@@ -111,7 +111,7 @@ export const UNIDADES = [
   "Moema",
   "Mooca",
   "Osasco",
-  "Panaмby",
+  "Panamby",
   "Paraíso",
   "Perdizes",
   "Pinheiros",

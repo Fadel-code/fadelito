@@ -123,6 +123,32 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
     [unidadeId, unidadeNome]
   );
 
+  const carregarObservacao = useCallback(
+    async (dataIso: string): Promise<string> => {
+      const { data } = await supabase
+        .from("observacoes_diarias")
+        .select("observacao")
+        .eq("unidade_id", unidadeId)
+        .eq("data", dataIso)
+        .maybeSingle();
+      return data?.observacao ?? "";
+    },
+    [unidadeId]
+  );
+
+  const salvarObservacao = useCallback(
+    async (dataIso: string, observacao: string): Promise<void> => {
+      const { error } = await supabase
+        .from("observacoes_diarias")
+        .upsert(
+          { unidade_id: unidadeId, data: dataIso, observacao },
+          { onConflict: "unidade_id,data" }
+        );
+      if (error) throw error;
+    },
+    [unidadeId]
+  );
+
   const carregarPorMes = useCallback(
     async (ano: number, mes: number) => {
       const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
@@ -143,5 +169,5 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
     [unidadeId]
   );
 
-  return { loading, salvando, carregarPorData, salvar, carregarPorMes };
+  return { loading, salvando, carregarPorData, salvar, carregarObservacao, salvarObservacao, carregarPorMes };
 }

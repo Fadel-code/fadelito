@@ -12,6 +12,14 @@ import { dateToIso } from "../../lib/utils";
 import FormularioTurmas from "../../components/FormularioTurmas";
 import { Button } from "../../components/ui/button";
 import { Calendar } from "../../components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../../components/ui/dialog";
 
 function inicializarLinhas(): RegistroInput[] {
   return TURMAS.map(registroVazio);
@@ -33,8 +41,11 @@ export default function FormularioDiario() {
 
   const [linhas, setLinhas] = useState<RegistroInput[]>(inicializarLinhas());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [modalObsAberto, setModalObsAberto] = useState(false);
+  const [observacao, setObservacao] = useState("");
+  const [obsExistente, setObsExistente] = useState("");
 
-  const { loading, salvando, carregarPorData, salvar } = useRegistros({
+  const { loading, salvando, carregarPorData, salvar, carregarObservacao, salvarObservacao } = useRegistros({
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
@@ -56,12 +67,27 @@ export default function FormularioDiario() {
     if (!dataSelecionada) return;
     const iso = dateToIso(dataSelecionada);
     carregarPorData(iso).then(setLinhas);
-  }, [dataSelecionada, carregarPorData]);
+    carregarObservacao(iso).then((obs) => {
+      setObsExistente(obs);
+      setObservacao(obs);
+    });
+  }, [dataSelecionada, carregarPorData, carregarObservacao]);
 
-  async function handleSalvar() {
+  function handleSalvar() {
     if (!dataSelecionada) return;
+    setObservacao(obsExistente);
+    setModalObsAberto(true);
+  }
+
+  async function handleConfirmarSalvar() {
+    if (!dataSelecionada || !observacao.trim()) return;
     const iso = dateToIso(dataSelecionada);
-    await salvar(iso, linhas);
+    const ok = await salvar(iso, linhas);
+    if (ok) {
+      await salvarObservacao(iso, observacao.trim());
+      setObsExistente(observacao.trim());
+    }
+    setModalObsAberto(false);
   }
 
   return (
@@ -134,6 +160,12 @@ export default function FormularioDiario() {
 
           <FormularioTurmas linhas={linhas} onChange={setLinhas} />
 
+          {obsExistente && (
+            <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+              <span className="font-semibold">Observação do dia:</span> {obsExistente}
+            </div>
+          )}
+
           <div className="mt-6 flex justify-end">
             <Button onClick={handleSalvar} disabled={salvando} size="lg">
               <Save className="h-4 w-4" />
@@ -147,6 +179,43 @@ export default function FormularioDiario() {
           <p className="text-gray-500">Selecione uma data para começar o preenchimento</p>
         </div>
       )}
+
+      {/* Modal de observação */}
+      <Dialog open={modalObsAberto} onOpenChange={setModalObsAberto}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Observação do dia</DialogTitle>
+            <DialogDescription>
+              Descreva algum detalhe relevante do dia antes de confirmar o salvamento.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-2">
+            <textarea
+              className="w-full rounded-md border border-gray-300 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+              rows={4}
+              placeholder="Ex: Evento especial hoje, baixo movimento por causa da chuva..."
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              autoFocus
+            />
+            {observacao.trim() === "" && (
+              <p className="mt-1 text-xs text-red-500">Observação obrigatória.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalObsAberto(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarSalvar}
+              disabled={salvando || observacao.trim() === ""}
+            >
+              <Save className="h-4 w-4" />
+              {salvando ? "Salvando..." : "Confirmar e salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
