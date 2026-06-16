@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+frontend/node_modules/
+
+# Build
+frontend/dist/
+frontend/build/
+
+# Variáveis de ambiente — NUNCA commitar
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
