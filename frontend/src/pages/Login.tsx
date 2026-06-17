@@ -94,11 +94,11 @@ export default function Login() {
                   <Label htmlFor="email">E-mail</Label>
                   <Input
                     id="email"
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     placeholder="seu@email.com.br"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
                     autoComplete="email"
                   />
                 </div>
@@ -136,11 +136,11 @@ export default function Login() {
                   <Label htmlFor="emailReset">E-mail</Label>
                   <Input
                     id="emailReset"
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     placeholder="seu@email.com.br"
                     value={emailReset}
                     onChange={(e) => setEmailReset(e.target.value)}
-                    required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={enviandoReset}>
