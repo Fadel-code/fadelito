@@ -80,10 +80,10 @@ export default function FormularioDiario() {
   }
 
   async function handleConfirmarSalvar() {
-    if (!dataSelecionada) return;
+    if (!dataSelecionada || !observacao.trim()) return;
     const iso = dateToIso(dataSelecionada);
     const ok = await salvar(iso, linhas);
-    if (ok && observacao.trim()) {
+    if (ok) {
       await salvarObservacao(iso, observacao.trim());
       setObsExistente(observacao.trim());
     }
@@ -186,18 +186,23 @@ export default function FormularioDiario() {
           <DialogHeader>
             <DialogTitle>Observação do dia</DialogTitle>
             <DialogDescription>
-              Opcional — descreva algum detalhe relevante do dia (evento especial, baixo movimento etc.).
+              Obrigatório — informe o nome e telefone de cada visita para registro no CRM.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-2">
             <textarea
               className="w-full rounded-md border border-gray-300 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
               rows={4}
-              placeholder="Ex: Evento especial hoje, baixo movimento por causa da chuva..."
+              placeholder="Insira o nome e telefone da visita"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               autoFocus
             />
+            {observacao.trim() === "" && (
+              <p className="mt-1 text-xs text-red-500">
+                Preencha o nome e telefone da visita para salvar.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalObsAberto(false)}>
@@ -205,7 +210,7 @@ export default function FormularioDiario() {
             </Button>
             <Button
               onClick={handleConfirmarSalvar}
-              disabled={salvando}
+              disabled={salvando || observacao.trim() === ""}
             >
               <Save className="h-4 w-4" />
               {salvando ? "Salvando..." : "Confirmar e salvar"}
