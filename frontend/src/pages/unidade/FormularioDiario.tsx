@@ -186,20 +186,22 @@ export default function FormularioDiario() {
           <DialogHeader>
             <DialogTitle>Observação do dia</DialogTitle>
             <DialogDescription>
-              Descreva algum detalhe relevante do dia antes de confirmar o salvamento.
+              Obrigatório — informe o nome e telefone de cada visita para registro no CRM.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-2">
             <textarea
               className="w-full rounded-md border border-gray-300 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
               rows={4}
-              placeholder="Ex: Evento especial hoje, baixo movimento por causa da chuva..."
+              placeholder="Insira o nome e telefone da visita"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               autoFocus
             />
             {observacao.trim() === "" && (
-              <p className="mt-1 text-xs text-red-500">Observação obrigatória.</p>
+              <p className="mt-1 text-xs text-red-500">
+                Preencha o nome e telefone da visita para salvar.
+              </p>
             )}
           </div>
           <DialogFooter>

@@ -15,12 +15,13 @@ export function useConsolidado(ano: number, mes: number) {
       const fim = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
       const hojeIso = dateToIso(new Date());
 
-      // Buscar todos os registros do mês
+      // Buscar todos os registros do mês (range amplo para não truncar no limite 1000)
       const { data: registros, error: errReg } = await supabase
         .from("registros")
         .select("*, profiles!inner(unidade_nome, ativo)")
         .gte("data", inicio)
-        .lte("data", fim);
+        .lte("data", fim)
+        .range(0, 9999);
 
       if (errReg) throw errReg;
 
