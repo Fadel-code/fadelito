@@ -15,15 +15,23 @@ export function useConsolidado(ano: number, mes: number) {
       const fim = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
       const hojeIso = dateToIso(new Date());
 
-      // Buscar todos os registros do mês (range amplo para não truncar no limite 1000)
-      const { data: registros, error: errReg } = await supabase
-        .from("registros")
-        .select("*, profiles!inner(unidade_nome, ativo)")
-        .gte("data", inicio)
-        .lte("data", fim)
-        .range(0, 9999);
-
-      if (errReg) throw errReg;
+      // Buscar todos os registros do mês com paginação (servidor limita a 1000/página)
+      const PAGE = 1000;
+      let from = 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const registros: any[] = [];
+      while (true) {
+        const { data: batch, error: errReg } = await supabase
+          .from("registros")
+          .select("*, profiles!inner(unidade_nome, ativo)")
+          .gte("data", inicio)
+          .lte("data", fim)
+          .range(from, from + PAGE - 1);
+        if (errReg) throw errReg;
+        registros.push(...(batch ?? []));
+        if (!batch || batch.length < PAGE) break;
+        from += PAGE;
+      }
 
       // Buscar todas as unidades ativas
       const { data: unidades, error: errUn } = await supabase
