@@ -80,10 +80,10 @@ export default function FormularioDiario() {
   }
 
   async function handleConfirmarSalvar() {
-    if (!dataSelecionada || !observacao.trim()) return;
+    if (!dataSelecionada) return;
     const iso = dateToIso(dataSelecionada);
     const ok = await salvar(iso, linhas);
-    if (ok) {
+    if (ok && observacao.trim()) {
       await salvarObservacao(iso, observacao.trim());
       setObsExistente(observacao.trim());
     }
@@ -186,7 +186,7 @@ export default function FormularioDiario() {
           <DialogHeader>
             <DialogTitle>Observação do dia</DialogTitle>
             <DialogDescription>
-              Descreva algum detalhe relevante do dia antes de confirmar o salvamento.
+              Opcional — descreva algum detalhe relevante do dia (evento especial, baixo movimento etc.).
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-2">
@@ -198,9 +198,6 @@ export default function FormularioDiario() {
               onChange={(e) => setObservacao(e.target.value)}
               autoFocus
             />
-            {observacao.trim() === "" && (
-              <p className="mt-1 text-xs text-red-500">Observação obrigatória.</p>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalObsAberto(false)}>
@@ -208,7 +205,7 @@ export default function FormularioDiario() {
             </Button>
             <Button
               onClick={handleConfirmarSalvar}
-              disabled={salvando || observacao.trim() === ""}
+              disabled={salvando}
             >
               <Save className="h-4 w-4" />
               {salvando ? "Salvando..." : "Confirmar e salvar"}
