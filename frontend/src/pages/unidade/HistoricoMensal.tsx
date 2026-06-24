@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button";
 import { Edit2 } from "lucide-react";
 
-const ANO = 2026;
+const ANO = new Date().getFullYear();
 
 const SECOES = [
   { key: "visitas" as const,                 label: "Visitas" },
@@ -46,9 +46,11 @@ export default function HistoricoMensal() {
   const mesSelecionadoEhAtual = mes === mesCorrido;
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
     carregarPorMes(ANO, mes)
       .then((data) => {
+        if (!active) return;
         const map: RegistroMap = {};
         for (const r of data) {
           if (!map[r.data]) map[r.data] = {} as RegistroMap[string];
@@ -69,7 +71,10 @@ export default function HistoricoMensal() {
         }
         setRegistros(map);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, [mes, carregarPorMes]);
 
   function getValor(data: string, turma: Turma, campo: Secao): number {

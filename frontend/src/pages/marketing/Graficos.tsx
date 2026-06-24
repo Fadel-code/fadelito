@@ -6,7 +6,7 @@ import GraficoBarras from "../../components/GraficoBarras";
 import GraficoLinha from "../../components/GraficoLinha";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 
-const ANO = 2026;
+const ANO = new Date().getFullYear();
 
 interface PontoMensal {
   mes: number;

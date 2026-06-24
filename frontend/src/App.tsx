@@ -3,6 +3,8 @@ import {
   useContext,
   useEffect,
   useState,
+  lazy,
+  Suspense,
   type ReactNode,
 } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
@@ -10,16 +12,24 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import type { Profile } from "./types";
 
-// Pages
 import Login from "./pages/Login";
-import FormularioDiario from "./pages/unidade/FormularioDiario";
-import HistoricoMensal from "./pages/unidade/HistoricoMensal";
-import Dashboard from "./pages/marketing/Dashboard";
-import Graficos from "./pages/marketing/Graficos";
-import Ranking from "./pages/marketing/Ranking";
-import Usuarios from "./pages/marketing/Usuarios";
-import AuditLog from "./pages/marketing/AuditLog";
 import Layout from "./components/Layout";
+
+const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
+const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
+const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
+const Graficos = lazy(() => import("./pages/marketing/Graficos"));
+const Ranking = lazy(() => import("./pages/marketing/Ranking"));
+const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
+const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+    </div>
+  );
+}
 
 // ---- Auth Context ----
 interface AuthContextType {
@@ -120,6 +130,7 @@ function RedirectByRole() {
 export default function App() {
   return (
     <AuthProvider>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RedirectByRole />} />
@@ -157,6 +168,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }

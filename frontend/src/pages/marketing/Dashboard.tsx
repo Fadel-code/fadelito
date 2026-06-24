@@ -5,8 +5,6 @@ import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
 import { MESES } from "../../types";
-import { exportarExcel } from "../../lib/exportExcel";
-import { exportarPdf } from "../../lib/exportPdf";
 import TabelaConsolidada from "../../components/TabelaConsolidada";
 import ModalEdicaoUnidade from "../../components/ModalEdicaoUnidade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
@@ -14,7 +12,7 @@ import { Button } from "../../components/ui/button";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 
-const ANO = 2026;
+const ANO = new Date().getFullYear();
 const TODOS_OS_DIAS = "todos";
 
 export default function Dashboard() {
@@ -107,7 +105,10 @@ export default function Dashboard() {
 
           <Button
             variant="outline"
-            onClick={() => exportarExcel(dados, mes, ANO)}
+            onClick={async () => {
+              const { exportarExcel } = await import("../../lib/exportExcel");
+              exportarExcel(dados, mes, ANO);
+            }}
             className="gap-2"
           >
             <FileSpreadsheet className="h-4 w-4" />
@@ -116,7 +117,10 @@ export default function Dashboard() {
 
           <Button
             variant="outline"
-            onClick={() => exportarPdf(dados, mes, ANO)}
+            onClick={async () => {
+              const { exportarPdf } = await import("../../lib/exportPdf");
+              exportarPdf(dados, mes, ANO);
+            }}
             className="gap-2"
           >
             <FileText className="h-4 w-4" />

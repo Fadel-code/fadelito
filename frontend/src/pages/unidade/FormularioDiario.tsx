@@ -67,17 +67,30 @@ export default function FormularioDiario() {
 
   useEffect(() => {
     if (!dataSelecionada) return;
+    let active = true;
     const iso = dateToIso(dataSelecionada);
     setTemRegistros(false);
     carregarPorData(iso).then(({ linhas, existe }) => {
+      if (!active) return;
       setLinhas(linhas);
       setTemRegistros(existe);
     });
     carregarObservacao(iso).then((obs) => {
+      if (!active) return;
       setObsExistente(obs);
       setObservacao(obs);
     });
+    return () => { active = false; };
   }, [dataSelecionada, carregarPorData, carregarObservacao]);
+
+  useEffect(() => {
+    if (!mostrarCalendario) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMostrarCalendario(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mostrarCalendario]);
 
   function handleSalvar() {
     if (!dataSelecionada) return;
@@ -125,6 +138,9 @@ export default function FormularioDiario() {
         <div className="flex items-start gap-6">
           <div className="relative">
             <button
+              type="button"
+              aria-expanded={mostrarCalendario}
+              aria-haspopup="dialog"
               onClick={() => setMostrarCalendario((v) => !v)}
               className="flex items-center gap-2 h-9 px-4 rounded-md border border-gray-300 bg-white text-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
@@ -135,24 +151,35 @@ export default function FormularioDiario() {
             </button>
 
             {mostrarCalendario && (
-              <div className="absolute top-11 left-0 z-30 bg-white rounded-xl shadow-xl border border-gray-200">
-                <Calendar
-                  mode="single"
-                  selected={dataSelecionada}
-                  onSelect={(d) => {
-                    setDataSelecionada(d);
-                    setMostrarCalendario(false);
-                  }}
-                  disabled={isDesabilitado}
-                  locale={ptBR}
-                  defaultMonth={startOfMonth(hoje)}
-                  fromMonth={startOfMonth(hoje)}
-                  toMonth={endOfMonth(hoje)}
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setMostrarCalendario(false)}
+                  aria-hidden="true"
                 />
-                <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                  Apenas dias úteis do mês atual habilitados
+                <div
+                  role="dialog"
+                  aria-label="Selecionar data"
+                  className="absolute top-11 left-0 z-30 bg-white rounded-xl shadow-xl border border-gray-200"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={dataSelecionada}
+                    onSelect={(d) => {
+                      setDataSelecionada(d);
+                      setMostrarCalendario(false);
+                    }}
+                    disabled={isDesabilitado}
+                    locale={ptBR}
+                    defaultMonth={startOfMonth(hoje)}
+                    fromMonth={startOfMonth(hoje)}
+                    toMonth={endOfMonth(hoje)}
+                  />
+                  <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
+                    Apenas dias úteis do mês atual habilitados
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
@@ -256,16 +283,27 @@ export default function FormularioDiario() {
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-2">
+            <label htmlFor="obs-input" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Observação{" "}
+              <span className="text-red-500" aria-hidden="true">*</span>
+            </label>
             <textarea
-              className="w-full rounded-md border border-gray-300 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+              id="obs-input"
+              className={`w-full rounded-md border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                observacao.trim() === "" ? "border-red-400" : "border-gray-300"
+              }`}
               rows={4}
               placeholder="Insira o nome e telefone da visita"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               autoFocus
+              required
+              aria-required="true"
+              aria-invalid={observacao.trim() === ""}
+              aria-describedby={observacao.trim() === "" ? "obs-erro" : undefined}
             />
             {observacao.trim() === "" && (
-              <p className="mt-1 text-xs text-red-500">
+              <p id="obs-erro" role="alert" className="mt-1 text-xs text-red-500">
                 Preencha o nome e telefone da visita para salvar.
               </p>
             )}

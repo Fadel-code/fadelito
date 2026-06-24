@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
-const ANO = 2026;
+const ANO = new Date().getFullYear();
 
 type ColunaOrdem = "matriculas_totais" | "aproveitamento_num" | "saldo";
 

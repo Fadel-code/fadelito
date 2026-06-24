@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Search } from "lucide-react";
 
-const ANO = 2026;
+const ANO = new Date().getFullYear();
 
 export default function AuditLog() {
   const mesCorrido = new Date().getMonth() + 1;
