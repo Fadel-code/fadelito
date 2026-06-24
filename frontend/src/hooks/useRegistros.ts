@@ -12,9 +12,10 @@ interface UseRegistrosOptions {
 export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
   const [loading, setLoading] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
 
   const carregarPorData = useCallback(
-    async (dataIso: string): Promise<RegistroInput[]> => {
+    async (dataIso: string): Promise<{ linhas: RegistroInput[]; existe: boolean }> => {
       setLoading(true);
       try {
         const { data, error } = await supabase
@@ -25,7 +26,7 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
 
         if (error) throw error;
 
-        return TURMAS.map((turma) => {
+        const linhas = TURMAS.map((turma) => {
           const reg = data?.find((r) => r.turma === turma);
           return reg
             ? {
@@ -40,6 +41,8 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
               }
             : registroVazio(turma);
         });
+
+        return { linhas, existe: (data?.length ?? 0) > 0 };
       } finally {
         setLoading(false);
       }
@@ -169,5 +172,67 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
     [unidadeId]
   );
 
-  return { loading, salvando, carregarPorData, salvar, carregarObservacao, salvarObservacao, carregarPorMes };
+  const remover = useCallback(
+    async (dataIso: string): Promise<boolean> => {
+      setRemovendo(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { data: existentes } = await supabase
+          .from("registros")
+          .select("*")
+          .eq("unidade_id", unidadeId)
+          .eq("data", dataIso);
+
+        const { error } = await supabase
+          .from("registros")
+          .delete()
+          .eq("unidade_id", unidadeId)
+          .eq("data", dataIso);
+
+        if (error) throw error;
+
+        await supabase
+          .from("observacoes_diarias")
+          .delete()
+          .eq("unidade_id", unidadeId)
+          .eq("data", dataIso);
+
+        if (existentes?.length && user) {
+          await supabase.from("audit_log").insert(
+            existentes.map((r) => ({
+              usuario_id: user.id,
+              unidade_nome: unidadeNome,
+              acao: "DELETE",
+              data_registro: dataIso,
+              turma: r.turma,
+              campo_alterado: "preenchimento",
+              valor_anterior: JSON.stringify({
+                visitas: r.visitas,
+                visitas_curso_ferias: r.visitas_curso_ferias,
+                matriculas: r.matriculas,
+                matriculas_curso_ferias: r.matriculas_curso_ferias,
+                desligamentos: r.desligamentos,
+                transferencias: r.transferencias,
+                religamentos: r.religamentos,
+              }),
+              valor_novo: null,
+            }))
+          );
+        }
+
+        toast.success("Preenchimento removido com sucesso!");
+        return true;
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao remover. Tente novamente.");
+        return false;
+      } finally {
+        setRemovendo(false);
+      }
+    },
+    [unidadeId, unidadeNome]
+  );
+
+  return { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao, carregarPorMes };
 }

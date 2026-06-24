@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save } from "lucide-react";
+import { CalendarIcon, Save, Trash2 } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
 import { TURMAS, registroVazio } from "../../types";
@@ -40,12 +40,14 @@ export default function FormularioDiario() {
   });
 
   const [linhas, setLinhas] = useState<RegistroInput[]>(inicializarLinhas());
+  const [temRegistros, setTemRegistros] = useState(false);
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [modalObsAberto, setModalObsAberto] = useState(false);
+  const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
   const [obsExistente, setObsExistente] = useState("");
 
-  const { loading, salvando, carregarPorData, salvar, carregarObservacao, salvarObservacao } = useRegistros({
+  const { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao } = useRegistros({
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
@@ -66,7 +68,11 @@ export default function FormularioDiario() {
   useEffect(() => {
     if (!dataSelecionada) return;
     const iso = dateToIso(dataSelecionada);
-    carregarPorData(iso).then(setLinhas);
+    setTemRegistros(false);
+    carregarPorData(iso).then(({ linhas, existe }) => {
+      setLinhas(linhas);
+      setTemRegistros(existe);
+    });
     carregarObservacao(iso).then((obs) => {
       setObsExistente(obs);
       setObservacao(obs);
@@ -86,8 +92,22 @@ export default function FormularioDiario() {
     if (ok) {
       await salvarObservacao(iso, observacao.trim());
       setObsExistente(observacao.trim());
+      setTemRegistros(true);
     }
     setModalObsAberto(false);
+  }
+
+  async function handleRemover() {
+    if (!dataSelecionada) return;
+    const iso = dateToIso(dataSelecionada);
+    const ok = await remover(iso);
+    if (ok) {
+      setLinhas(inicializarLinhas());
+      setTemRegistros(false);
+      setObsExistente("");
+      setObservacao("");
+    }
+    setModalRemocaoAberto(false);
   }
 
   return (
@@ -166,8 +186,21 @@ export default function FormularioDiario() {
             </div>
           )}
 
-          <div className="mt-6 flex justify-end">
-            <Button onClick={handleSalvar} disabled={salvando} size="lg">
+          <div className="mt-6 flex items-center justify-between">
+            <div>
+              {temRegistros && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => setModalRemocaoAberto(true)}
+                  disabled={salvando || removendo}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remover preenchimento
+                </Button>
+              )}
+            </div>
+            <Button onClick={handleSalvar} disabled={salvando || removendo} size="lg">
               <Save className="h-4 w-4" />
               {salvando ? "Salvando..." : "Salvar dados"}
             </Button>
@@ -179,6 +212,39 @@ export default function FormularioDiario() {
           <p className="text-gray-500">Selecione uma data para começar o preenchimento</p>
         </div>
       )}
+
+      {/* Modal de confirmação de remoção */}
+      <Dialog open={modalRemocaoAberto} onOpenChange={setModalRemocaoAberto}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover preenchimento</DialogTitle>
+            <DialogDescription>
+              Todos os dados de{" "}
+              {dataSelecionada
+                ? format(dataSelecionada, "dd/MM/yyyy", { locale: ptBR })
+                : "este dia"}{" "}
+              serão removidos. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setModalRemocaoAberto(false)}
+              disabled={removendo}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRemover}
+              disabled={removendo}
+            >
+              <Trash2 className="h-4 w-4" />
+              {removendo ? "Removendo..." : "Sim, remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de observação */}
       <Dialog open={modalObsAberto} onOpenChange={setModalObsAberto}>

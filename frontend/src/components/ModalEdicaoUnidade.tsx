@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Trash2 } from "lucide-react";
 import { TURMAS, registroVazio } from "../types";
 import type { ConsolidadoUnidade, RegistroInput } from "../types";
 import { supabase } from "../lib/supabase";
@@ -25,8 +26,13 @@ export default function ModalEdicaoUnidade({ open, onClose, unidade, ano, mes }:
   const [diaSelecionado, setDiaSelecionado] = useState<string>("");
   const [linhas, setLinhas] = useState<RegistroInput[]>(TURMAS.map(registroVazio));
   const [salvando, setSalvando] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
+  const [temRegistros, setTemRegistros] = useState(false);
+  const [confirmarRemocao, setConfirmarRemocao] = useState(false);
 
   useEffect(() => {
+    setConfirmarRemocao(false);
+    setTemRegistros(false);
     if (!diaSelecionado || !unidade) return;
     supabase
       .from("registros")
@@ -34,6 +40,7 @@ export default function ModalEdicaoUnidade({ open, onClose, unidade, ano, mes }:
       .eq("unidade_id", unidade.unidade_id)
       .eq("data", diaSelecionado)
       .then(({ data }) => {
+        setTemRegistros((data?.length ?? 0) > 0);
         setLinhas(
           TURMAS.map((turma) => {
             const r = data?.find((x: { turma: string }) => x.turma === turma);
@@ -120,6 +127,66 @@ export default function ModalEdicaoUnidade({ open, onClose, unidade, ano, mes }:
     }
   }
 
+  async function handleRemover() {
+    if (!unidade || !diaSelecionado) return;
+    setRemovendo(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data: existentes } = await supabase
+        .from("registros")
+        .select("*")
+        .eq("unidade_id", unidade.unidade_id)
+        .eq("data", diaSelecionado);
+
+      const { error } = await supabase
+        .from("registros")
+        .delete()
+        .eq("unidade_id", unidade.unidade_id)
+        .eq("data", diaSelecionado);
+
+      if (error) throw error;
+
+      await supabase
+        .from("observacoes_diarias")
+        .delete()
+        .eq("unidade_id", unidade.unidade_id)
+        .eq("data", diaSelecionado);
+
+      if (existentes?.length && user) {
+        await supabase.from("audit_log").insert(
+          existentes.map((r: Record<string, unknown>) => ({
+            usuario_id: user.id,
+            unidade_nome: unidade.unidade_nome,
+            acao: "DELETE",
+            data_registro: diaSelecionado,
+            turma: r.turma,
+            campo_alterado: "preenchimento",
+            valor_anterior: JSON.stringify({
+              visitas: r.visitas,
+              visitas_curso_ferias: r.visitas_curso_ferias,
+              matriculas: r.matriculas,
+              matriculas_curso_ferias: r.matriculas_curso_ferias,
+              desligamentos: r.desligamentos,
+              transferencias: r.transferencias,
+              religamentos: r.religamentos,
+            }),
+            valor_novo: null,
+          }))
+        );
+      }
+
+      toast.success("Preenchimento removido com sucesso!");
+      onClose();
+    } catch (err) {
+      toast.error("Erro ao remover. Tente novamente.");
+      console.error(err);
+    } finally {
+      setRemovendo(false);
+      setConfirmarRemocao(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-5xl">
@@ -155,12 +222,48 @@ export default function ModalEdicaoUnidade({ open, onClose, unidade, ano, mes }:
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={salvando}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSalvar} disabled={salvando || !diaSelecionado}>
-            {salvando ? "Salvando..." : "Salvar alterações"}
-          </Button>
+          {confirmarRemocao ? (
+            <>
+              <span className="text-sm text-red-600 mr-auto self-center">
+                Remover todos os dados deste dia?
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setConfirmarRemocao(false)}
+                disabled={removendo}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemover}
+                disabled={removendo}
+              >
+                <Trash2 className="h-4 w-4" />
+                {removendo ? "Removendo..." : "Sim, remover"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={salvando || removendo}>
+                Cancelar
+              </Button>
+              {diaSelecionado && temRegistros && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={() => setConfirmarRemocao(true)}
+                  disabled={salvando || removendo}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remover preenchimento
+                </Button>
+              )}
+              <Button onClick={handleSalvar} disabled={salvando || removendo || !diaSelecionado}>
+                {salvando ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

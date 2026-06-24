@@ -3,19 +3,21 @@ import { supabase } from "../lib/supabase";
 import type { ConsolidadoUnidade } from "../types";
 import { dateToIso } from "../lib/utils";
 
-export function useConsolidado(ano: number, mes: number) {
+// dia: ISO date string para filtrar por dia específico; undefined = mês inteiro
+export function useConsolidado(ano: number, mes: number, dia?: string) {
   const [dados, setDados] = useState<ConsolidadoUnidade[]>([]);
   const [loading, setLoading] = useState(true);
 
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const inicio = `${ano}-${String(mes).padStart(2, "0")}-01`;
+      const padMes = String(mes).padStart(2, "0");
+      const inicio = dia ?? `${ano}-${padMes}-01`;
       const ultimoDia = new Date(ano, mes, 0).getDate();
-      const fim = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+      const fim = dia ?? `${ano}-${padMes}-${String(ultimoDia).padStart(2, "0")}`;
       const hojeIso = dateToIso(new Date());
 
-      // Buscar todos os registros do mês com paginação (servidor limita a 1000/página)
+      // Buscar registros do período com paginação (servidor limita a 1000/página)
       const PAGE = 1000;
       let from = 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,20 +45,22 @@ export function useConsolidado(ano: number, mes: number) {
 
       if (errUn) throw errUn;
 
-      // Buscar quem preencheu hoje
-      const { data: hoje } = await supabase
-        .from("registros")
-        .select("unidade_id")
-        .eq("data", hojeIso);
-
-      const preencheramHoje = new Set(
-        (hoje ?? []).map((r: { unidade_id: string }) => r.unidade_id)
-      );
+      // No modo mês (sem dia fixo), buscar quem preencheu hoje
+      let preencheramHoje = new Set<string>();
+      if (!dia) {
+        const { data: hoje } = await supabase
+          .from("registros")
+          .select("unidade_id")
+          .eq("data", hojeIso);
+        preencheramHoje = new Set(
+          (hoje ?? []).map((r: { unidade_id: string }) => r.unidade_id)
+        );
+      }
 
       // Agregar por unidade
       const consolidado: ConsolidadoUnidade[] = (unidades ?? []).map(
         (u: { id: string; unidade_nome: string }) => {
-          const regsUnidade = (registros ?? []).filter(
+          const regsUnidade = registros.filter(
             (r: { unidade_id: string }) => r.unidade_id === u.id
           );
 
@@ -96,7 +100,9 @@ export function useConsolidado(ano: number, mes: number) {
             matriculas_totais,
             aproveitamento,
             saldo,
-            preencheu_hoje: preencheramHoje.has(u.id),
+            // No modo dia: preencheu = tem registros naquele dia
+            // No modo mês: preencheu = tem registros hoje
+            preencheu_hoje: dia ? regsUnidade.length > 0 : preencheramHoje.has(u.id),
           };
         }
       );
@@ -105,7 +111,7 @@ export function useConsolidado(ano: number, mes: number) {
     } finally {
       setLoading(false);
     }
-  }, [ano, mes]);
+  }, [ano, mes, dia]);
 
   useEffect(() => {
     carregar();
@@ -127,6 +133,12 @@ export function useConsolidado(ano: number, mes: number) {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [carregar]);
+
+  // Polling de 30s como fallback caso o realtime não dispare
+  useEffect(() => {
+    const id = setInterval(carregar, 30_000);
+    return () => clearInterval(id);
   }, [carregar]);
 
   return { dados, loading, recarregar: carregar };

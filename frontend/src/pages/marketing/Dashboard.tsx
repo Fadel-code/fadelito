@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
@@ -9,16 +11,32 @@ import TabelaConsolidada from "../../components/TabelaConsolidada";
 import ModalEdicaoUnidade from "../../components/ModalEdicaoUnidade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
+import { diasUteisDoMes, dateToIso } from "../../lib/utils";
+import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = 2026;
+const TODOS_OS_DIAS = "todos";
 
 export default function Dashboard() {
   const mesCorrido = new Date().getMonth() + 1;
+  const hojeIso = dateToIso(new Date());
   const [mes, setMes] = useState(mesCorrido);
+  const [dia, setDia] = useState(TODOS_OS_DIAS);
   const [modalAberto, setModalAberto] = useState(false);
   const [unidadeEditando, setUnidadeEditando] = useState<ConsolidadoUnidade | null>(null);
 
-  const { dados, loading, recarregar } = useConsolidado(ANO, mes);
+  const diaFiltro = dia === TODOS_OS_DIAS ? undefined : dia;
+  const { dados, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
+
+  // Dias úteis do mês selecionado, do mais recente para o mais antigo, limitado a hoje
+  const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET)
+    .filter((d) => dateToIso(d) <= hojeIso)
+    .reverse();
+
+  function handleChangeMes(v: string) {
+    setMes(Number(v));
+    setDia(TODOS_OS_DIAS);
+  }
 
   function handleEditar(u: ConsolidadoUnidade) {
     setUnidadeEditando(u);
@@ -31,8 +49,10 @@ export default function Dashboard() {
     recarregar();
   }
 
-  const preencheramHoje = dados.filter((d) => d.preencheu_hoje).length;
+  const preencheramNoDia = dados.filter((d) => d.preencheu_hoje).length;
   const totalUnidades = dados.length;
+  const filtrouDia = dia !== TODOS_OS_DIAS;
+  const labelStatus = filtrouDia ? "no dia" : "hoje";
 
   return (
     <div>
@@ -45,7 +65,8 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+          {/* Seletor de mês */}
+          <Select value={String(mes)} onValueChange={handleChangeMes}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -56,6 +77,24 @@ export default function Dashboard() {
                 return (
                   <SelectItem key={num} value={String(num)} disabled={futuro}>
                     {nome} {ANO}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* Seletor de dia */}
+          <Select value={dia} onValueChange={setDia}>
+            <SelectTrigger className="w-52">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS_OS_DIAS}>Todos os dias</SelectItem>
+              {diasUteis.map((d) => {
+                const iso = dateToIso(d);
+                return (
+                  <SelectItem key={iso} value={iso}>
+                    {format(d, "EEE, dd/MM", { locale: ptBR })}
                   </SelectItem>
                 );
               })}
@@ -93,13 +132,17 @@ export default function Dashboard() {
           <p className="text-3xl font-bold text-gray-900 mt-1">{totalUnidades}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Preenchidas hoje</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{preencheramHoje}</p>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+            Preenchidas {labelStatus}
+          </p>
+          <p className="text-3xl font-bold text-green-600 mt-1">{preencheramNoDia}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Faltando hoje</p>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+            Faltando {labelStatus}
+          </p>
           <p className="text-3xl font-bold text-red-500 mt-1">
-            {totalUnidades - preencheramHoje}
+            {totalUnidades - preencheramNoDia}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -120,11 +163,12 @@ export default function Dashboard() {
         ) : dados.length === 0 ? (
           <div className="text-center h-32 flex items-center justify-center text-gray-400">
             Nenhum dado para {MESES[mes - 1]} {ANO}
+            {filtrouDia && ` — ${format(new Date(dia + "T12:00:00"), "dd/MM", { locale: ptBR })}`}
           </div>
         ) : (
           <TabelaConsolidada
             dados={dados}
-            mostrarStatus={mes === mesCorrido}
+            mostrarStatus={mes === mesCorrido || filtrouDia}
             onEditar={handleEditar}
           />
         )}

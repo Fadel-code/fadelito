@@ -65,7 +65,7 @@ export interface AuditLog {
   id: string;
   usuario_id: string;
   unidade_nome: string;
-  acao: "INSERT" | "UPDATE";
+  acao: "INSERT" | "UPDATE" | "DELETE";
   data_registro: string;
   turma: string;
   campo_alterado: string;
