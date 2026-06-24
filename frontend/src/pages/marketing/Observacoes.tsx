@@ -13,12 +13,12 @@ interface ObsRow {
   unidade_id: string;
   data: string;
   observacao: string;
-  profiles: { unidade_nome: string }[] | null;
 }
 
 export default function Observacoes() {
   const mesCorrido = new Date().getMonth() + 1;
   const [registros, setRegistros] = useState<ObsRow[]>([]);
+  const [nomeMap, setNomeMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const [unidade, setUnidade] = useState("todas");
@@ -26,11 +26,24 @@ export default function Observacoes() {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
+  // Load profiles once for the name lookup
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, unidade_nome")
+      .eq("role", "unidade")
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const p of data ?? []) map[p.id] = p.unidade_nome ?? "";
+        setNomeMap(map);
+      });
+  }, []);
+
   const buscar = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from("observacoes_diarias")
-      .select("unidade_id, data, observacao, profiles(unidade_nome)")
+      .select("unidade_id, data, observacao")
       .order("data", { ascending: false })
       .limit(1000);
 
@@ -50,11 +63,11 @@ export default function Observacoes() {
 
     let rows = (data ?? []) as ObsRow[];
     if (unidade !== "todas") {
-      rows = rows.filter((r) => r.profiles?.[0]?.unidade_nome === unidade);
+      rows = rows.filter((r) => nomeMap[r.unidade_id] === unidade);
     }
     setRegistros(rows);
     setLoading(false);
-  }, [unidade, mes, dataInicio, dataFim]);
+  }, [unidade, mes, dataInicio, dataFim, nomeMap]);
 
   useEffect(() => {
     buscar();
@@ -168,7 +181,7 @@ export default function Observacoes() {
                         {formatarData(r.data)}
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                        {r.profiles?.[0]?.unidade_nome ?? "—"}
+                        {nomeMap[r.unidade_id] ?? "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-700 whitespace-pre-wrap">{r.observacao}</td>
                     </tr>
