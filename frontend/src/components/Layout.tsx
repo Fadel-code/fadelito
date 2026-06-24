@@ -8,6 +8,7 @@ import {
   FileText,
   History,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { cn } from "../lib/utils";
@@ -29,6 +30,7 @@ const NAV_MARKETING: NavItem[] = [
   { to: "/marketing/ranking", label: "Ranking", icon: Trophy },
   { to: "/marketing/usuarios", label: "Usuários", icon: Users },
   { to: "/marketing/audit", label: "Audit Log", icon: FileText },
+  { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
 ];
 
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
