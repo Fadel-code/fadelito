@@ -107,7 +107,7 @@ export const UNIDADES = [
   "Jardins",
   "Klabin",
   "Lapa",
-  "Marajoará",
+  "Marajoara",
   "Moema",
   "Mooca",
   "Osasco",

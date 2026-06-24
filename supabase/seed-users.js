@@ -20,7 +20,7 @@ const UNIDADES = [
   "Aclamação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Brooklin",
   "Campinas", "Campo Belo", "Granja", "Guarulhos", "Higienópolis",
   "Indianópolis", "Ipiranga", "Jardins", "Klabin", "Lapa",
-  "Marajoará", "Moema", "Mooca", "Osasco", "Panamby",
+  "Marajoara", "Moema", "Mooca", "Osasco", "Panamby",
   "Paraíso", "Perdizes", "Pinheiros", "Piracicaba", "Portal",
   "Real Parque", "Santo André", "São Caetano", "Saúde", "Tatuapé",
   "Vila Gumercindo", "Vila Leopoldina", "Vila Madalena", "Vila Mariana", "Vila Sônia",
