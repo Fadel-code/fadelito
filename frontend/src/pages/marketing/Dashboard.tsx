@@ -2,6 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { useAuth } from "../../App";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
 import { MESES } from "../../types";
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [unidadeEditando, setUnidadeEditando] = useState<ConsolidadoUnidade | null>(null);
 
   const diaFiltro = dia === TODOS_OS_DIAS ? undefined : dia;
+  const { profile } = useAuth();
   const { dados, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
 
   // Dias úteis do mês selecionado, do mais recente para o mais antigo, limitado a hoje
@@ -173,7 +175,7 @@ export default function Dashboard() {
           <TabelaConsolidada
             dados={dados}
             mostrarStatus={mes === mesCorrido || filtrouDia}
-            onEditar={handleEditar}
+            onEditar={profile?.role === "marketing" ? handleEditar : undefined}
           />
         )}
       </div>
