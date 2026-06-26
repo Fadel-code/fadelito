@@ -12,6 +12,8 @@ import {
   LogOut,
   MessageSquare,
   AlertTriangle,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -24,6 +26,8 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
+
+const BANNER_KEY = "fadelito_banner_desfecho_v1";
 
 interface NavItem {
   to: string;
@@ -50,6 +54,15 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
+
+  const [bannerVisivel, setBannerVisivel] = useState(
+    () => role === "unidade" && !localStorage.getItem(BANNER_KEY)
+  );
+
+  function dispensarBanner() {
+    localStorage.setItem(BANNER_KEY, "1");
+    setBannerVisivel(false);
+  }
 
   // Modal de alerta — aparece uma vez por montagem do Layout (= uma vez por login)
   const [modalAberto, setModalAberto] = useState(false);
@@ -180,6 +193,34 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             </span>
           </div>
         </header>
+
+        {/* Banner nova funcionalidade */}
+        {bannerVisivel && (
+          <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-3 flex items-center gap-4">
+            <Sparkles className="h-5 w-5 flex-shrink-0 text-primary-100" />
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold">Nova funcionalidade disponível: </span>
+              <span>
+                Agora você pode registrar o <strong>Desfecho de Matrículas</strong> de cada visita — informe se o lead
+                matriculou, está em negociação ou não fechou. Acesse{" "}
+                <button
+                  onClick={() => { dispensarBanner(); navigate("/unidade/desfechos"); }}
+                  className="underline underline-offset-2 hover:text-primary-100 font-semibold"
+                >
+                  Desfecho das Visitas
+                </button>{" "}
+                no menu lateral para começar.
+              </span>
+            </div>
+            <button
+              onClick={dispensarBanner}
+              aria-label="Fechar aviso"
+              className="flex-shrink-0 p-1 rounded hover:bg-primary-700 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Page content */}
         <div className="flex-1 p-8">

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Trash2 } from "lucide-react";
+import { CalendarIcon, Save, Trash2, ClipboardCheck } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
 import { TURMAS, registroVazio } from "../../types";
@@ -44,6 +44,7 @@ export default function FormularioDiario() {
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [modalObsAberto, setModalObsAberto] = useState(false);
   const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
+  const [modalDesfechoAberto, setModalDesfechoAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
   const [obsExistente, setObsExistente] = useState("");
 
@@ -106,6 +107,9 @@ export default function FormularioDiario() {
       await salvarObservacao(iso, observacao.trim());
       setObsExistente(observacao.trim());
       setTemRegistros(true);
+      setModalObsAberto(false);
+      setModalDesfechoAberto(true);
+      return;
     }
     setModalObsAberto(false);
   }
@@ -270,6 +274,36 @@ export default function FormularioDiario() {
               {removendo ? "Removendo..." : "Sim, remover"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal pós-save: convite para registrar desfecho */}
+      <Dialog open={modalDesfechoAberto} onOpenChange={setModalDesfechoAberto}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-primary-500" />
+              Registrar Desfecho de Matrículas
+            </DialogTitle>
+            <DialogDescription>
+              Preenchimento salvo com sucesso! Deseja agora registrar o desfecho das visitas do dia —
+              se o lead matriculou, está em negociação ou não fechou?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-1">
+            <Button
+              onClick={() => {
+                setModalDesfechoAberto(false);
+                navigate("/unidade/desfechos");
+              }}
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              Registrar Desfecho agora
+            </Button>
+            <Button variant="outline" onClick={() => setModalDesfechoAberto(false)}>
+              Agora não
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
