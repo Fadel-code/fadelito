@@ -180,3 +180,49 @@ export const MESES = [
   "Novembro",
   "Dezembro",
 ];
+
+// ============================================================
+// Opção B — Eventos por lead (integração com o CRM)
+// ============================================================
+
+export type DesfechoTipo =
+  | "visita_realizada"
+  | "em_negociacao"
+  | "matricula"
+  | "nao_fechou";
+
+export const DESFECHOS: { value: DesfechoTipo; label: string }[] = [
+  { value: "visita_realizada", label: "Visitou" },
+  { value: "em_negociacao", label: "Em negociação" },
+  { value: "matricula", label: "Matriculou" },
+  { value: "nao_fechou", label: "Não fechou" },
+];
+
+// Lead vindo do CRM (apto a receber desfecho)
+export interface LeadCRM {
+  id: number;
+  name: string;
+  phone: string | null;
+  child_name: string | null;
+  child_age: number | null;
+  stage: string;
+  unit_name: string | null;
+  visit_date: string | null;
+  no_show_count: number;
+}
+
+// Registro local (Supabase) do desfecho — espelho/audit do que foi enviado ao CRM
+export interface EventoLead {
+  id: string;
+  unidade_id: string;
+  crm_lead_id: number;
+  nome: string | null;
+  telefone: string | null;
+  turma: string | null;
+  data: string;
+  tipo: DesfechoTipo;
+  observacao: string | null;
+  synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}

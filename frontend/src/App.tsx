@@ -17,6 +17,7 @@ import Layout from "./components/Layout";
 
 const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
 const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
+const Desfechos = lazy(() => import("./pages/unidade/Desfechos"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
 const Graficos = lazy(() => import("./pages/marketing/Graficos"));
 const Ranking = lazy(() => import("./pages/marketing/Ranking"));
@@ -76,9 +77,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          loadProfile(session.user.id);
+          setLoading(true);
+          loadProfile(session.user.id).finally(() => setLoading(false));
         } else {
           setProfile(null);
+          setLoading(false);
         }
       }
     );
@@ -155,6 +158,7 @@ export default function App() {
         >
           <Route path="formulario" element={<FormularioDiario />} />
           <Route path="historico" element={<HistoricoMensal />} />
+          <Route path="desfechos" element={<Desfechos />} />
           <Route index element={<Navigate to="formulario" replace />} />
         </Route>
 

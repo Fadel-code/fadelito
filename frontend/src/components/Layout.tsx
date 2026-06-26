@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ClipboardList,
+  CalendarCheck,
   BarChart2,
   Trophy,
   Users,
@@ -9,9 +11,19 @@ import {
   History,
   LogOut,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../App";
+import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
 import { cn } from "../lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
 
 interface NavItem {
   to: string;
@@ -21,6 +33,7 @@ interface NavItem {
 
 const NAV_UNIDADE: NavItem[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
+  { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
 ];
 
@@ -36,6 +49,18 @@ const NAV_MARKETING: NavItem[] = [
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
+
+  // Modal de alerta — aparece uma vez por montagem do Layout (= uma vez por login)
+  const [modalAberto, setModalAberto] = useState(false);
+  const modalMostrado = useRef(false);
+
+  useEffect(() => {
+    if (role !== "unidade" || pendingCount === 0 || modalMostrado.current) return;
+    modalMostrado.current = true;
+    setModalAberto(true);
+  }, [pendingCount, role]);
+
   const navItems = role === "unidade"
     ? NAV_UNIDADE
     : profile?.role === "supervisao"
@@ -49,6 +74,37 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
   return (
     <div className="min-h-screen flex">
+      {/* Modal de desfechos pendentes */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Atualizar Desfecho das Visitas
+            </DialogTitle>
+            <DialogDescription>
+              {pendingCount === 1
+                ? "1 lead visitou mas ainda não tem um desfecho decisivo."
+                : `${pendingCount} leads visitaram mas ainda não têm um desfecho decisivo.`}{" "}
+              Acesse a página para registrar se matriculou, está em negociação ou não fechou.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-1">
+            <Button
+              onClick={() => {
+                setModalAberto(false);
+                navigate("/unidade/desfechos");
+              }}
+            >
+              Ir para Desfecho das Visitas
+            </Button>
+            <Button variant="outline" onClick={() => setModalAberto(false)}>
+              Atualizar depois
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Sidebar */}
       <aside className="w-60 bg-gray-900 flex flex-col">
         {/* Logo */}
@@ -66,23 +122,31 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary-500 text-white"
-                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                )
-              }
-            >
-              <item.icon className="h-4 w-4 flex-shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            const showBadge = item.to === "/unidade/desfechos" && pendingCount > 0;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary-500 text-white"
+                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  )
+                }
+              >
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="ml-auto bg-amber-400 text-gray-900 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {pendingCount}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Footer */}
