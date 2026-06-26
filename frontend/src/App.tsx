@@ -112,10 +112,18 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "unidade"
 
   if (!user || !profile) return <Navigate to="/login" replace />;
   if (!profile.ativo) return <Navigate to="/login" replace />;
-  if (role && profile.role !== role) {
-    return <Navigate to={profile.role === "marketing" ? "/marketing/dashboard" : "/unidade/formulario"} replace />;
+  // supervisao acessa as mesmas rotas de marketing
+  const effectiveRole = profile.role === "supervisao" ? "marketing" : profile.role;
+  if (role && effectiveRole !== role) {
+    return <Navigate to={effectiveRole === "marketing" ? "/marketing/dashboard" : "/unidade/formulario"} replace />;
   }
 
+  return <>{children}</>;
+}
+
+function MarketingOnly({ children }: { children: ReactNode }) {
+  const { profile } = useAuth();
+  if (profile?.role === "supervisao") return <Navigate to="/marketing/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -123,7 +131,7 @@ function RedirectByRole() {
   const { profile, loading } = useAuth();
   if (loading) return null;
   if (!profile) return <Navigate to="/login" replace />;
-  if (profile.role === "marketing") return <Navigate to="/marketing/dashboard" replace />;
+  if (profile.role === "marketing" || profile.role === "supervisao") return <Navigate to="/marketing/dashboard" replace />;
   return <Navigate to="/unidade/formulario" replace />;
 }
 
@@ -162,7 +170,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="graficos" element={<Graficos />} />
           <Route path="ranking" element={<Ranking />} />
-          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="usuarios" element={<MarketingOnly><Usuarios /></MarketingOnly>} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
           <Route index element={<Navigate to="dashboard" replace />} />

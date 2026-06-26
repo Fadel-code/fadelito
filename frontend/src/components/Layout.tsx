@@ -36,7 +36,11 @@ const NAV_MARKETING: NavItem[] = [
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const navItems = role === "unidade" ? NAV_UNIDADE : NAV_MARKETING;
+  const navItems = role === "unidade"
+    ? NAV_UNIDADE
+    : profile?.role === "supervisao"
+      ? NAV_MARKETING.filter((i) => i.to !== "/marketing/usuarios")
+      : NAV_MARKETING;
 
   async function handleSignOut() {
     await signOut();
@@ -56,7 +60,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             <span className="text-white font-bold text-lg">Fadelito</span>
           </div>
           <p className="text-gray-400 text-xs mt-1">
-            {role === "marketing" ? "Marketing" : profile?.unidade_nome ?? "Unidade"}
+            {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
           </p>
         </div>
 

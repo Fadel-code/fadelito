@@ -1,4 +1,4 @@
-export type Role = "unidade" | "marketing";
+export type Role = "unidade" | "marketing" | "supervisao";
 
 export interface Profile {
   id: string;
