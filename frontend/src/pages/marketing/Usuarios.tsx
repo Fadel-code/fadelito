@@ -12,8 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import toast from "react-hot-toast";
 
+const ROLE_LABEL: Record<string, string> = {
+  marketing: "Marketing",
+  supervisao: "Supervisão",
+};
+
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
+  const [gestores, setGestores] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalCriar, setModalCriar] = useState(false);
 
@@ -25,13 +31,13 @@ export default function Usuarios() {
 
   async function carregarUsuarios() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "unidade")
-      .order("unidade_nome");
+    const [{ data: unidades, error }, { data: gest }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("role", "unidade").order("unidade_nome"),
+      supabase.from("profiles").select("*").in("role", ["marketing", "supervisao"]).order("email"),
+    ]);
     if (error) toast.error("Erro ao carregar usuários.");
-    setUsuarios(data ?? []);
+    setUsuarios(unidades ?? []);
+    setGestores(gest ?? []);
     setLoading(false);
   }
 
@@ -117,6 +123,51 @@ export default function Usuarios() {
           </Button>
         </div>
       </div>
+
+      {/* Acessos de Gestão */}
+      {gestores.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <h2 className="text-sm font-semibold text-gray-700">Acessos de Gestão</h2>
+          </div>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">E-mail</th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">Perfil</th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">Status</th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gestores.map((u, i) => (
+                <tr key={u.id} className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} border-b border-gray-100`}>
+                  <td className="px-4 py-3 text-gray-800">{u.email}</td>
+                  <td className="px-4 py-3 text-center">
+                    <Badge variant="secondary">{ROLE_LABEL[u.role] ?? u.role}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Badge variant={u.ativo ? "success" : "destructive"}>
+                      {u.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => resetarSenha(u.email!)} title="Enviar e-mail de redefinição de senha">
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Resetar senha
+                      </Button>
+                      <Button variant={u.ativo ? "destructive" : "secondary"} size="sm" onClick={() => toggleAtivo(u)}>
+                        {u.ativo ? "Desativar" : "Reativar"}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
