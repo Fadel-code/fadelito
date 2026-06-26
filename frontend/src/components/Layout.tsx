@@ -43,6 +43,7 @@ const NAV_UNIDADE: NavItem[] = [
 
 const NAV_MARKETING: NavItem[] = [
   { to: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/marketing/desfechos", label: "Desfechos", icon: CalendarCheck },
   { to: "/marketing/graficos", label: "Gráficos", icon: BarChart2 },
   { to: "/marketing/ranking", label: "Ranking", icon: Trophy },
   { to: "/marketing/usuarios", label: "Usuários", icon: Users },

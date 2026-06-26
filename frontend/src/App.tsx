@@ -24,6 +24,7 @@ const Ranking = lazy(() => import("./pages/marketing/Ranking"));
 const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
+const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 
 function PageLoader() {
   return (
@@ -177,6 +178,7 @@ export default function App() {
           <Route path="usuarios" element={<MarketingOnly><Usuarios /></MarketingOnly>} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
+          <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

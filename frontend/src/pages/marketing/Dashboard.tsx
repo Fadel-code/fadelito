@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, FileText, RefreshCw, ClipboardCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../App";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [unidadeEditando, setUnidadeEditando] = useState<ConsolidadoUnidade | null>(null);
 
   const diaFiltro = dia === TODOS_OS_DIAS ? undefined : dia;
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { dados, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
 
@@ -103,6 +105,14 @@ export default function Dashboard() {
 
           <Button variant="outline" size="icon" onClick={recarregar} title="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+
+          <Button
+            onClick={() => navigate("/marketing/desfechos")}
+            className="gap-2"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            Desfechos de Matrículas
           </Button>
 
           <Button
