@@ -27,7 +27,7 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 
-const BANNER_KEY = "fadelito_banner_desfecho_v1";
+export const BANNER_KEY = "fadelito_banner_desfecho_v2";
 
 interface NavItem {
   to: string;

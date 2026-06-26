@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Save, Trash2, ClipboardCheck } from "lucide-react";
+import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
 import { TURMAS, registroVazio } from "../../types";
@@ -293,6 +294,7 @@ export default function FormularioDiario() {
           <div className="flex flex-col gap-2 mt-1">
             <Button
               onClick={() => {
+                localStorage.setItem(BANNER_KEY, "1");
                 setModalDesfechoAberto(false);
                 navigate("/unidade/desfechos");
               }}

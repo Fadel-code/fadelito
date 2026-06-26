@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { fetchLeadsElegiveis, enviarDesfecho, reverterDesfecho } from "../lib/crm";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../types";
 import toast from "react-hot-toast";
+import { BANNER_KEY } from "../components/Layout";
 
 interface UseEventosLeadOptions {
   unidadeId: string;
@@ -61,6 +62,7 @@ export function useEventosLead({ unidadeId, unidadeNome }: UseEventosLeadOptions
         );
         if (error) throw error;
         toast.success("Desfecho registrado e enviado ao CRM!");
+        localStorage.setItem(BANNER_KEY, "1");
         return true;
       } catch (err) {
         console.error(err);
