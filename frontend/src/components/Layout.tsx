@@ -202,7 +202,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             <div className="flex-1 min-w-0">
               <span className="font-semibold">Nova funcionalidade disponível: </span>
               <span>
-                Agora você pode registrar o <strong>Desfecho de Matrículas</strong> de cada visita — informe se o lead
+                Agora você pode registrar o <strong>Desfecho de Matrículas</strong> de cada visita — informe se a visita
                 matriculou, está em negociação ou não fechou. Acesse{" "}
                 <button
                   onClick={() => { dispensarBanner(); navigate("/unidade/desfechos"); }}

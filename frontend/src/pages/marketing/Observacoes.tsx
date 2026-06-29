@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "../../lib/supabase";
 import { reverterDesfecho } from "../../lib/crm";
 import { UNIDADES, MESES, DESFECHOS } from "../../types";
@@ -9,6 +11,8 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Search, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { diasUteisDoMes, dateToIso } from "../../lib/utils";
+import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
 
@@ -53,8 +57,16 @@ export default function Observacoes() {
 
   const [unidade, setUnidade] = useState("todas");
   const [mes, setMes] = useState(String(mesCorrido));
+  const [dia, setDia] = useState("todos");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+
+  const hojeIso = dateToIso(new Date());
+  const diasUteis = mes !== "todos"
+    ? diasUteisDoMes(ANO, Number(mes), FERIADOS_SET)
+        .filter((d) => dateToIso(d) <= hojeIso)
+        .reverse()
+    : [];
 
   useEffect(() => {
     supabase
@@ -69,6 +81,7 @@ export default function Observacoes() {
   }, []);
 
   function buildDateRange() {
+    if (dia !== "todos") return { inicio: dia, fim: dia };
     if (dataInicio || dataFim) return { inicio: dataInicio || undefined, fim: dataFim || undefined };
     if (mes !== "todos") {
       const m = parseInt(mes);
@@ -106,7 +119,7 @@ export default function Observacoes() {
 
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidade, mes, dataInicio, dataFim, nomeMap]);
+  }, [unidade, mes, dia, dataInicio, dataFim, nomeMap]);
 
   useEffect(() => { buscar(); }, [buscar]);
 
@@ -144,7 +157,7 @@ export default function Observacoes() {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           <div className="space-y-1.5">
             <Label>Unidade</Label>
             <Select value={unidade} onValueChange={setUnidade}>
@@ -157,7 +170,7 @@ export default function Observacoes() {
           </div>
           <div className="space-y-1.5">
             <Label>Mês</Label>
-            <Select value={mes} onValueChange={setMes}>
+            <Select value={mes} onValueChange={(v) => { setMes(v); setDia("todos"); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os meses</SelectItem>
@@ -166,6 +179,23 @@ export default function Observacoes() {
                   return (
                     <SelectItem key={num} value={String(num)} disabled={num > mesCorrido}>
                       {nome}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Dia</Label>
+            <Select value={dia} onValueChange={setDia} disabled={mes === "todos"}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os dias</SelectItem>
+                {diasUteis.map((d) => {
+                  const iso = dateToIso(d);
+                  return (
+                    <SelectItem key={iso} value={iso}>
+                      {format(d, "EEE, dd/MM", { locale: ptBR })}
                     </SelectItem>
                   );
                 })}
