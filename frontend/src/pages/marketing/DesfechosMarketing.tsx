@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { RefreshCw, ClipboardCheck } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { DesfechoTipo } from "../../types";
+import { MESES } from "../../types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { diasUteisDoMes, dateToIso } from "../../lib/utils";
+import { FERIADOS_SET } from "../../lib/feriados";
+
+const ANO = new Date().getFullYear();
 
 interface UnidadeRow {
   unidade_id: string;
@@ -21,14 +29,32 @@ const TIPO_STYLE: Record<DesfechoTipo, string> = {
 };
 
 export default function DesfechosMarketing() {
+  const mesCorrido = new Date().getMonth() + 1;
+  const hojeIso = dateToIso(new Date());
+  const [mes, setMes] = useState(mesCorrido);
+  const [dia, setDia] = useState("todos");
   const [rows, setRows] = useState<UnidadeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET)
+    .filter((d) => dateToIso(d) <= hojeIso)
+    .reverse();
+
+  function buildDateRange() {
+    if (dia !== "todos") return { inicio: dia, fim: dia };
+    const m = mes;
+    const inicio = `${ANO}-${String(m).padStart(2, "0")}-01`;
+    const ultimoDia = new Date(ANO, m, 0).getDate();
+    const fim = `${ANO}-${String(m).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+    return { inicio, fim };
+  }
+
   async function carregar() {
     setLoading(true);
+    const { inicio, fim } = buildDateRange();
     const [{ data: profiles }, { data: eventos }] = await Promise.all([
       supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true),
-      supabase.from("eventos_lead").select("unidade_id, tipo"),
+      supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim),
     ]);
 
     const contagens = new Map<string, Record<DesfechoTipo, number>>();
@@ -55,7 +81,7 @@ export default function DesfechosMarketing() {
     setLoading(false);
   }
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { carregar(); }, [mes, dia]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totais = rows.reduce(
     (acc, r) => ({
@@ -79,13 +105,46 @@ export default function DesfechosMarketing() {
             Resultado das visitas registradas pelas unidades
           </p>
         </div>
-        <button
-          onClick={carregar}
-          title="Atualizar"
-          className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <Select value={String(mes)} onValueChange={(v) => { setMes(Number(v)); setDia("todos"); }}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MESES.map((nome, i) => {
+                const num = i + 1;
+                return (
+                  <SelectItem key={num} value={String(num)} disabled={num > mesCorrido}>
+                    {nome} {ANO}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          <Select value={dia} onValueChange={setDia}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os dias</SelectItem>
+              {diasUteis.map((d) => {
+                const iso = dateToIso(d);
+                return (
+                  <SelectItem key={iso} value={iso}>
+                    {format(d, "EEE, dd/MM", { locale: ptBR })}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          <button
+            onClick={carregar}
+            title="Atualizar"
+            className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}
