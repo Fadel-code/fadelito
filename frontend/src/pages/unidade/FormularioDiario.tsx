@@ -108,7 +108,8 @@ export default function FormularioDiario() {
     const iso = dateToIso(dataSelecionada);
     const ok = await salvar(iso, linhas);
     if (ok) {
-      await salvarObservacao(iso, observacao.trim());
+      const obsOk = await salvarObservacao(iso, observacao.trim());
+      if (!obsOk) return;
       setObsExistente(observacao.trim());
       setTemRegistros(true);
       setModalObsAberto(false);

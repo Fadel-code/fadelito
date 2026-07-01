@@ -66,23 +66,31 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
         );
 
         // 2. Upsert
-        const { error } = await supabase.from("registros").upsert(
-          linhas.map((l) => ({
-            unidade_id: unidadeId,
-            data: dataIso,
-            turma: l.turma,
-            visitas: l.visitas,
-            visitas_curso_ferias: l.visitas_curso_ferias,
-            matriculas: l.matriculas,
-            matriculas_curso_ferias: l.matriculas_curso_ferias,
-            desligamentos: l.desligamentos,
-            transferencias: l.transferencias,
-            religamentos: l.religamentos,
-          })),
-          { onConflict: "unidade_id,data,turma" }
-        );
+        const { data: salvos, error } = await supabase
+          .from("registros")
+          .upsert(
+            linhas.map((l) => ({
+              unidade_id: unidadeId,
+              data: dataIso,
+              turma: l.turma,
+              visitas: l.visitas,
+              visitas_curso_ferias: l.visitas_curso_ferias,
+              matriculas: l.matriculas,
+              matriculas_curso_ferias: l.matriculas_curso_ferias,
+              desligamentos: l.desligamentos,
+              transferencias: l.transferencias,
+              religamentos: l.religamentos,
+            })),
+            { onConflict: "unidade_id,data,turma" }
+          )
+          .select();
 
         if (error) throw error;
+        // A policy de RLS pode bloquear o UPDATE silenciosamente (0 linhas, sem erro)
+        // quando a data não é mais editável — sem essa checagem o toast mentiria "sucesso".
+        if ((salvos?.length ?? 0) < linhas.length) {
+          throw new Error("Permissão negada pelo banco para salvar essa data.");
+        }
 
         // 3. Gravar audit log
         const auditEntries: object[] = [];
@@ -140,14 +148,25 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
   );
 
   const salvarObservacao = useCallback(
-    async (dataIso: string, observacao: string): Promise<void> => {
-      const { error } = await supabase
-        .from("observacoes_diarias")
-        .upsert(
-          { unidade_id: unidadeId, data: dataIso, observacao },
-          { onConflict: "unidade_id,data" }
-        );
-      if (error) throw error;
+    async (dataIso: string, observacao: string): Promise<boolean> => {
+      try {
+        const { data, error } = await supabase
+          .from("observacoes_diarias")
+          .upsert(
+            { unidade_id: unidadeId, data: dataIso, observacao },
+            { onConflict: "unidade_id,data" }
+          )
+          .select();
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error("Permissão negada pelo banco para salvar a observação dessa data.");
+        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao salvar a observação. Tente novamente.");
+        return false;
+      }
     },
     [unidadeId]
   );
