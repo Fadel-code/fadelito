@@ -15,7 +15,9 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
       const inicio = dia ?? `${ano}-${padMes}-01`;
       const ultimoDia = new Date(ano, mes, 0).getDate();
       const fim = dia ?? `${ano}-${padMes}-${String(ultimoDia).padStart(2, "0")}`;
-      const hojeIso = dateToIso(new Date());
+      const agora = new Date();
+      const hojeIso = dateToIso(agora);
+      const ehMesAtual = ano === agora.getFullYear() && mes === agora.getMonth() + 1;
 
       // Buscar registros do período com paginação (servidor limita a 1000/página)
       const PAGE = 1000;
@@ -45,9 +47,10 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
 
       if (errUn) throw errUn;
 
-      // No modo mês (sem dia fixo), buscar quem preencheu hoje
+      // No modo mês atual (sem dia fixo), buscar quem preencheu hoje.
+      // Em meses passados "hoje" não faz sentido — o status vira "preencheu em algum dia do mês".
       let preencheramHoje = new Set<string>();
-      if (!dia) {
+      if (!dia && ehMesAtual) {
         const { data: hoje } = await supabase
           .from("registros")
           .select("unidade_id")
@@ -101,8 +104,13 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
             aproveitamento,
             saldo,
             // No modo dia: preencheu = tem registros naquele dia
-            // No modo mês: preencheu = tem registros hoje
-            preencheu_hoje: dia ? regsUnidade.length > 0 : preencheramHoje.has(u.id),
+            // No mês atual (sem dia fixo): preencheu = tem registros hoje
+            // Em mês passado: preencheu = tem ao menos um registro no mês inteiro
+            preencheu_hoje: dia
+              ? regsUnidade.length > 0
+              : ehMesAtual
+                ? preencheramHoje.has(u.id)
+                : regsUnidade.length > 0,
           };
         }
       );

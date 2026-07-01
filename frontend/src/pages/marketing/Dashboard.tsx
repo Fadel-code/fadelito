@@ -54,7 +54,7 @@ export default function Dashboard() {
   const preencheramNoDia = dados.filter((d) => d.preencheu_hoje).length;
   const totalUnidades = dados.length;
   const filtrouDia = dia !== TODOS_OS_DIAS;
-  const labelStatus = filtrouDia ? "no dia" : "hoje";
+  const labelStatus = filtrouDia ? "no dia" : mes === mesCorrido ? "hoje" : "no mês";
 
   return (
     <div>
@@ -184,7 +184,7 @@ export default function Dashboard() {
         ) : (
           <TabelaConsolidada
             dados={dados}
-            mostrarStatus={mes === mesCorrido || filtrouDia}
+            mostrarStatus
             onEditar={profile?.role === "marketing" ? handleEditar : undefined}
           />
         )}
