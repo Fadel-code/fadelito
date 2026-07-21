@@ -35,9 +35,15 @@ export default function Ranking() {
         : 0,
   }));
 
+  // Empates na coluna escolhida caem para saldo e depois matrículas, senão a ordem fica sem critério visível.
+  const criterios = Array.from(new Set<ColunaOrdem>([ordem, "saldo", "matriculas_totais"]));
+
   const ordenados = [...dadosComAprov].sort((a, b) => {
-    const diff = a[ordem] - b[ordem];
-    return asc ? diff : -diff;
+    for (const col of criterios) {
+      const diff = a[col] - b[col];
+      if (diff !== 0) return asc ? diff : -diff;
+    }
+    return 0;
   });
 
   function SortIcon({ col }: { col: ColunaOrdem }) {
