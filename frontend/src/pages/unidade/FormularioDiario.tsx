@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, isSameMonth, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Save, Trash2, ClipboardCheck } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
@@ -55,17 +55,16 @@ export default function FormularioDiario() {
   });
 
   const hoje = new Date();
-  const mesPassado = subMonths(hoje, 1);
 
   const isDesabilitado = useCallback(
     (date: Date) => {
       const dia = date.getDay();
       const isWeekend = dia === 0 || dia === 6;
       const isHoliday = FERIADOS_SET.has(dateToIso(date));
-      const isPermitido = isSameMonth(date, hoje) || isSameMonth(date, mesPassado);
+      const isPermitido = isSameMonth(date, hoje);
       return isWeekend || isHoliday || !isPermitido;
     },
-    [hoje, mesPassado]
+    [hoje]
   );
 
   useEffect(() => {
@@ -179,11 +178,11 @@ export default function FormularioDiario() {
                     disabled={isDesabilitado}
                     locale={ptBR}
                     defaultMonth={startOfMonth(hoje)}
-                    fromMonth={startOfMonth(mesPassado)}
+                    fromMonth={startOfMonth(hoje)}
                     toMonth={endOfMonth(hoje)}
                   />
                   <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                    Dias úteis do mês atual e do mês anterior habilitados.
+                    Apenas dias úteis do mês atual habilitados.
                   </div>
                 </div>
               </>
