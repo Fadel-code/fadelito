@@ -125,12 +125,6 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "unidade"
   return <>{children}</>;
 }
 
-function MarketingOnly({ children }: { children: ReactNode }) {
-  const { profile } = useAuth();
-  if (profile?.role === "supervisao") return <Navigate to="/marketing/dashboard" replace />;
-  return <>{children}</>;
-}
-
 function RedirectByRole() {
   const { profile, loading } = useAuth();
   if (loading) return null;
@@ -175,7 +169,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="graficos" element={<Graficos />} />
           <Route path="ranking" element={<Ranking />} />
-          <Route path="usuarios" element={<MarketingOnly><Usuarios /></MarketingOnly>} />
+          <Route path="usuarios" element={<Usuarios />} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />

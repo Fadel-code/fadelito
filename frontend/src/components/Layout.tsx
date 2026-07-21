@@ -75,11 +75,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
     setModalAberto(true);
   }, [pendingCount, role]);
 
-  const navItems = role === "unidade"
-    ? NAV_UNIDADE
-    : profile?.role === "supervisao"
-      ? NAV_MARKETING.filter((i) => i.to !== "/marketing/usuarios")
-      : NAV_MARKETING;
+  const navItems = role === "unidade" ? NAV_UNIDADE : NAV_MARKETING;
 
   async function handleSignOut() {
     await signOut();
