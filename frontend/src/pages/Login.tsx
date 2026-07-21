@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -11,6 +12,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarReset, setMostrarReset] = useState(false);
   const [emailReset, setEmailReset] = useState("");
   const [enviandoReset, setEnviandoReset] = useState(false);
@@ -40,7 +42,7 @@ export default function Login() {
         return;
       }
 
-      if (profile.role === "marketing") {
+      if (profile.role === "marketing" || profile.role === "supervisao") {
         navigate("/marketing/dashboard");
       } else {
         navigate("/unidade/formulario");
@@ -104,15 +106,26 @@ export default function Login() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="senha">Senha</Label>
-                  <Input
-                    id="senha"
-                    type="password"
-                    placeholder="••••••••"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="senha"
+                      type={mostrarSenha ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarSenha((v) => !v)}
+                      aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                      className="absolute right-0 top-0 h-9 w-9 inline-flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}

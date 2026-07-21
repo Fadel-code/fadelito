@@ -155,6 +155,7 @@ export default function HistoricoMensal() {
                                   navigate(`/unidade/formulario?data=${iso}`)
                                 }
                                 title="Editar"
+                                aria-label={`Editar dia ${d.getDate()}`}
                                 className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded hover:bg-primary-100 transition-colors"
                               >
                                 <Edit2 className="h-3 w-3 text-primary-400" />

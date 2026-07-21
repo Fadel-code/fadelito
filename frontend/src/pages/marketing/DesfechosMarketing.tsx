@@ -140,6 +140,7 @@ export default function DesfechosMarketing() {
           <button
             onClick={carregar}
             title="Atualizar"
+            aria-label="Atualizar"
             className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
           >
             <RefreshCw className={`h-4 w-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />

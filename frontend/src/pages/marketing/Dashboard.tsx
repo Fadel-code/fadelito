@@ -100,7 +100,7 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={recarregar} title="Atualizar">
+          <Button variant="outline" size="icon" onClick={recarregar} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 

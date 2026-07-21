@@ -86,6 +86,7 @@ export default function TabelaConsolidada({ dados, mostrarStatus, onEditar }: Pr
                     size="icon"
                     onClick={() => onEditar(u)}
                     title="Editar dados desta unidade"
+                    aria-label={`Editar dados de ${u.unidade_nome}`}
                   >
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>

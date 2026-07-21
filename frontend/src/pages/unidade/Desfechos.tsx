@@ -393,6 +393,7 @@ export default function Desfechos() {
                                   }}
                                   className="text-gray-400 hover:text-primary-500 transition-colors"
                                   title="Editar"
+                                  aria-label="Editar desfecho"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
@@ -400,6 +401,7 @@ export default function Desfechos() {
                                   onClick={() => { setConfirmandoId(ev.id); setEditandoId(null); }}
                                   className="text-gray-400 hover:text-red-500 transition-colors"
                                   title="Remover"
+                                  aria-label="Remover desfecho"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>

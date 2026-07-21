@@ -325,6 +325,7 @@ export default function Observacoes() {
                             onClick={() => setConfirmandoId(r.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                             title="Remover desfecho"
+                            aria-label="Remover desfecho"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
