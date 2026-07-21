@@ -95,7 +95,7 @@ export default function DesfechosMarketing() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <ClipboardCheck className="h-6 w-6 text-primary-500" />
@@ -149,7 +149,7 @@ export default function DesfechosMarketing() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-amber-200 p-5">
           <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Pendentes</p>
           <p className="text-3xl font-bold text-amber-600 mt-1">{totais.visita_realizada}</p>

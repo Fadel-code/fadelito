@@ -61,7 +61,7 @@ export default function Ranking() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ranking das Unidades</h1>
           <p className="text-gray-500 text-sm mt-1">Top 3 e bottom 3 do mês</p>

@@ -95,7 +95,7 @@ export default function HistoricoMensal() {
 
   return (
     <div className="max-w-full">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Histórico Mensal</h1>
           <p className="text-gray-500 text-sm mt-1">{profile?.unidade_nome}</p>

@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Sparkles,
   X,
+  Menu,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -77,6 +78,8 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
   const navItems = role === "unidade" ? NAV_UNIDADE : NAV_MARKETING;
 
+  const [mobileNavAberto, setMobileNavAberto] = useState(false);
+
   async function handleSignOut() {
     await signOut();
     navigate("/login");
@@ -115,15 +118,39 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         </DialogContent>
       </Dialog>
 
+      {/* Backdrop (mobile) */}
+      {mobileNavAberto && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setMobileNavAberto(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-60 bg-gray-900 flex flex-col">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-60 bg-gray-900 flex flex-col transition-transform duration-200 ease-in-out",
+          "lg:static lg:translate-x-0",
+          mobileNavAberto ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-800">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">F</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">F</span>
+              </div>
+              <span className="text-white font-bold text-lg">Fadelito</span>
             </div>
-            <span className="text-white font-bold text-lg">Fadelito</span>
+            <button
+              onClick={() => setMobileNavAberto(false)}
+              aria-label="Fechar menu"
+              className="lg:hidden p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
           <p className="text-gray-400 text-xs mt-1">
             {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
@@ -138,6 +165,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={() => setMobileNavAberto(false)}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
@@ -177,10 +205,19 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="h-1 w-12 bg-primary-500 rounded" />
-            <span className="text-sm text-gray-500">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileNavAberto(true)}
+                aria-label="Abrir menu"
+                className="lg:hidden -ml-1 p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="h-1 w-12 bg-primary-500 rounded hidden sm:block" />
+            </div>
+            <span className="text-xs sm:text-sm text-gray-500 truncate">
               {new Date().toLocaleDateString("pt-BR", {
                 weekday: "long",
                 day: "numeric",
@@ -193,7 +230,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
         {/* Banner nova funcionalidade */}
         {bannerVisivel && (
-          <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-3 flex items-center gap-4">
+          <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 sm:px-8 py-3 flex items-center gap-4">
             <Sparkles className="h-5 w-5 flex-shrink-0 text-primary-100" />
             <div className="flex-1 min-w-0">
               <span className="font-semibold">Nova funcionalidade disponível: </span>
@@ -220,7 +257,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         )}
 
         {/* Page content */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 sm:p-8">
           <Outlet />
         </div>
       </main>

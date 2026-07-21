@@ -56,7 +56,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Consolidado</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -139,7 +139,7 @@ export default function Dashboard() {
       </div>
 
       {/* Indicadores rápidos */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Unidades na rede</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{totalUnidades}</p>
