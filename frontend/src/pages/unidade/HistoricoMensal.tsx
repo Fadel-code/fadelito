@@ -43,7 +43,7 @@ export default function HistoricoMensal() {
   });
 
   const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET);
-  const mesSelecionadoEhAtual = mes === mesCorrido;
+  const mesEditavel = mes >= mesCorrido;
 
   useEffect(() => {
     let active = true;
@@ -111,13 +111,8 @@ export default function HistoricoMensal() {
             <SelectContent>
               {MESES.map((nome, i) => {
                 const num = i + 1;
-                const futuro = num > mesCorrido;
                 return (
-                  <SelectItem
-                    key={num}
-                    value={String(num)}
-                    disabled={futuro}
-                  >
+                  <SelectItem key={num} value={String(num)}>
                     {nome} {ANO}
                   </SelectItem>
                 );
@@ -154,7 +149,7 @@ export default function HistoricoMensal() {
                               {format(d, "EEE", { locale: ptBR }).slice(0, 3)}
                             </div>
                             <div>{d.getDate()}</div>
-                            {mesSelecionadoEhAtual && (
+                            {mesEditavel && (
                               <button
                                 onClick={() =>
                                   navigate(`/unidade/formulario?data=${iso}`)

@@ -74,7 +74,7 @@ export default function Ranking() {
             {MESES.map((nome, i) => {
               const num = i + 1;
               return (
-                <SelectItem key={num} value={String(num)} disabled={num > mesCorrido}>
+                <SelectItem key={num} value={String(num)}>
                   {nome} {ANO}
                 </SelectItem>
               );

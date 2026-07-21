@@ -12,7 +12,6 @@ import { Search } from "lucide-react";
 const ANO = new Date().getFullYear();
 
 export default function AuditLog() {
-  const mesCorrido = new Date().getMonth() + 1;
   const [registros, setRegistros] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -111,7 +110,7 @@ export default function AuditLog() {
                 {MESES.map((nome, i) => {
                   const num = i + 1;
                   return (
-                    <SelectItem key={num} value={String(num)} disabled={num > mesCorrido}>
+                    <SelectItem key={num} value={String(num)}>
                       {nome}
                     </SelectItem>
                   );

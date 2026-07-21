@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Save, Trash2, ClipboardCheck } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
@@ -55,16 +55,18 @@ export default function FormularioDiario() {
   });
 
   const hoje = new Date();
+  const inicioMesAtual = startOfMonth(hoje);
 
   const isDesabilitado = useCallback(
     (date: Date) => {
       const dia = date.getDay();
       const isWeekend = dia === 0 || dia === 6;
       const isHoliday = FERIADOS_SET.has(dateToIso(date));
-      const isPermitido = isSameMonth(date, hoje);
+      // ponytail: janela permitida = mês atual até dez/ano corrente (sem limite de meses à frente)
+      const isPermitido = !isBefore(date, inicioMesAtual) && isSameYear(date, hoje);
       return isWeekend || isHoliday || !isPermitido;
     },
-    [hoje]
+    [hoje, inicioMesAtual]
   );
 
   useEffect(() => {
@@ -179,10 +181,10 @@ export default function FormularioDiario() {
                     locale={ptBR}
                     defaultMonth={startOfMonth(hoje)}
                     fromMonth={startOfMonth(hoje)}
-                    toMonth={endOfMonth(hoje)}
+                    toMonth={endOfYear(hoje)}
                   />
                   <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                    Apenas dias úteis do mês atual habilitados.
+                    Dias úteis do mês atual em diante habilitados (até dez/{format(hoje, "yyyy")}).
                   </div>
                 </div>
               </>

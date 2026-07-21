@@ -73,9 +73,8 @@ export default function Dashboard() {
             <SelectContent>
               {MESES.map((nome, i) => {
                 const num = i + 1;
-                const futuro = num > mesCorrido;
                 return (
-                  <SelectItem key={num} value={String(num)} disabled={futuro}>
+                  <SelectItem key={num} value={String(num)}>
                     {nome} {ANO}
                   </SelectItem>
                 );

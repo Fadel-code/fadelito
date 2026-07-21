@@ -25,7 +25,7 @@ export default function Graficos() {
   // Carregar evolução anual
   useEffect(() => {
     setLoadingEvolucao(true);
-    const promises = Array.from({ length: mesCorrido }, (_, i) => {
+    const promises = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const inicio = `${ANO}-${String(m).padStart(2, "0")}-01`;
       const ultimoDia = new Date(ANO, m, 0).getDate();
@@ -48,7 +48,7 @@ export default function Graficos() {
     Promise.all(promises)
       .then(setEvolucao)
       .finally(() => setLoadingEvolucao(false));
-  }, [mesCorrido]);
+  }, []);
 
   const rankingMatriculas = [...dados]
     .sort((a, b) => b.matriculas_totais - a.matriculas_totais)
@@ -83,7 +83,7 @@ export default function Graficos() {
             {MESES.map((nome, i) => {
               const num = i + 1;
               return (
-                <SelectItem key={num} value={String(num)} disabled={num > mesCorrido}>
+                <SelectItem key={num} value={String(num)}>
                   {nome} {ANO}
                 </SelectItem>
               );
