@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Trash2, ClipboardCheck } from "lucide-react";
+import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
+import { useDesfechoUrgencia } from "../../hooks/useDesfechoUrgencia";
 import { TURMAS, registroVazio } from "../../types";
 import type { RegistroInput } from "../../types";
 import { FERIADOS_SET } from "../../lib/feriados";
@@ -53,6 +54,7 @@ export default function FormularioDiario() {
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
+  const { nuncaPreencheu, diasPendente, urgente } = useDesfechoUrgencia(profile?.id);
 
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
@@ -139,6 +141,23 @@ export default function FormularioDiario() {
           {profile?.unidade_nome} — preencha os dados de visitas e matrículas do dia
         </p>
       </div>
+
+      {/* Urgência: nunca preencheu Desfecho de Visitas, ou tem "Visitou" pendente há dias.
+          Só um aviso — não bloqueia o preenchimento do formulário abaixo. */}
+      {urgente && (
+        <div className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+          <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-800 flex-1">
+            <strong>Urgência:</strong>{" "}
+            {nuncaPreencheu
+              ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
+              : `há um "Visitou" pendente de decisão há ${diasPendente} dia${diasPendente === 1 ? "" : "s"} sem atualização.`}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => navigate("/unidade/desfechos")}>
+            Ver Desfechos
+          </Button>
+        </div>
+      )}
 
       {/* Seletor de data */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">

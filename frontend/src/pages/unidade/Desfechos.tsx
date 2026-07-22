@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { RefreshCw, Phone, Baby, CalendarCheck, AlertTriangle, Pencil, Trash2, X, Check } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
+import { useDesfechoUrgencia } from "../../hooks/useDesfechoUrgencia";
 import { DESFECHOS } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
@@ -14,9 +15,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-
-// ponytail: limite arbitrário de urgência; ajustar se o negócio definir um SLA formal
-const DIAS_URGENCIA = 3;
 
 const STAGE_LABEL: Record<string, string> = {
   VISITA_AGENDADA: "Visita agendada",
@@ -43,6 +41,7 @@ export default function Desfechos() {
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
+  const { nuncaPreencheu, diasPendente: diasPendenteAntigo, urgente } = useDesfechoUrgencia(profile?.id);
 
   const [leads, setLeads] = useState<LeadCRM[]>([]);
   const [eventos, setEventos] = useState<Map<number, EventoLead>>(new Map());
@@ -121,14 +120,6 @@ export default function Desfechos() {
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
-
-  // ponytail: mesmo limite/critério usado no painel de marketing (DesfechosMarketing.tsx)
-  const pendentesAntigos = realizados.filter((ev) => ev.tipo === "visita_realizada");
-  const diasPendenteAntigo = pendentesAntigos.length > 0
-    ? Math.floor((Date.now() - Math.min(...pendentesAntigos.map((ev) => new Date(ev.created_at).getTime()))) / 86_400_000)
-    : null;
-  const nuncaPreencheu = !loading && realizados.length === 0;
-  const urgente = nuncaPreencheu || (diasPendenteAntigo ?? 0) >= DIAS_URGENCIA;
 
   return (
     <div className="max-w-5xl space-y-8">

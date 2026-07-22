@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { RefreshCw, ClipboardCheck, AlertOctagon } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { fetchLeadsElegiveis } from "../../lib/crm";
+import { DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
@@ -11,8 +12,6 @@ import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
-// ponytail: limite arbitrário de urgência; ajustar se o negócio definir um SLA formal
-const DIAS_URGENCIA = 3;
 
 interface UnidadeRow {
   unidade_id: string;
