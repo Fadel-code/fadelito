@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RefreshCw, ClipboardCheck, AlertOctagon } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { fetchLeadsElegiveis } from "../../lib/crm";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
@@ -23,6 +24,8 @@ interface UnidadeRow {
   total: number;
   nuncaPreencheu: boolean;
   diasPendente: number | null;
+  visitasNoPeriodo: number;
+  visitasSemDesfecho: number;
 }
 
 const TIPO_STYLE: Record<DesfechoTipo, string> = {
@@ -60,8 +63,35 @@ export default function DesfechosMarketing() {
       supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true),
       supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim),
       // Sem filtro de período: usado só para o alerta de urgência (nunca preencheu / pendente há dias)
-      supabase.from("eventos_lead").select("unidade_id, tipo, created_at"),
+      supabase.from("eventos_lead").select("unidade_id, tipo, created_at, crm_lead_id"),
     ]);
+
+    // Lead com desfecho local já registrado (qualquer tipo, a qualquer momento)
+    const leadsComDesfecho = new Set(
+      (todosEventos ?? []).map((e) => `${e.unidade_id}:${e.crm_lead_id}`)
+    );
+
+    // CRM: leads elegíveis por unidade, para achar visitas já ocorridas sem nenhum desfecho local
+    const crmResultados = await Promise.allSettled(
+      (profiles ?? []).map((p) => fetchLeadsElegiveis(p.unidade_nome ?? ""))
+    );
+    const agora = Date.now();
+    const crmStats = new Map<string, { visitasNoPeriodo: number; visitasSemDesfecho: number }>();
+    (profiles ?? []).forEach((p, i) => {
+      const res = crmResultados[i];
+      const leads = res.status === "fulfilled" ? res.value : [];
+      let visitasNoPeriodo = 0;
+      let visitasSemDesfecho = 0;
+      for (const l of leads) {
+        if (!l.visit_date) continue;
+        const dataVisita = l.visit_date.slice(0, 10);
+        if (new Date(l.visit_date).getTime() > agora) continue; // visita ainda não aconteceu
+        if (dataVisita < inicio || dataVisita > fim) continue; // fora do período selecionado
+        visitasNoPeriodo++;
+        if (!leadsComDesfecho.has(`${p.id}:${l.id}`)) visitasSemDesfecho++;
+      }
+      crmStats.set(p.id, { visitasNoPeriodo, visitasSemDesfecho });
+    });
 
     const contagens = new Map<string, Record<DesfechoTipo, number>>();
     for (const e of eventos ?? []) {
@@ -86,6 +116,7 @@ export default function DesfechosMarketing() {
       const diasPendente = h?.pendenteMaisAntigo
         ? Math.floor((Date.now() - new Date(h.pendenteMaisAntigo).getTime()) / 86_400_000)
         : null;
+      const crm = crmStats.get(p.id) ?? { visitasNoPeriodo: 0, visitasSemDesfecho: 0 };
       return {
         unidade_id: p.id,
         unidade_nome: p.unidade_nome ?? p.id,
@@ -93,6 +124,8 @@ export default function DesfechosMarketing() {
         total: c.visita_realizada + c.em_negociacao + c.matricula + c.nao_fechou,
         nuncaPreencheu: !h,
         diasPendente,
+        visitasNoPeriodo: crm.visitasNoPeriodo,
+        visitasSemDesfecho: crm.visitasSemDesfecho,
       };
     });
 
@@ -214,6 +247,7 @@ export default function DesfechosMarketing() {
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="px-6 py-3 text-left font-semibold text-gray-600">Unidade</th>
                   <th className="px-4 py-3 text-left font-semibold text-red-600">Urgência</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Visitas no período (CRM)</th>
                   <th className="px-4 py-3 text-center font-semibold text-amber-600">Pendentes</th>
                   <th className="px-4 py-3 text-center font-semibold text-blue-600">Em Negociação</th>
                   <th className="px-4 py-3 text-center font-semibold text-green-600">Matrículas</th>
@@ -250,6 +284,16 @@ export default function DesfechosMarketing() {
                         </span>
                       ) : (
                         <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      {r.visitasNoPeriodo === 0 ? (
+                        <span className="text-gray-300">—</span>
+                      ) : (
+                        <span className={r.visitasSemDesfecho > 0 ? "text-red-600 font-semibold" : "text-gray-500"}>
+                          {r.visitasNoPeriodo} visita{r.visitasNoPeriodo === 1 ? "" : "s"} realizada{r.visitasNoPeriodo === 1 ? "" : "s"},{" "}
+                          {r.visitasSemDesfecho} sem desfecho
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
