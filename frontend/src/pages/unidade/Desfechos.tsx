@@ -15,6 +15,9 @@ import {
   DialogDescription,
 } from "../../components/ui/dialog";
 
+// ponytail: limite arbitrário de urgência; ajustar se o negócio definir um SLA formal
+const DIAS_URGENCIA = 3;
+
 const STAGE_LABEL: Record<string, string> = {
   VISITA_AGENDADA: "Visita agendada",
   NAO_COMPARECEU: "Não compareceu",
@@ -119,8 +122,29 @@ export default function Desfechos() {
   );
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
 
+  // ponytail: mesmo limite/critério usado no painel de marketing (DesfechosMarketing.tsx)
+  const pendentesAntigos = realizados.filter((ev) => ev.tipo === "visita_realizada");
+  const diasPendenteAntigo = pendentesAntigos.length > 0
+    ? Math.floor((Date.now() - Math.min(...pendentesAntigos.map((ev) => new Date(ev.created_at).getTime()))) / 86_400_000)
+    : null;
+  const nuncaPreencheu = !loading && realizados.length === 0;
+  const urgente = nuncaPreencheu || (diasPendenteAntigo ?? 0) >= DIAS_URGENCIA;
+
   return (
     <div className="max-w-5xl space-y-8">
+      {/* ── Banner de urgência (não bloqueia o preenchimento, só avisa) ── */}
+      {urgente && (
+        <div className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 flex items-center gap-3">
+          <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-800">
+            <strong>Urgência:</strong>{" "}
+            {nuncaPreencheu
+              ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
+              : `há um "Visitou" pendente de decisão há ${diasPendenteAntigo} dia${diasPendenteAntigo === 1 ? "" : "s"} sem atualização.`}
+          </p>
+        </div>
+      )}
+
       {/* ── Banner de pendentes ── */}
       {pendingVisitas > 0 && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-3">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, ClipboardCheck } from "lucide-react";
+import { RefreshCw, ClipboardCheck, AlertOctagon } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
@@ -10,6 +10,8 @@ import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
+// ponytail: limite arbitrário de urgência; ajustar se o negócio definir um SLA formal
+const DIAS_URGENCIA = 3;
 
 interface UnidadeRow {
   unidade_id: string;
@@ -19,6 +21,8 @@ interface UnidadeRow {
   matricula: number;
   nao_fechou: number;
   total: number;
+  nuncaPreencheu: boolean;
+  diasPendente: number | null;
 }
 
 const TIPO_STYLE: Record<DesfechoTipo, string> = {
@@ -52,9 +56,11 @@ export default function DesfechosMarketing() {
   async function carregar() {
     setLoading(true);
     const { inicio, fim } = buildDateRange();
-    const [{ data: profiles }, { data: eventos }] = await Promise.all([
+    const [{ data: profiles }, { data: eventos }, { data: todosEventos }] = await Promise.all([
       supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true),
       supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim),
+      // Sem filtro de período: usado só para o alerta de urgência (nunca preencheu / pendente há dias)
+      supabase.from("eventos_lead").select("unidade_id, tipo, created_at"),
     ]);
 
     const contagens = new Map<string, Record<DesfechoTipo, number>>();
@@ -65,18 +71,37 @@ export default function DesfechosMarketing() {
       contagens.get(e.unidade_id)![e.tipo as DesfechoTipo]++;
     }
 
+    const historico = new Map<string, { pendenteMaisAntigo: string | null }>();
+    for (const e of todosEventos ?? []) {
+      const h = historico.get(e.unidade_id) ?? { pendenteMaisAntigo: null };
+      if (e.tipo === "visita_realizada" && (!h.pendenteMaisAntigo || e.created_at < h.pendenteMaisAntigo)) {
+        h.pendenteMaisAntigo = e.created_at;
+      }
+      historico.set(e.unidade_id, h);
+    }
+
     const result: UnidadeRow[] = (profiles ?? []).map((p) => {
       const c = contagens.get(p.id) ?? { visita_realizada: 0, em_negociacao: 0, matricula: 0, nao_fechou: 0 };
+      const h = historico.get(p.id);
+      const diasPendente = h?.pendenteMaisAntigo
+        ? Math.floor((Date.now() - new Date(h.pendenteMaisAntigo).getTime()) / 86_400_000)
+        : null;
       return {
         unidade_id: p.id,
         unidade_nome: p.unidade_nome ?? p.id,
         ...c,
         total: c.visita_realizada + c.em_negociacao + c.matricula + c.nao_fechou,
+        nuncaPreencheu: !h,
+        diasPendente,
       };
     });
 
-    // Pendentes primeiro, depois por total decrescente
-    result.sort((a, b) => b.visita_realizada - a.visita_realizada || b.total - a.total);
+    // Urgência (nunca preencheu / pendente há muitos dias) primeiro, depois pendentes do período, depois total
+    result.sort((a, b) => {
+      const urgA = a.nuncaPreencheu || (a.diasPendente ?? 0) >= DIAS_URGENCIA ? 1 : 0;
+      const urgB = b.nuncaPreencheu || (b.diasPendente ?? 0) >= DIAS_URGENCIA ? 1 : 0;
+      return urgB - urgA || b.visita_realizada - a.visita_realizada || b.total - a.total;
+    });
     setRows(result);
     setLoading(false);
   }
@@ -188,6 +213,7 @@ export default function DesfechosMarketing() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="px-6 py-3 text-left font-semibold text-gray-600">Unidade</th>
+                  <th className="px-4 py-3 text-left font-semibold text-red-600">Urgência</th>
                   <th className="px-4 py-3 text-center font-semibold text-amber-600">Pendentes</th>
                   <th className="px-4 py-3 text-center font-semibold text-blue-600">Em Negociação</th>
                   <th className="px-4 py-3 text-center font-semibold text-green-600">Matrículas</th>
@@ -196,17 +222,34 @@ export default function DesfechosMarketing() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {rows.map((r) => (
+                {rows.map((r) => {
+                  const urgente = r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA;
+                  return (
                   <tr
                     key={r.unidade_id}
-                    className={r.visita_realizada > 0 ? "bg-amber-50/40" : ""}
+                    className={urgente ? "bg-red-50/60" : r.visita_realizada > 0 ? "bg-amber-50/40" : ""}
                   >
                     <td className="px-6 py-3 font-medium text-gray-900">
                       {r.unidade_nome}
-                      {r.visita_realizada > 0 && (
+                      {!urgente && r.visita_realizada > 0 && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
                           pendente
                         </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.nuncaPreencheu ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
+                          <AlertOctagon className="h-3 w-3" />
+                          Nunca preencheu
+                        </span>
+                      ) : (r.diasPendente ?? 0) >= DIAS_URGENCIA ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
+                          <AlertOctagon className="h-3 w-3" />
+                          Pendente há {r.diasPendente}d
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -233,7 +276,8 @@ export default function DesfechosMarketing() {
                       {r.total > 0 ? r.total : <span className="text-gray-300">—</span>}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
