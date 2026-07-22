@@ -6,7 +6,7 @@ import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle } from "lucid
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
-import { useDesfechoUrgencia } from "../../hooks/useDesfechoUrgencia";
+import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
 import { TURMAS, registroVazio } from "../../types";
 import type { RegistroInput } from "../../types";
 import { FERIADOS_SET } from "../../lib/feriados";
@@ -54,7 +54,10 @@ export default function FormularioDiario() {
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
-  const { nuncaPreencheu, diasPendente, urgente } = useDesfechoUrgencia(profile?.id);
+  const { nuncaPreencheu, diasPendente, visitasSemDesfecho, urgente } = useDesfechoUrgencia(
+    profile?.id,
+    profile?.unidade_nome
+  );
 
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
@@ -151,7 +154,9 @@ export default function FormularioDiario() {
             <strong>Urgência:</strong>{" "}
             {nuncaPreencheu
               ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
-              : `há um "Visitou" pendente de decisão há ${diasPendente} dia${diasPendente === 1 ? "" : "s"} sem atualização.`}
+              : (diasPendente ?? 0) >= DIAS_URGENCIA
+              ? `há um "Visitou" pendente de decisão há ${diasPendente} dia${diasPendente === 1 ? "" : "s"} sem atualização.`
+              : `há ${visitasSemDesfecho} visita${visitasSemDesfecho === 1 ? "" : "s"} nova${visitasSemDesfecho === 1 ? "" : "s"} ainda sem nenhum desfecho registrado.`}
           </p>
           <Button size="sm" variant="outline" onClick={() => navigate("/unidade/desfechos")}>
             Ver Desfechos

@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { RefreshCw, Phone, Baby, CalendarCheck, AlertTriangle, Pencil, Trash2, X, Check } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
-import { useDesfechoUrgencia } from "../../hooks/useDesfechoUrgencia";
+import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
 import { DESFECHOS } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
@@ -41,7 +41,10 @@ export default function Desfechos() {
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
-  const { nuncaPreencheu, diasPendente: diasPendenteAntigo, urgente } = useDesfechoUrgencia(profile?.id);
+  const { nuncaPreencheu, diasPendente: diasPendenteAntigo, visitasSemDesfecho, urgente } = useDesfechoUrgencia(
+    profile?.id,
+    profile?.unidade_nome
+  );
 
   const [leads, setLeads] = useState<LeadCRM[]>([]);
   const [eventos, setEventos] = useState<Map<number, EventoLead>>(new Map());
@@ -131,7 +134,9 @@ export default function Desfechos() {
             <strong>Urgência:</strong>{" "}
             {nuncaPreencheu
               ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
-              : `há um "Visitou" pendente de decisão há ${diasPendenteAntigo} dia${diasPendenteAntigo === 1 ? "" : "s"} sem atualização.`}
+              : (diasPendenteAntigo ?? 0) >= DIAS_URGENCIA
+              ? `há um "Visitou" pendente de decisão há ${diasPendenteAntigo} dia${diasPendenteAntigo === 1 ? "" : "s"} sem atualização.`
+              : `há ${visitasSemDesfecho} visita${visitasSemDesfecho === 1 ? "" : "s"} nova${visitasSemDesfecho === 1 ? "" : "s"} ainda sem nenhum desfecho registrado.`}
           </p>
         </div>
       )}
