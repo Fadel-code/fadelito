@@ -38,9 +38,11 @@ const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
   em_negociacao:   "bg-yellow-100 text-yellow-700",
   matricula:       "bg-green-100 text-green-700",
   nao_fechou:      "bg-red-100 text-red-700",
+  removido:        "bg-gray-200 text-gray-600",
 };
 
 function desfechoLabel(tipo: DesfechoTipo) {
+  if (tipo === "removido") return "Removido (não é desta unidade)";
   return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
 }
 
@@ -126,7 +128,12 @@ export default function Observacoes() {
   async function handleRemoverDesfecho(row: DesfechoRow & { id: string }) {
     setRemovendoId(row.id);
     try {
-      await reverterDesfecho(row.crm_lead_id);
+      // CRM: best-effort — falha não impede a limpeza local (ex.: lead "removido" nunca teve outcome enviado ao CRM)
+      try {
+        await reverterDesfecho(row.crm_lead_id);
+      } catch (crmErr) {
+        console.warn("Não foi possível reverter no CRM (ignorado):", crmErr);
+      }
       const { error } = await supabase.from("eventos_lead").delete().eq("id", row.id);
       if (error) throw error;
       toast.success("Desfecho removido.");

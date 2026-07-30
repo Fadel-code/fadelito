@@ -32,6 +32,7 @@ const TIPO_STYLE: Record<DesfechoTipo, string> = {
   em_negociacao:   "bg-blue-100 text-blue-800",
   matricula:       "bg-green-100 text-green-800",
   nao_fechou:      "bg-red-100 text-red-800",
+  removido:        "bg-gray-200 text-gray-600",
 };
 
 export default function DesfechosMarketing() {
@@ -95,7 +96,7 @@ export default function DesfechosMarketing() {
     const contagens = new Map<string, Record<DesfechoTipo, number>>();
     for (const e of eventos ?? []) {
       if (!contagens.has(e.unidade_id)) {
-        contagens.set(e.unidade_id, { visita_realizada: 0, em_negociacao: 0, matricula: 0, nao_fechou: 0 });
+        contagens.set(e.unidade_id, { visita_realizada: 0, em_negociacao: 0, matricula: 0, nao_fechou: 0, removido: 0 });
       }
       contagens.get(e.unidade_id)![e.tipo as DesfechoTipo]++;
     }

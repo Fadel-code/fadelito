@@ -189,7 +189,8 @@ export type DesfechoTipo =
   | "visita_realizada"
   | "em_negociacao"
   | "matricula"
-  | "nao_fechou";
+  | "nao_fechou"
+  | "removido"; // local apenas — lead não é desta unidade, nunca enviado ao CRM
 
 export const DESFECHOS: { value: DesfechoTipo; label: string }[] = [
   { value: "visita_realizada", label: "Visitou" },

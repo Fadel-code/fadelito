@@ -28,7 +28,13 @@ const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
   em_negociacao:   "bg-yellow-100 text-yellow-700",
   matricula:       "bg-green-100 text-green-700",
   nao_fechou:      "bg-red-100 text-red-700",
+  removido:        "bg-gray-200 text-gray-600",
 };
+
+function desfechoLabel(tipo: DesfechoTipo) {
+  if (tipo === "removido") return "Removido (não é desta unidade)";
+  return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
+}
 
 interface LinhaState {
   tipo: DesfechoTipo | "";
@@ -37,7 +43,7 @@ interface LinhaState {
 
 export default function Desfechos() {
   const { profile } = useAuth();
-  const { loading, salvando, carregar, registrarDesfecho, editarDesfecho, removerDesfecho } = useEventosLead({
+  const { loading, salvando, carregar, registrarDesfecho, editarDesfecho, removerDesfecho, descartarLead } = useEventosLead({
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
@@ -90,6 +96,13 @@ export default function Desfechos() {
     }
   }
 
+  async function handleDescartar(lead: LeadCRM) {
+    const motivo = estado[lead.id]?.observacao ?? "";
+    if (!motivo.trim()) return;
+    const ok = await descartarLead(lead, motivo);
+    if (ok) await recarregar();
+  }
+
   async function handleDecisaoModal(tipo: DesfechoTipo) {
     if (!modalVisita) return;
     const ok = await registrarDesfecho(modalVisita.lead, tipo, modalVisita.observacao);
@@ -123,6 +136,8 @@ export default function Desfechos() {
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
+  // Leads marcados como "removido" (não são desta unidade) saem da lista de aguardando desfecho
+  const leadsPendentes = leads.filter((l) => eventos.get(l.id)?.tipo !== "removido");
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -168,18 +183,18 @@ export default function Desfechos() {
           </Button>
         </div>
 
-        {loading && leads.length === 0 ? (
+        {loading && leadsPendentes.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
             Carregando leads do CRM...
           </div>
-        ) : leads.length === 0 ? (
+        ) : leadsPendentes.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <CalendarCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Nenhum lead aguardando desfecho nesta unidade no momento.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {leads.map((lead) => {
+            {leadsPendentes.map((lead) => {
               const linha = estado[lead.id] ?? { tipo: "", observacao: "" };
               const ev = eventos.get(lead.id);
               const isSalvando = salvando === lead.id;
@@ -254,12 +269,21 @@ export default function Desfechos() {
                       />
                     </div>
 
-                    <div className="flex items-center">
+                    <div className="flex flex-col items-stretch gap-1.5">
                       <Button
                         onClick={() => handleSalvar(lead)}
                         disabled={!linha.tipo || !linha.observacao.trim() || isSalvando}
                       >
                         {isSalvando ? "Salvando..." : ev ? "Atualizar" : "Registrar"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Use quando este lead na verdade é de outra unidade — descreva o motivo na observação acima"
+                        onClick={() => handleDescartar(lead)}
+                        disabled={!linha.observacao.trim() || isSalvando}
+                      >
+                        Não é desta unidade
                       </Button>
                     </div>
                   </div>
@@ -378,7 +402,7 @@ export default function Desfechos() {
                           <td className="px-4 py-3 font-medium text-gray-800">{ev.nome ?? "—"}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>
-                              {DESFECHOS.find((d) => d.value === ev.tipo)?.label ?? ev.tipo}
+                              {desfechoLabel(ev.tipo)}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-gray-600 whitespace-pre-wrap">{ev.observacao ?? "—"}</td>

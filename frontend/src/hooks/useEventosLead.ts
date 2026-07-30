@@ -102,6 +102,38 @@ export function useEventosLead({ unidadeId, unidadeNome }: UseEventosLeadOptions
     [unidadeNome]
   );
 
+  const descartarLead = useCallback(
+    async (lead: LeadCRM, motivo: string): Promise<boolean> => {
+      setSalvando(lead.id);
+      try {
+        // Local apenas — não é um outcome de visita, então não chama o CRM.
+        const { error } = await supabase.from("eventos_lead").upsert(
+          {
+            unidade_id: unidadeId,
+            crm_lead_id: lead.id,
+            nome: lead.name,
+            telefone: lead.phone,
+            data: new Date().toISOString().slice(0, 10),
+            tipo: "removido",
+            observacao: motivo.trim(),
+            synced_at: null,
+          },
+          { onConflict: "unidade_id,crm_lead_id" }
+        );
+        if (error) throw error;
+        toast.success("Lead removido do desfecho desta unidade.");
+        return true;
+      } catch (err) {
+        console.error(err);
+        toast.error(err instanceof Error ? err.message : "Erro ao remover lead");
+        return false;
+      } finally {
+        setSalvando(null);
+      }
+    },
+    [unidadeId]
+  );
+
   const removerDesfecho = useCallback(async (evento: EventoLead): Promise<boolean> => {
     setSalvando(evento.crm_lead_id);
     try {
@@ -124,5 +156,5 @@ export function useEventosLead({ unidadeId, unidadeNome }: UseEventosLeadOptions
     }
   }, []);
 
-  return { loading, salvando, carregar, registrarDesfecho, editarDesfecho, removerDesfecho };
+  return { loading, salvando, carregar, registrarDesfecho, editarDesfecho, removerDesfecho, descartarLead };
 }
