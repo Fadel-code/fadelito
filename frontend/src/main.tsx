@@ -19,7 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             borderRadius: "8px",
           },
           success: {
-            iconTheme: { primary: "#F97316", secondary: "#fff" },
+            iconTheme: { primary: "#005BAE", secondary: "#fff" },
           },
         }}
       />

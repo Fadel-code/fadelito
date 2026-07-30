@@ -27,7 +27,7 @@ export async function exportarPdf(
   const nomeMes = MESES[mes - 1];
 
   // Cabeçalho
-  doc.setFillColor(249, 115, 22); // #F97316
+  doc.setFillColor(0, 91, 174); // #005BAE
   doc.rect(0, 0, 297, 20, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
@@ -85,7 +85,7 @@ export async function exportarPdf(
     body: rows,
     theme: "striped",
     headStyles: {
-      fillColor: [249, 115, 22],
+      fillColor: [0, 91, 174],
       textColor: [255, 255, 255],
       fontSize: 7,
       fontStyle: "bold",
@@ -105,7 +105,7 @@ export async function exportarPdf(
     didParseCell: (data) => {
       // Destaque na última linha (Total da Rede)
       if (data.row.index === rows.length - 1) {
-        data.cell.styles.fillColor = [253, 186, 116];
+        data.cell.styles.fillColor = [127, 176, 226];
         data.cell.styles.fontStyle = "bold";
       }
     },

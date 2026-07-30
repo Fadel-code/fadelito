@@ -116,7 +116,7 @@ export default function Graficos() {
             <GraficoBarras
               dados={rankingMatriculas}
               label="Matrículas Totais"
-              cor="#F97316"
+              cor="#005BAE"
             />
           )}
         </div>

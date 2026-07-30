@@ -4,19 +4,40 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Marca Fadelito (verificada em pmo.fadelito.com.br)
         primary: {
-          DEFAULT: "#F97316",
-          50:  "#fff7ed",
-          100: "#ffedd5",
-          200: "#fed7aa",
-          300: "#fdba74",
-          400: "#fb923c",
-          500: "#F97316",
-          600: "#ea6c0b",
-          700: "#c2560a",
-          800: "#9a440e",
-          900: "#7c370f",
+          DEFAULT: "#005BAE",
+          50: "#eef4fb",
+          100: "#d9e8f7",
+          200: "#b3d0ef",
+          300: "#7fb0e2",
+          400: "#3d84cc",
+          500: "#005BAE",
+          600: "#1b4e9c",
+          700: "#153f7d",
+          800: "#0f2f5e",
+          900: "#0a2047",
         },
+        ink: {
+          DEFAULT: "#001040",
+          panel: "#001A4A",
+        },
+        sun: {
+          DEFAULT: "#FFD800",
+          soft: "#FAEC27",
+        },
+      },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+      },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-14px)" },
+        },
+      },
+      animation: {
+        float: "float 5s ease-in-out infinite",
       },
     },
   },

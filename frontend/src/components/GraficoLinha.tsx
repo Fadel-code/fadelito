@@ -41,9 +41,9 @@ export default function GraficoLinha({ dados }: Props) {
         <Line
           type="monotone"
           dataKey="visitas_totais"
-          stroke="#F97316"
+          stroke="#005BAE"
           strokeWidth={2.5}
-          dot={{ r: 4, fill: "#F97316" }}
+          dot={{ r: 4, fill: "#005BAE" }}
           activeDot={{ r: 6 }}
         />
         <Line

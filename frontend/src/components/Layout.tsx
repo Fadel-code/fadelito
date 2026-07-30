@@ -130,29 +130,31 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-60 bg-gray-900 flex flex-col transition-transform duration-200 ease-in-out",
+          "fixed inset-y-0 left-0 z-40 w-60 bg-ink flex flex-col transition-transform duration-200 ease-in-out",
           "lg:static lg:translate-x-0",
           mobileNavAberto ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="px-6 py-5 border-b border-gray-800">
+        <div className="px-6 py-5 border-b border-white/10">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">F</span>
-              </div>
+              <img
+                src="/mascot-fadelito.webp"
+                alt="Mascote Fadelito"
+                className="h-9 w-9 rounded-full bg-primary-500 object-cover object-top ring-2 ring-sun/80"
+              />
               <span className="text-white font-bold text-lg">Fadelito</span>
             </div>
             <button
               onClick={() => setMobileNavAberto(false)}
               aria-label="Fechar menu"
-              className="lg:hidden p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="lg:hidden p-1 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-white/50 text-xs mt-1">
             {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
           </p>
         </div>
@@ -171,14 +173,14 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-primary-500 text-white"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                      : "text-white/50 hover:bg-white/10 hover:text-white"
                   )
                 }
               >
                 <item.icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {showBadge && (
-                  <span className="ml-auto bg-amber-400 text-gray-900 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  <span className="ml-auto bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {pendingCount}
                   </span>
                 )}
@@ -188,13 +190,13 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-4 border-t border-gray-800">
+        <div className="px-3 py-4 border-t border-white/10">
           <div className="px-3 py-2 mb-2">
-            <p className="text-gray-400 text-xs truncate">{profile?.email}</p>
+            <p className="text-white/50 text-xs truncate">{profile?.email}</p>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sair

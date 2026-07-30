@@ -16,7 +16,7 @@ interface Props {
   horizontal?: boolean;
 }
 
-export default function GraficoBarras({ dados, cor = "#F97316", label = "Valor", horizontal }: Props) {
+export default function GraficoBarras({ dados, cor = "#005BAE", label = "Valor", horizontal }: Props) {
   if (horizontal) {
     return (
       <ResponsiveContainer width="100%" height={Math.max(300, dados.length * 28)}>
