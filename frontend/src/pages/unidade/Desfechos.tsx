@@ -63,6 +63,9 @@ export default function Desfechos() {
   // Modal "próximo passo" após registrar "Visitou"
   const [modalVisita, setModalVisita] = useState<{ lead: LeadCRM; observacao: string } | null>(null);
 
+  // Modal "remover lead" (motivo é só desta ação, independente da observação do desfecho)
+  const [modalRemover, setModalRemover] = useState<{ lead: LeadCRM; motivo: string } | null>(null);
+
   const recarregar = useCallback(async () => {
     const { leads, eventos } = await carregar();
     setLeads(leads);
@@ -96,11 +99,13 @@ export default function Desfechos() {
     }
   }
 
-  async function handleDescartar(lead: LeadCRM) {
-    const motivo = estado[lead.id]?.observacao ?? "";
-    if (!motivo.trim()) return;
-    const ok = await descartarLead(lead, motivo);
-    if (ok) await recarregar();
+  async function handleConfirmarRemover() {
+    if (!modalRemover || !modalRemover.motivo.trim()) return;
+    const ok = await descartarLead(modalRemover.lead, modalRemover.motivo);
+    if (ok) {
+      setModalRemover(null);
+      await recarregar();
+    }
   }
 
   async function handleDecisaoModal(tipo: DesfechoTipo) {
@@ -279,11 +284,11 @@ export default function Desfechos() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        title="Use quando este lead na verdade é de outra unidade — descreva o motivo na observação acima"
-                        onClick={() => handleDescartar(lead)}
-                        disabled={!linha.observacao.trim() || isSalvando}
+                        title="Use quando este lead na verdade é de outra unidade"
+                        onClick={() => setModalRemover({ lead, motivo: "" })}
+                        disabled={isSalvando}
                       >
-                        Não é desta unidade
+                        Remover
                       </Button>
                     </div>
                   </div>
@@ -327,6 +332,38 @@ export default function Desfechos() {
             >
               Deixar em aberto por enquanto
             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: remover lead que não é desta unidade ── */}
+      <Dialog open={!!modalRemover} onOpenChange={(open) => { if (!open) setModalRemover(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover lead do desfecho</DialogTitle>
+            <DialogDescription>
+              <strong>{modalRemover?.lead.name}</strong> vai sair da lista de desfechos desta unidade.
+              Descreva o motivo (ex.: "visitou a unidade Klabin, não esta").
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            className="mt-2 w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+            rows={3}
+            placeholder="Motivo da remoção — obrigatório"
+            value={modalRemover?.motivo ?? ""}
+            onChange={(e) => setModalRemover((prev) => (prev ? { ...prev, motivo: e.target.value } : prev))}
+          />
+          <div className="flex gap-2 mt-2">
+            <Button
+              variant="destructive"
+              onClick={handleConfirmarRemover}
+              disabled={!modalRemover?.motivo.trim() || salvando !== null}
+            >
+              {salvando !== null ? "Removendo..." : "Remover"}
+            </Button>
+            <Button variant="outline" onClick={() => setModalRemover(null)}>
+              Cancelar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
