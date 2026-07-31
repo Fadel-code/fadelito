@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
@@ -27,6 +27,8 @@ function inicializarLinhas(): RegistroInput[] {
   return TURMAS.map(registroVazio);
 }
 
+const OBS_SEM_VISITA = "Sem visitas hoje.";
+
 export default function FormularioDiario() {
   const { profile } = useAuth();
   const [params] = useSearchParams();
@@ -47,6 +49,7 @@ export default function FormularioDiario() {
   const [modalObsAberto, setModalObsAberto] = useState(false);
   const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
   const [modalDesfechoAberto, setModalDesfechoAberto] = useState(false);
+  const [modalSemVisitaAberto, setModalSemVisitaAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
   const [obsExistente, setObsExistente] = useState("");
 
@@ -121,6 +124,23 @@ export default function FormularioDiario() {
       return;
     }
     setModalObsAberto(false);
+  }
+
+  async function handleConfirmarSemVisitas() {
+    if (!dataSelecionada) return;
+    const iso = dateToIso(dataSelecionada);
+    const linhasZeradas = inicializarLinhas();
+    const ok = await salvar(iso, linhasZeradas);
+    if (ok) {
+      const obsOk = await salvarObservacao(iso, OBS_SEM_VISITA);
+      if (obsOk) {
+        setLinhas(linhasZeradas);
+        setObsExistente(OBS_SEM_VISITA);
+        setObservacao(OBS_SEM_VISITA);
+        setTemRegistros(true);
+      }
+    }
+    setModalSemVisitaAberto(false);
   }
 
   async function handleRemover() {
@@ -259,10 +279,21 @@ export default function FormularioDiario() {
                 </Button>
               )}
             </div>
-            <Button onClick={handleSalvar} disabled={salvando || removendo} size="lg">
-              <Save className="h-4 w-4" />
-              {salvando ? "Salvando..." : "Salvar dados"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setModalSemVisitaAberto(true)}
+                disabled={salvando || removendo}
+                size="lg"
+              >
+                <CalendarOff className="h-4 w-4" />
+                Não tivemos visitas hoje
+              </Button>
+              <Button onClick={handleSalvar} disabled={salvando || removendo} size="lg">
+                <Save className="h-4 w-4" />
+                {salvando ? "Salvando..." : "Salvar dados"}
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
@@ -300,6 +331,36 @@ export default function FormularioDiario() {
             >
               <Trash2 className="h-4 w-4" />
               {removendo ? "Removendo..." : "Sim, remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação: sem visitas hoje */}
+      <Dialog open={modalSemVisitaAberto} onOpenChange={setModalSemVisitaAberto}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Não tivemos visitas hoje</DialogTitle>
+            <DialogDescription>
+              Isso vai salvar{" "}
+              {dataSelecionada
+                ? format(dataSelecionada, "dd/MM/yyyy", { locale: ptBR })
+                : "este dia"}{" "}
+              como um dia sem visitas, zerando qualquer valor já preenchido na tabela abaixo.
+              Confirmar?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setModalSemVisitaAberto(false)}
+              disabled={salvando}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmarSemVisitas} disabled={salvando}>
+              <CalendarOff className="h-4 w-4" />
+              {salvando ? "Salvando..." : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>
