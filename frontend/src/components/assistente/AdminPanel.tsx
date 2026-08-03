@@ -85,9 +85,7 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
         <div className="grid md:grid-cols-[1.4fr_1fr]">
           <section className="p-6 md:border-r" style={{ borderColor: "var(--af-line)" }}>
             <DialogHeader className="mb-1">
-              <DialogTitle style={{ fontFamily: "Georgia, serif" }}>
-                {editando ? "Editar protocolo" : "Adicionar protocolo"}
-              </DialogTitle>
+              <DialogTitle>{editando ? "Editar protocolo" : "Adicionar protocolo"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSalvar} className="grid grid-cols-2 gap-3 mt-4">
               <div className="af-field col-span-2">
@@ -170,9 +168,7 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
           </section>
 
           <section className="p-6" style={{ background: "#f5f4ee" }}>
-            <h3 className="text-lg mb-1" style={{ fontFamily: "Georgia, serif" }}>
-              Gestão de protocolos
-            </h3>
+            <h3 className="text-lg font-bold mb-1">Gestão de protocolos</h3>
             <p className="text-xs mb-3" style={{ color: "var(--af-muted)" }}>
               {protocolos.length} protocolos cadastrados.
             </p>

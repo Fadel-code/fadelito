@@ -67,8 +67,7 @@
   text-transform: uppercase;
 }
 .af-hero-title {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.035em;
   font-size: clamp(28px, 4vw, 42px);
   line-height: 1.05;
@@ -294,7 +293,9 @@
   text-transform: uppercase;
 }
 .af-card h3 {
-  font: 600 17px/1.25 Georgia, serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
   margin: 10px 0 8px;
   color: var(--af-ink);
 }
@@ -338,8 +339,7 @@
   overflow: hidden;
 }
 .af-answer h2 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.03em;
   font-size: 26px;
   margin: 0;
