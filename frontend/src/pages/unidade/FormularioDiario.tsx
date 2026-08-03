@@ -229,11 +229,13 @@ export default function FormularioDiario() {
                     disabled={isDesabilitado}
                     locale={ptBR}
                     defaultMonth={startOfMonth(hoje)}
-                    fromMonth={startOfMonth(hoje)}
+                    fromMonth={podeEditarMesAnterior ? inicioMesAnterior : inicioMesAtual}
                     toMonth={endOfYear(hoje)}
                   />
                   <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                    Dias úteis do mês atual em diante habilitados (até dez/{format(hoje, "yyyy")}).
+                    {podeEditarMesAnterior
+                      ? `Mês anterior (até o dia 4) e mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`
+                      : `Dias úteis do mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`}
                   </div>
                 </div>
               </>
