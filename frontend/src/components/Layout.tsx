@@ -156,26 +156,27 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex items-center justify-between gap-2 mt-1">
-            <p className="text-white/50 text-xs">
-              {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
-            </p>
-            {role === "marketing" && (
-              <NavLink
-                to="/marketing/protocolos"
-                onClick={() => setMobileNavAberto(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-1 transition-colors",
-                    isActive ? "bg-sun text-ink" : "bg-white/10 text-sun hover:bg-white/20"
-                  )
-                }
-              >
-                <BookOpen className="h-3 w-3" />
-                Assistente
-              </NavLink>
-            )}
-          </div>
+          <p className="text-white/50 text-xs mt-1">
+            {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
+          </p>
+          {role === "marketing" && (
+            <NavLink
+              to="/marketing/protocolos"
+              onClick={() => setMobileNavAberto(false)}
+              className={({ isActive }) =>
+                cn(
+                  "mt-3 flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm font-bold transition-colors cursor-pointer",
+                  isActive ? "bg-sun text-ink" : "bg-sun/90 text-ink hover:bg-sun"
+                )
+              }
+            >
+              <BookOpen className="h-4 w-4 flex-shrink-0" />
+              <span className="flex-1">Assistente Fadelito</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide bg-ink/15 text-ink rounded-full px-1.5 py-0.5">
+                Novo
+              </span>
+            </NavLink>
+          )}
         </div>
 
         {/* Nav */}
