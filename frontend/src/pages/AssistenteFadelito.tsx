@@ -149,6 +149,14 @@ export default function AssistenteFadelito() {
               Não encontrei um protocolo específico para "{pergunta.trim()}". Tente uma palavra central, como "câmera",
               "mordida", "desfralde" ou "falta".
             </p>
+            <div className="af-suggestions-light">
+              <span>Experimente:</span>
+              {SUGESTOES.map((s) => (
+                <button key={s} type="button" onClick={() => usarSugestao(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
             <button onClick={voltarBiblioteca} className="af-admin-open mt-4">
               Voltar aos protocolos
             </button>
@@ -171,6 +179,7 @@ export default function AssistenteFadelito() {
                     key={a}
                     data-area={a}
                     className={activeArea === a ? "active" : ""}
+                    aria-pressed={activeArea === a}
                     onClick={() => {
                       setActiveArea(a);
                       setActiveCategoria("Todos");
@@ -189,7 +198,12 @@ export default function AssistenteFadelito() {
                     ? visiveis.filter((p) => activeArea === "Todos" || p.area === activeArea).length
                     : visiveis.filter((p) => (activeArea === "Todos" || p.area === activeArea) && p.categoria === c).length;
                 return (
-                  <button key={c} className={activeCategoria === c ? "active" : ""} onClick={() => setActiveCategoria(c)}>
+                  <button
+                    key={c}
+                    className={activeCategoria === c ? "active" : ""}
+                    aria-pressed={activeCategoria === c}
+                    onClick={() => setActiveCategoria(c)}
+                  >
                     <span>{c}</span>
                     <small>{n}</small>
                   </button>
@@ -203,8 +217,15 @@ export default function AssistenteFadelito() {
 
           <div>
             {loading ? (
-              <div className="af-answer p-10 text-center" style={{ color: "var(--af-muted)" }}>
-                Carregando protocolos...
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-busy="true" aria-label="Carregando protocolos">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="af-card-skeleton">
+                    <div className="af-skeleton-line" style={{ height: 10, width: "40%", marginBottom: 14 }} />
+                    <div className="af-skeleton-line" style={{ height: 14, width: "80%", marginBottom: 10 }} />
+                    <div className="af-skeleton-line" style={{ height: 10, width: "100%", marginBottom: 6 }} />
+                    <div className="af-skeleton-line" style={{ height: 10, width: "90%" }} />
+                  </div>
+                ))}
               </div>
             ) : itensFiltrados.length === 0 ? (
               <div className="af-answer p-10 text-center" style={{ color: "var(--af-muted)" }}>

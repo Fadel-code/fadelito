@@ -24,7 +24,7 @@ export default function AssistenteDetail({ protocolo, onVoltar }: AssistenteDeta
       <div className="p-6 pb-0">
         <button
           onClick={onVoltar}
-          className="text-sm font-semibold mb-4 px-1.5 py-1 -ml-1.5 rounded-md cursor-pointer transition-colors"
+          className="af-back-link text-sm font-semibold mb-4 px-2.5 py-2 -ml-2.5 rounded-md"
           style={{ color: "var(--af-brand)" }}
         >
           ← Voltar aos protocolos

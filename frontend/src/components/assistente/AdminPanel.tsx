@@ -89,7 +89,9 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
             </DialogHeader>
             <form onSubmit={handleSalvar} className="grid grid-cols-2 gap-3 mt-4">
               <div className="af-field col-span-2">
-                <label>Título</label>
+                <label>
+                  Título <span className="af-required">*</span>
+                </label>
                 <input required value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} />
               </div>
               <div className="af-field">
@@ -101,7 +103,9 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                 </select>
               </div>
               <div className="af-field">
-                <label>Categoria</label>
+                <label>
+                  Categoria <span className="af-required">*</span>
+                </label>
                 <input required value={form.categoria} onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))} />
               </div>
               <div className="af-field">
@@ -116,7 +120,9 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                 <input value={form.fonte} onChange={(e) => setForm((f) => ({ ...f, fonte: e.target.value }))} />
               </div>
               <div className="af-field col-span-2">
-                <label>Como agir — texto completo</label>
+                <label>
+                  Como agir — texto completo <span className="af-required">*</span>
+                </label>
                 <textarea required rows={4} value={form.resumo} onChange={(e) => setForm((f) => ({ ...f, resumo: e.target.value }))} />
               </div>
               <div className="af-field col-span-2">
@@ -157,7 +163,7 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                   <button
                     type="button"
                     onClick={() => setEditando(null)}
-                    className="text-sm font-semibold cursor-pointer"
+                    className="text-sm font-semibold cursor-pointer px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     style={{ color: "var(--af-muted)" }}
                   >
                     Cancelar edição
@@ -195,12 +201,16 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                       <button
                         onClick={() => handleRemover(p.id)}
                         disabled={removendoId === p.id}
-                        className="font-bold cursor-pointer"
+                        className="font-bold cursor-pointer px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                         style={{ color: "var(--af-coral)" }}
                       >
                         {removendoId === p.id ? "..." : "Sim"}
                       </button>
-                      <button onClick={() => setConfirmandoId(null)} className="cursor-pointer" style={{ color: "var(--af-muted)" }}>
+                      <button
+                        onClick={() => setConfirmandoId(null)}
+                        className="cursor-pointer px-2 py-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                        style={{ color: "var(--af-muted)" }}
+                      >
                         Não
                       </button>
                     </div>
@@ -208,14 +218,14 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                     <div className="flex gap-1.5">
                       <button
                         onClick={() => setEditando(p)}
-                        className="text-[10px] font-bold rounded-md border px-2 py-1 cursor-pointer"
+                        className="text-[10px] font-bold rounded-md border px-2.5 py-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                         style={{ borderColor: "#d7d7ce" }}
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => setConfirmandoId(p.id)}
-                        className="text-[10px] font-bold rounded-md border px-2 py-1 cursor-pointer"
+                        className="text-[10px] font-bold rounded-md border px-2.5 py-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                         style={{ borderColor: "#d7d7ce", color: "var(--af-coral)" }}
                       >
                         Excluir
