@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { BookOpen, Eye, EyeOff } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -195,6 +195,14 @@ export default function Login() {
               </button>
             </>
           )}
+        </div>
+
+        <div className="mt-5 flex w-full max-w-[380px] items-start gap-2.5 rounded-[14px] border border-white/[0.10] bg-white/[0.04] px-4 py-3">
+          <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-sun-soft" />
+          <p className="text-xs leading-relaxed text-white/55">
+            <span className="font-bold text-white/80">Assistente Fadelito:</span> depois de entrar, consulte em segundos
+            os protocolos oficiais da rede para dúvidas do dia a dia da unidade (mordida, desfralde, emergências e mais).
+          </p>
         </div>
       </div>
 

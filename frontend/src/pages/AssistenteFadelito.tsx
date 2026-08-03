@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { BookOpen } from "lucide-react";
 import { useAuth } from "../App";
 import { useProtocolos } from "../hooks/useProtocolos";
 import { buscarProtocolos } from "../lib/protocoloSearch";
@@ -84,6 +85,20 @@ export default function AssistenteFadelito() {
 
   return (
     <div className="assistente-fadelito space-y-6">
+      <div
+        className="flex items-start gap-2.5 rounded-[14px] border px-4 py-3"
+        style={{ borderColor: "var(--af-line)", background: "var(--af-brand-soft)" }}
+      >
+        <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: "var(--af-brand)" }} />
+        <p className="text-xs leading-relaxed" style={{ color: "var(--af-muted)" }}>
+          <span className="font-bold" style={{ color: "var(--af-brand-deep)" }}>
+            O que é o Assistente Fadelito?
+          </span>{" "}
+          É a biblioteca de protocolos oficiais da rede: descreva a situação (mordida, desfralde, emergência etc.) e
+          receba na hora a orientação correta, sem precisar procurar em pastas ou grupos.
+        </p>
+      </div>
+
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Assistente Fadelito</h1>
