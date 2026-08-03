@@ -67,11 +67,14 @@ export default function FormularioDiario() {
   const inicioMesAtual = startOfMonth(hoje);
   const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
   const podeEditarMesAnterior = hoje.getDate() < 5;
-  const anoAtual = hoje.getFullYear();
-  const mesAtualNum = hoje.getMonth() + 1;
+  // Segue o mês da data selecionada no formulário (pode ser o mês anterior,
+  // liberado até o dia 5) em vez de travar no mês corrente do calendário.
+  const mesReferencia = dataSelecionada ?? hoje;
+  const anoRef = mesReferencia.getFullYear();
+  const mesRefNum = mesReferencia.getMonth() + 1;
 
   const carregarConversaoMes = useCallback(async () => {
-    const registros = await carregarPorMes(anoAtual, mesAtualNum);
+    const registros = await carregarPorMes(anoRef, mesRefNum);
     let visitasTotais = 0;
     let matriculasTotais = 0;
     for (const r of registros) {
@@ -79,7 +82,7 @@ export default function FormularioDiario() {
       matriculasTotais += (r.matriculas ?? 0) + (r.matriculas_curso_ferias ?? 0);
     }
     setConversaoMes(visitasTotais > 0 ? `${((matriculasTotais / visitasTotais) * 100).toFixed(1)}%` : "—");
-  }, [carregarPorMes, anoAtual, mesAtualNum]);
+  }, [carregarPorMes, anoRef, mesRefNum]);
 
   useEffect(() => {
     carregarConversaoMes();
@@ -193,7 +196,7 @@ export default function FormularioDiario() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 px-5 py-3 flex-shrink-0">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            Conversão da unidade — {format(hoje, "MMMM", { locale: ptBR })}
+            Conversão da unidade — {format(mesReferencia, "MMMM", { locale: ptBR })}
           </p>
           <p className="text-2xl font-bold text-primary-500 mt-0.5">{conversaoMes ?? "—"}</p>
         </div>
