@@ -26,6 +26,7 @@ const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
+const Protocolos = lazy(() => import("./pages/marketing/Protocolos"));
 
 function PageLoader() {
   return (
@@ -175,6 +176,7 @@ export default function App() {
           <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
+          <Route path="protocolos" element={<Protocolos />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

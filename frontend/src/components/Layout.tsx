@@ -52,6 +52,7 @@ const NAV_MARKETING: NavItem[] = [
   { to: "/marketing/usuarios", label: "Usuários", icon: Users },
   { to: "/marketing/audit", label: "Audit Log", icon: FileText },
   { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
+  { to: "/marketing/protocolos", label: "Protocolos", icon: BookOpen },
 ];
 
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
