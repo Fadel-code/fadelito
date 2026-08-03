@@ -227,3 +227,24 @@ export interface EventoLead {
   created_at: string;
   updated_at: string;
 }
+
+// ============================================================
+// Assistente Fadelito — biblioteca de protocolos
+// ============================================================
+
+export interface Protocolo {
+  id: string;
+  titulo: string;
+  area: "Pedagógico" | "Administrativo" | "Em comum";
+  categoria: string;
+  palavras_chave: string[];
+  status: "validado" | "revisao";
+  resumo: string;
+  acoes: string[];
+  mensagem_familia: string;
+  atencao: string;
+  publicado: boolean;
+  fonte: string;
+  created_at: string;
+  updated_at: string;
+}
