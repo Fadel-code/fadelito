@@ -93,6 +93,11 @@ export default function HistoricoMensal() {
     return diasUteis.reduce((acc, d) => acc + getTotalDia(dateToIso(d), campo), 0);
   }
 
+  const visitasTotaisMes = getTotalGeral("visitas") + getTotalGeral("visitas_curso_ferias");
+  const matriculasTotaisMes = getTotalGeral("matriculas") + getTotalGeral("matriculas_curso_ferias");
+  const conversaoMes =
+    visitasTotaisMes > 0 ? `${((matriculasTotaisMes / visitasTotaisMes) * 100).toFixed(1)}%` : "—";
+
   return (
     <div className="max-w-full">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -101,6 +106,10 @@ export default function HistoricoMensal() {
           <p className="text-gray-500 text-sm mt-1">{profile?.unidade_nome}</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="bg-white rounded-xl border border-gray-200 px-4 py-2">
+            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wide">Conversão do mês</p>
+            <p className="text-xl font-bold text-primary-500">{conversaoMes}</p>
+          </div>
           <Select
             value={String(mes)}
             onValueChange={(v) => setMes(Number(v))}
