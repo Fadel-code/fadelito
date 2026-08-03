@@ -77,10 +77,10 @@ export default function Protocolos() {
     <div className="max-w-6xl space-y-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Protocolos — Assistente Fadelito</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Protocolos do Assistente Fadelito</h1>
           <p className="text-gray-500 text-sm mt-1">
             {podeEditar
-              ? "Biblioteca de protocolos oficiais — crie, edite ou despublique."
+              ? "Biblioteca de protocolos oficiais: crie, edite ou despublique."
               : "Biblioteca de protocolos oficiais (somente leitura)."}
           </p>
         </div>

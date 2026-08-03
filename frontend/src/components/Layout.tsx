@@ -52,7 +52,6 @@ const NAV_MARKETING: NavItem[] = [
   { to: "/marketing/usuarios", label: "Usuários", icon: Users },
   { to: "/marketing/audit", label: "Audit Log", icon: FileText },
   { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
-  { to: "/marketing/protocolos", label: "Protocolos", icon: BookOpen },
 ];
 
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
@@ -157,9 +156,26 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <p className="text-white/50 text-xs mt-1">
-            {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
-          </p>
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p className="text-white/50 text-xs">
+              {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
+            </p>
+            {role === "marketing" && (
+              <NavLink
+                to="/marketing/protocolos"
+                onClick={() => setMobileNavAberto(false)}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-1 transition-colors",
+                    isActive ? "bg-sun text-ink" : "bg-white/10 text-sun hover:bg-white/20"
+                  )
+                }
+              >
+                <BookOpen className="h-3 w-3" />
+                Assistente
+              </NavLink>
+            )}
+          </div>
         </div>
 
         {/* Nav */}

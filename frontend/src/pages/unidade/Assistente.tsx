@@ -25,7 +25,7 @@ export default function Assistente() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Assistente Fadelito</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Busque um protocolo pela situação — ex: "mordida", "desfralde", "foto".
+          Busque um protocolo pela situação, ex: "mordida", "desfralde", "foto".
         </p>
       </div>
 
