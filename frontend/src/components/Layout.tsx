@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
   Menu,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -40,6 +41,7 @@ const NAV_UNIDADE: NavItem[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
+  { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
 
 const NAV_MARKETING: NavItem[] = [

@@ -18,6 +18,7 @@ import Layout from "./components/Layout";
 const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
 const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
 const Desfechos = lazy(() => import("./pages/unidade/Desfechos"));
+const Assistente = lazy(() => import("./pages/unidade/Assistente"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
 const Graficos = lazy(() => import("./pages/marketing/Graficos"));
 const Ranking = lazy(() => import("./pages/marketing/Ranking"));
@@ -154,6 +155,7 @@ export default function App() {
           <Route path="formulario" element={<FormularioDiario />} />
           <Route path="historico" element={<HistoricoMensal />} />
           <Route path="desfechos" element={<Desfechos />} />
+          <Route path="assistente" element={<Assistente />} />
           <Route index element={<Navigate to="formulario" replace />} />
         </Route>
 
