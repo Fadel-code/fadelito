@@ -25,7 +25,7 @@ export default function ProtocolDetail({ protocolo, onVoltar }: ProtocolDetailPr
       <div className="p-6 border-b border-gray-100">
         <button
           onClick={onVoltar}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 -ml-1.5 mb-4 px-1.5 py-1 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar à biblioteca
@@ -63,7 +63,7 @@ export default function ProtocolDetail({ protocolo, onVoltar }: ProtocolDetailPr
             </h3>
             <button
               onClick={copiarMensagem}
-              className="flex items-center gap-1 text-xs font-semibold text-primary-700 hover:text-primary-900"
+              className="flex items-center gap-1 text-xs font-semibold text-primary-700 hover:text-primary-900 px-2 py-1.5 rounded-md hover:bg-white cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
               {copiado ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copiado ? "Copiado" : "Copiar mensagem"}

@@ -12,10 +12,11 @@ interface ProtocolCardProps {
 }
 
 export default function ProtocolCard({ protocolo, onClick }: ProtocolCardProps) {
+  const disponivel = protocolo.status === "validado";
   return (
     <button
       onClick={onClick}
-      className="text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-primary-300 hover:shadow-sm transition-all flex flex-col gap-2 w-full"
+      className="text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-primary-300 hover:shadow-sm active:scale-[0.98] transition-all flex flex-col gap-2 w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
@@ -27,8 +28,9 @@ export default function ProtocolCard({ protocolo, onClick }: ProtocolCardProps) 
       </div>
       <h3 className="font-semibold text-gray-900 leading-snug">{protocolo.titulo}</h3>
       <p className="text-sm text-gray-500 line-clamp-2">{protocolo.resumo}</p>
-      <span className={`text-xs font-medium ${protocolo.status === "validado" ? "text-green-600" : "text-amber-600"}`}>
-        {protocolo.status === "validado" ? "● Disponível" : "● Em revisão"}
+      <span className={`flex items-center gap-1.5 text-xs font-medium ${disponivel ? "text-green-600" : "text-amber-600"}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${disponivel ? "bg-green-500" : "bg-amber-500"}`} aria-hidden="true" />
+        {disponivel ? "Disponível" : "Em revisão"}
       </span>
     </button>
   );

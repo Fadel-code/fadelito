@@ -70,14 +70,14 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
-            <Label>Título</Label>
+            <Label>Título <span className="text-red-500">*</span></Label>
             <Input value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Área</Label>
               <select
-                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                className="w-full rounded-md border border-gray-300 p-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 value={form.area}
                 onChange={(e) => setForm((f) => ({ ...f, area: e.target.value as Protocolo["area"] }))}
               >
@@ -96,9 +96,9 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
             <Input value={palavrasTexto} onChange={(e) => setPalavrasTexto(e.target.value)} />
           </div>
           <div>
-            <Label>Resumo</Label>
+            <Label>Resumo <span className="text-red-500">*</span></Label>
             <textarea
-              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows={3}
               value={form.resumo}
               onChange={(e) => setForm((f) => ({ ...f, resumo: e.target.value }))}
@@ -107,7 +107,7 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
           <div>
             <Label>Ações (uma por linha)</Label>
             <textarea
-              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows={5}
               value={acoesTexto}
               onChange={(e) => setAcoesTexto(e.target.value)}
@@ -116,7 +116,7 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
           <div>
             <Label>Mensagem para a família</Label>
             <textarea
-              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows={3}
               value={form.mensagem_familia}
               onChange={(e) => setForm((f) => ({ ...f, mensagem_familia: e.target.value }))}
@@ -125,7 +125,7 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
           <div>
             <Label>Atenção (opcional)</Label>
             <textarea
-              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows={2}
               value={form.atencao}
               onChange={(e) => setForm((f) => ({ ...f, atencao: e.target.value }))}
@@ -135,7 +135,7 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
             <div>
               <Label>Status</Label>
               <select
-                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                className="w-full rounded-md border border-gray-300 p-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 value={form.status}
                 onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Protocolo["status"] }))}
               >
@@ -143,15 +143,16 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
                 <option value="revisao">Em revisão</option>
               </select>
             </div>
-            <div className="flex items-center gap-2 pb-2">
+            <label htmlFor="publicado" className="flex items-center gap-2 pb-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 id="publicado"
                 checked={form.publicado}
                 onChange={(e) => setForm((f) => ({ ...f, publicado: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300 accent-primary-500 cursor-pointer"
               />
-              <Label htmlFor="publicado">Publicado (visível às unidades)</Label>
-            </div>
+              <span className="text-sm font-medium text-gray-700">Publicado (visível às unidades)</span>
+            </label>
           </div>
           <div>
             <Label>Fonte (documento original)</Label>
@@ -161,7 +162,7 @@ export default function ProtocolForm({ open, protocolo, onClose, onSalvar }: Pro
             <Button onClick={handleSalvar} disabled={!form.titulo.trim() || !form.resumo.trim() || salvando}>
               {salvando ? "Salvando..." : "Salvar"}
             </Button>
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button variant="outline" onClick={onClose} disabled={salvando}>Cancelar</Button>
           </div>
         </div>
       </DialogContent>
