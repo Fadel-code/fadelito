@@ -52,8 +52,9 @@ export default function FormularioDiario() {
   const [modalSemVisitaAberto, setModalSemVisitaAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
   const [obsExistente, setObsExistente] = useState("");
+  const [conversaoMes, setConversaoMes] = useState<string | null>(null);
 
-  const { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao } = useRegistros({
+  const { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao, carregarPorMes } = useRegistros({
     unidadeId: profile!.id,
     unidadeNome: profile!.unidade_nome ?? "",
   });
@@ -66,6 +67,23 @@ export default function FormularioDiario() {
   const inicioMesAtual = startOfMonth(hoje);
   const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
   const podeEditarMesAnterior = hoje.getDate() < 5;
+  const anoAtual = hoje.getFullYear();
+  const mesAtualNum = hoje.getMonth() + 1;
+
+  const carregarConversaoMes = useCallback(async () => {
+    const registros = await carregarPorMes(anoAtual, mesAtualNum);
+    let visitasTotais = 0;
+    let matriculasTotais = 0;
+    for (const r of registros) {
+      visitasTotais += (r.visitas ?? 0) + (r.visitas_curso_ferias ?? 0);
+      matriculasTotais += (r.matriculas ?? 0) + (r.matriculas_curso_ferias ?? 0);
+    }
+    setConversaoMes(visitasTotais > 0 ? `${((matriculasTotais / visitasTotais) * 100).toFixed(1)}%` : "—");
+  }, [carregarPorMes, anoAtual, mesAtualNum]);
+
+  useEffect(() => {
+    carregarConversaoMes();
+  }, [carregarConversaoMes]);
 
   const isDesabilitado = useCallback(
     (date: Date) => {
@@ -126,6 +144,7 @@ export default function FormularioDiario() {
       setTemRegistros(true);
       setModalObsAberto(false);
       setModalDesfechoAberto(true);
+      carregarConversaoMes();
       return;
     }
     setModalObsAberto(false);
@@ -143,6 +162,7 @@ export default function FormularioDiario() {
         setObsExistente(OBS_SEM_VISITA);
         setObservacao(OBS_SEM_VISITA);
         setTemRegistros(true);
+        carregarConversaoMes();
       }
     }
     setModalSemVisitaAberto(false);
@@ -157,17 +177,26 @@ export default function FormularioDiario() {
       setTemRegistros(false);
       setObsExistente("");
       setObservacao("");
+      carregarConversaoMes();
     }
     setModalRemocaoAberto(false);
   }
 
   return (
     <div className="max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Formulário Diário</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          {profile?.unidade_nome} — preencha os dados de visitas e matrículas do dia
-        </p>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Formulário Diário</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            {profile?.unidade_nome} — preencha os dados de visitas e matrículas do dia
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 px-5 py-3 flex-shrink-0">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+            Conversão da unidade — {format(hoje, "MMMM", { locale: ptBR })}
+          </p>
+          <p className="text-2xl font-bold text-primary-500 mt-0.5">{conversaoMes ?? "—"}</p>
+        </div>
       </div>
 
       {/* Urgência: nunca preencheu Desfecho de Visitas, ou tem "Visitou" pendente há dias.

@@ -54,6 +54,12 @@ export default function Dashboard() {
   const filtrouDia = dia !== TODOS_OS_DIAS;
   const labelStatus = filtrouDia ? "no dia" : mes === mesCorrido ? "hoje" : "no mês";
 
+  const visitasTotaisRede = dados.reduce((a, d) => a + d.visitas_totais, 0);
+  const matriculasTotaisRede = dados.reduce((a, d) => a + d.matriculas_totais, 0);
+  const conversaoTotal =
+    visitasTotaisRede > 0 ? `${((matriculasTotaisRede / visitasTotaisRede) * 100).toFixed(1)}%` : "—";
+  const desligamentosTotal = dados.reduce((a, d) => a + d.desligamentos, 0);
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -139,11 +145,7 @@ export default function Dashboard() {
       </div>
 
       {/* Indicadores rápidos */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Unidades na rede</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{totalUnidades}</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
             Preenchidas {labelStatus}
@@ -163,6 +165,14 @@ export default function Dashboard() {
           <p className="text-3xl font-bold text-primary-500 mt-1">
             {dados.reduce((a, d) => a + d.matriculas_totais, 0)}
           </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Conversão total</p>
+          <p className="text-3xl font-bold text-primary-500 mt-1">{conversaoTotal}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Desligamentos</p>
+          <p className="text-3xl font-bold text-red-500 mt-1">{desligamentosTotal}</p>
         </div>
       </div>
 
