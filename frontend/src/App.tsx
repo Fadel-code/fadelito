@@ -18,7 +18,6 @@ import Layout from "./components/Layout";
 const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
 const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
 const Desfechos = lazy(() => import("./pages/unidade/Desfechos"));
-const Assistente = lazy(() => import("./pages/unidade/Assistente"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
 const Graficos = lazy(() => import("./pages/marketing/Graficos"));
 const Ranking = lazy(() => import("./pages/marketing/Ranking"));
@@ -26,7 +25,7 @@ const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
-const Protocolos = lazy(() => import("./pages/marketing/Protocolos"));
+const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 
 function PageLoader() {
   return (
@@ -156,7 +155,7 @@ export default function App() {
           <Route path="formulario" element={<FormularioDiario />} />
           <Route path="historico" element={<HistoricoMensal />} />
           <Route path="desfechos" element={<Desfechos />} />
-          <Route path="assistente" element={<Assistente />} />
+          <Route path="assistente" element={<AssistenteFadelito />} />
           <Route index element={<Navigate to="formulario" replace />} />
         </Route>
 
@@ -176,7 +175,7 @@ export default function App() {
           <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
-          <Route path="protocolos" element={<Protocolos />} />
+          <Route path="protocolos" element={<AssistenteFadelito />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
