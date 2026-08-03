@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { format, startOfMonth, endOfYear, isBefore, isSameYear } from "date-fns";
+import { format, startOfMonth, subMonths, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
@@ -64,17 +64,22 @@ export default function FormularioDiario() {
 
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
+  const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
+  const podeEditarMesAnterior = hoje.getDate() < 5;
 
   const isDesabilitado = useCallback(
     (date: Date) => {
       const dia = date.getDay();
       const isWeekend = dia === 0 || dia === 6;
       const isHoliday = FERIADOS_SET.has(dateToIso(date));
-      // ponytail: janela permitida = mês atual até dez/ano corrente (sem limite de meses à frente)
-      const isPermitido = !isBefore(date, inicioMesAtual) && isSameYear(date, hoje);
+      // ponytail: janela permitida = mês atual até dez/ano corrente + mês anterior até o dia 4
+      const isMesAtualOuFuturo = !isBefore(date, inicioMesAtual) && isSameYear(date, hoje);
+      const isMesAnteriorLiberado =
+        podeEditarMesAnterior && !isBefore(date, inicioMesAnterior) && isBefore(date, inicioMesAtual);
+      const isPermitido = isMesAtualOuFuturo || isMesAnteriorLiberado;
       return isWeekend || isHoliday || !isPermitido;
     },
-    [hoje, inicioMesAtual]
+    [hoje, inicioMesAtual, inicioMesAnterior, podeEditarMesAnterior]
   );
 
   useEffect(() => {
