@@ -48,7 +48,7 @@ export default function AssistenteFadelito() {
   function consultar(texto: string) {
     const termo = texto.trim();
     if (!termo) return;
-    const [top] = buscarProtocolos(protocolos, termo);
+    const [top] = buscarProtocolos(visiveis, termo);
     setBuscaFeita(true);
     setSemResultado(!top);
     setSelecionado(top ?? null);
@@ -77,7 +77,12 @@ export default function AssistenteFadelito() {
     setSemResultado(false);
   }
 
-  const visiveis = protocolos.filter((p) => p.publicado !== false);
+  const visiveis = protocolos.filter(
+    (p) =>
+      p.publicado !== false &&
+      // ponytail: fonte inconsistente, oculto só pra unidade até alinhar; marketing/supervisão seguem vendo pra resolver
+      (profile?.role !== "unidade" || p.titulo !== "Pais aniversariantes — fonte inconsistente")
+  );
   const itensFiltrados = visiveis.filter(
     (p) => (activeArea === "Todos" || p.area === activeArea) && (activeCategoria === "Todos" || p.categoria === activeCategoria)
   );
