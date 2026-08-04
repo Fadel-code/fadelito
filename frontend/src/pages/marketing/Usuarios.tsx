@@ -187,7 +187,7 @@ export default function Usuarios() {
 
       {/* Acessos de Gestão */}
       {gestores.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+        <div className="card overflow-hidden mb-6">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <h2 className="text-sm font-semibold text-gray-700">Acessos de Gestão</h2>
           </div>
@@ -237,7 +237,7 @@ export default function Usuarios() {
       )}
 
       {/* Unidades */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="card overflow-hidden">
         {loading ? (
           <div className="h-48 flex items-center justify-center text-gray-400">Carregando...</div>
         ) : (

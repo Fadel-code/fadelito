@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, subMonths, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff } from "lucide-react";
+import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff, TrendingUp } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
@@ -194,11 +194,16 @@ export default function FormularioDiario() {
             {profile?.unidade_nome} — preencha os dados de visitas e matrículas do dia
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-3 flex-shrink-0">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            Conversão da unidade — {format(mesReferencia, "MMMM", { locale: ptBR })}
-          </p>
-          <p className="text-2xl font-bold text-primary-500 mt-0.5">{conversaoMes ?? "—"}</p>
+        <div className="card px-5 py-3 flex-shrink-0 flex items-center gap-3">
+          <span className="flex-shrink-0 h-9 w-9 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
+            <TrendingUp className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Conversão — {format(mesReferencia, "MMMM", { locale: ptBR })}
+            </p>
+            <p className="text-2xl font-bold text-primary-500 mt-0.5">{conversaoMes ?? "—"}</p>
+          </div>
         </div>
       </div>
 
@@ -222,7 +227,7 @@ export default function FormularioDiario() {
       )}
 
       {/* Seletor de data */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="card p-6 mb-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Selecione a data</h2>
         <div className="flex items-start gap-6">
           <div className="relative">
@@ -286,7 +291,7 @@ export default function FormularioDiario() {
 
       {/* Tabela */}
       {dataSelecionada ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">
               Dados do dia — {format(dataSelecionada, "dd/MM/yyyy")}
@@ -336,7 +341,7 @@ export default function FormularioDiario() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="card p-12 text-center">
           <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">Selecione uma data para começar o preenchimento</p>
         </div>

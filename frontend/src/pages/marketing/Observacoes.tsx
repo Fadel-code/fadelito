@@ -163,7 +163,7 @@ export default function Observacoes() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <div className="card p-5 mb-4">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           <div className="space-y-1.5">
             <Label>Unidade</Label>

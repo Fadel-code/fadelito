@@ -83,7 +83,7 @@ export default function AuditLog() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+      <div className="card p-5 mb-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="space-y-1.5">
             <Label>Unidade</Label>
@@ -143,7 +143,7 @@ export default function AuditLog() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="card overflow-hidden">
         {loading ? (
           <div className="h-48 flex items-center justify-center text-gray-400">Carregando...</div>
         ) : registros.length === 0 ? (

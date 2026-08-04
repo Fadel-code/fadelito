@@ -31,6 +31,17 @@ import { Button } from "./ui/button";
 
 export const BANNER_KEY = "fadelito_banner_desfecho_v3";
 
+function saudacao() {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function capitalizar(texto: string) {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 interface NavItem {
   to: string;
   label: string;
@@ -132,7 +143,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-60 bg-ink flex flex-col transition-transform duration-200 ease-in-out",
+          "fixed inset-y-0 left-0 z-40 w-60 bg-gradient-to-b from-ink-panel to-ink flex flex-col transition-transform duration-200 ease-in-out",
           "lg:static lg:translate-x-0",
           mobileNavAberto ? "translate-x-0" : "-translate-x-full"
         )}
@@ -227,26 +238,33 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-3.5">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileNavAberto(true)}
                 aria-label="Abrir menu"
-                className="lg:hidden -ml-1 p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors"
+                className="lg:hidden -ml-1 p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div className="h-1 w-12 bg-primary-500 rounded hidden sm:block" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">
+                  {saudacao()}
+                  {role === "unidade" && profile?.unidade_nome ? `, ${profile.unidade_nome}` : ""}
+                </p>
+                <p className="text-xs text-gray-400 truncate hidden sm:block">
+                  {capitalizar(
+                    new Date().toLocaleDateString("pt-BR", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  )}
+                </p>
+              </div>
             </div>
-            <span className="text-xs sm:text-sm text-gray-500 truncate">
-              {new Date().toLocaleDateString("pt-BR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
           </div>
         </header>
 

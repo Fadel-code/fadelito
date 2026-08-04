@@ -145,7 +145,7 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                 <label>Alerta ou restrição (opcional)</label>
                 <textarea rows={2} value={form.atencao} onChange={(e) => setForm((f) => ({ ...f, atencao: e.target.value }))} />
               </div>
-              <label className="col-span-2 flex items-center gap-2 text-sm cursor-pointer select-none" style={{ color: "#52615d" }}>
+              <label className="col-span-2 flex items-center gap-2 text-sm cursor-pointer select-none" style={{ color: "var(--af-muted)" }}>
                 <input
                   type="checkbox"
                   checked={form.publicado}
@@ -219,14 +219,14 @@ export default function AdminPanel({ open, onClose, protocolos, criar, atualizar
                       <button
                         onClick={() => setEditando(p)}
                         className="text-[10px] font-bold rounded-md border px-2.5 py-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                        style={{ borderColor: "#d7d7ce" }}
+                        style={{ borderColor: "var(--af-line)" }}
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => setConfirmandoId(p.id)}
                         className="text-[10px] font-bold rounded-md border px-2.5 py-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                        style={{ borderColor: "#d7d7ce", color: "var(--af-coral)" }}
+                        style={{ borderColor: "var(--af-line)", color: "var(--af-coral)" }}
                       >
                         Excluir
                       </button>

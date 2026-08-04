@@ -231,7 +231,7 @@ export default function DesfechosMarketing() {
       </div>
 
       {/* Tabela por unidade */}
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="card">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Resultado por Unidade</h2>
         </div>

@@ -189,11 +189,11 @@ export default function Desfechos() {
         </div>
 
         {loading && leadsPendentes.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
+          <div className="card p-12 text-center text-gray-500">
             Carregando leads do CRM...
           </div>
         ) : leadsPendentes.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="card p-12 text-center">
             <CalendarCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Nenhum lead aguardando desfecho nesta unidade no momento.</p>
           </div>
@@ -204,7 +204,7 @@ export default function Desfechos() {
               const ev = eventos.get(lead.id);
               const isSalvando = salvando === lead.id;
               return (
-                <div key={lead.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                <div key={lead.id} className="card p-5">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="min-w-[200px]">
                       <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function Desfechos() {
       {realizados.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Desfechos Realizados</h2>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="card overflow-hidden">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wide">

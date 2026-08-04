@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileSpreadsheet, FileText, RefreshCw, ClipboardCheck } from "lucide-react";
+import {
+  FileSpreadsheet,
+  FileText,
+  RefreshCw,
+  ClipboardCheck,
+  CheckCircle2,
+  AlertCircle,
+  GraduationCap,
+  TrendingUp,
+  UserMinus,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
@@ -70,7 +80,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Seletor de mês */}
           <Select value={String(mes)} onValueChange={handleChangeMes}>
             <SelectTrigger className="w-44">
@@ -146,38 +156,63 @@ export default function Dashboard() {
 
       {/* Indicadores rápidos */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            Preenchidas {labelStatus}
-          </p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{preencheramNoDia}</p>
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Preenchidas {labelStatus}
+            </p>
+            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-green-600 mt-2">{preencheramNoDia}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            Faltando {labelStatus}
-          </p>
-          <p className="text-3xl font-bold text-red-500 mt-1">
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Faltando {labelStatus}
+            </p>
+            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+              <AlertCircle className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-red-500 mt-2">
             {totalUnidades - preencheramNoDia}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total matrículas</p>
-          <p className="text-3xl font-bold text-primary-500 mt-1">
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total matrículas</p>
+            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
+              <GraduationCap className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-primary-500 mt-2">
             {dados.reduce((a, d) => a + d.matriculas_totais, 0)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Conversão total</p>
-          <p className="text-3xl font-bold text-primary-500 mt-1">{conversaoTotal}</p>
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Conversão total</p>
+            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-primary-500 mt-2">{conversaoTotal}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Desligamentos</p>
-          <p className="text-3xl font-bold text-red-500 mt-1">{desligamentosTotal}</p>
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Desligamentos</p>
+            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+              <UserMinus className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-red-500 mt-2">{desligamentosTotal}</p>
         </div>
       </div>
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="card p-6">
         {loading ? (
           <div className="flex items-center justify-center h-48 text-gray-400">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" />

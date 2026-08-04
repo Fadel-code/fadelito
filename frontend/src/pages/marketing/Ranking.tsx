@@ -83,7 +83,7 @@ export default function Ranking() {
         </Select>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="card overflow-hidden">
         {loading ? (
           <div className="h-48 flex items-center justify-center text-gray-400">Carregando...</div>
         ) : (

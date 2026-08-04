@@ -2,20 +2,22 @@
    escopada em .assistente-fadelito para não vazar pro resto do sistema de visitas. */
 
 .assistente-fadelito {
-  --af-ink: #102451;
+  /* Tokens da marca real Fadelito (ver tailwind.config.js: primary/ink/sun) —
+     antes este arquivo tinha uma paleta própria herdada do protótipo original. */
+  --af-ink: #001040;
   --af-muted: #647394;
-  --af-canvas: #eef3ff;
-  --af-line: #dbe4f5;
-  --af-brand: #1747b7;
-  --af-brand-deep: #0d2e82;
-  --af-brand-soft: #eaf0ff;
+  --af-canvas: #eef4fb;
+  --af-line: #d9e8f7;
+  --af-brand: #005bae;
+  --af-brand-deep: #001a4a;
+  --af-brand-soft: #d9e8f7;
   --af-green: #14866f;
   --af-green-soft: #e7f7f2;
   --af-amber: #9a6900;
   --af-amber-soft: #fff5d7;
-  --af-yellow: #ffd43b;
+  --af-yellow: #ffd800;
   --af-coral: #f25d4b;
-  --af-shadow: 0 20px 54px rgba(17, 51, 125, 0.12);
+  --af-shadow: 0 20px 54px rgba(0, 27, 74, 0.12);
   color: var(--af-ink);
 }
 
@@ -23,7 +25,7 @@
   position: relative;
   padding: 42px clamp(22px, 5vw, 42px);
   border-radius: 28px;
-  background: linear-gradient(120deg, var(--af-brand-deep), var(--af-brand) 70%, #356fe0);
+  background: linear-gradient(120deg, var(--af-brand-deep), var(--af-brand) 70%, #3d84cc);
   overflow: hidden;
   box-shadow: 0 24px 64px rgba(13, 46, 130, 0.22);
 }
@@ -35,7 +37,7 @@
   width: 370px;
   height: 370px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 209, 67, 0.28) 0, rgba(255, 209, 67, 0.12) 38%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 216, 0, 0.28) 0, rgba(255, 216, 0, 0.12) 38%, transparent 70%);
   filter: blur(16px);
   pointer-events: none;
 }
@@ -46,10 +48,10 @@
   top: -64px;
   width: 260px;
   height: 260px;
-  background: rgba(255, 209, 67, 0.48);
+  background: rgba(255, 216, 0, 0.48);
   clip-path: polygon(50% 0, 61% 34%, 98% 35%, 68% 56%, 79% 92%, 50% 70%, 21% 92%, 32% 56%, 2% 35%, 39% 34%);
   transform: rotate(-10deg);
-  filter: blur(0.7px) drop-shadow(0 0 18px rgba(255, 209, 67, 0.52)) drop-shadow(0 0 42px rgba(255, 209, 67, 0.3));
+  filter: blur(0.7px) drop-shadow(0 0 18px rgba(255, 216, 0, 0.52)) drop-shadow(0 0 42px rgba(255, 216, 0, 0.3));
   opacity: 0.82;
   pointer-events: none;
 }
@@ -85,7 +87,7 @@
 .af-search-card {
   padding: 16px;
   background: #fff;
-  border: 1px solid #e4dfd5;
+  border: 1px solid var(--af-line);
   border-radius: 18px;
   box-shadow: var(--af-shadow);
 }
@@ -100,7 +102,7 @@
   padding: 13px 16px;
   border: 1px solid transparent;
   border-radius: 12px;
-  background: #f7f6f1;
+  background: var(--af-canvas);
   font-size: 14px;
   outline: none;
 }
@@ -302,7 +304,7 @@
 .af-card {
   min-height: 168px;
   padding: 16px;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--af-line);
   border-radius: 14px;
   background: #fff;
   display: flex;
@@ -386,7 +388,7 @@
 
 .af-answer {
   background: #fff;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--af-line);
   border-radius: 18px;
   box-shadow: var(--af-shadow);
   overflow: hidden;
@@ -549,7 +551,7 @@
 .af-field select,
 .af-field textarea {
   width: 100%;
-  border: 1px solid #d9d9cf;
+  border: 1px solid var(--af-line);
   border-radius: 9px;
   background: #fff;
   padding: 10px 12px;
@@ -580,7 +582,7 @@
 }
 .af-item {
   padding: 12px;
-  border: 1px solid #dcddd4;
+  border: 1px solid var(--af-line);
   border-radius: 11px;
   background: #fff;
 }
@@ -591,7 +593,7 @@
 
 .af-card-skeleton {
   border-radius: 14px;
-  border: 1px solid #e2ded4;
+  border: 1px solid var(--af-line);
   background: #fff;
   padding: 16px;
   min-height: 168px;
