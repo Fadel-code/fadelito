@@ -1,0 +1,29 @@
+ASSISTENTE FADELITO — PACOTE PARA PUBLICAÇÃO
+
+Conteúdo deste pacote
+
+1. index.html
+   Demonstração completa que pode ser aberta diretamente ou publicada como site estático.
+
+2. banco-de-dados/assistente-fadelito-banco-completo.json
+   Banco portátil com todos os 42 protocolos oficiais, palavras de busca, orientações, ações, mensagens para as famílias, alertas e fontes.
+
+3. banco-de-dados/schema.sql e seed.sql
+   Estrutura e carga inicial compatíveis com SQLite e Cloudflare D1.
+
+4. banco-de-dados/protocolos.csv
+   Versão para conferência no Excel ou importação em outras plataformas.
+
+IMPORTANTE SOBRE CONTEÚDOS CRIADOS NO ADMINISTRADOR
+
+Os conteúdos cadastrados anteriormente ficam no navegador do computador em que foram criados. Para incluí-los na publicação, abra a demonstração original nesse mesmo computador, entre em Administração e clique em “Exportar banco completo”. O arquivo gerado reúne os protocolos oficiais, as alterações e os conteúdos cadastrados localmente. Entregue esse arquivo junto com este pacote.
+
+ORIENTAÇÃO PARA QUEM VAI PUBLICAR
+
+- Para uma demonstração simples: publique index.html.
+- Para uma versão online com vários usuários: importe schema.sql e seed.sql em um banco SQLite/D1 e substitua o armazenamento local pelas operações do banco.
+- Proteja a área administrativa com login real e permissões.
+- Não salve nomes de crianças, familiares, telefones, diagnósticos ou outros dados pessoais nas consultas.
+- Faça backup antes de importar ou substituir conteúdos.
+
+Rede Fadelito — uso interno.

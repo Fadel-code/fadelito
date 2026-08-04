@@ -10,6 +10,15 @@ import type { Protocolo } from "../types";
 import "./assistente-fadelito.css";
 
 const AREAS: Array<Protocolo["area"] | "Todos"> = ["Todos", "Pedagógico", "Administrativo", "Em comum"];
+// ponytail: curadoria manual do que não faz sentido pro login da unidade — conteúdo com
+// fonte inconsistente (título não bate com o arquivo) ou protocolo de gestão de rede
+// (comparação entre unidades / produção de treinamento), não execução na própria unidade.
+const OCULTOS_UNIDADE = new Set([
+  "Pais aniversariantes — fonte inconsistente",
+  "Protocolo de rematrícula — fonte inconsistente",
+  "Protocolo de webinar",
+  "Protocolo do jantar Melhor Escola do Mês",
+]);
 const CATEGORIAS: string[] = [
   "Todos",
   "Saúde e segurança",
@@ -80,8 +89,7 @@ export default function AssistenteFadelito() {
   const visiveis = protocolos.filter(
     (p) =>
       p.publicado !== false &&
-      // ponytail: fonte inconsistente, oculto só pra unidade até alinhar; marketing/supervisão seguem vendo pra resolver
-      (profile?.role !== "unidade" || p.titulo !== "Pais aniversariantes — fonte inconsistente")
+      (profile?.role !== "unidade" || !OCULTOS_UNIDADE.has(p.titulo))
   );
   const itensFiltrados = visiveis.filter(
     (p) => (activeArea === "Todos" || p.area === activeArea) && (activeCategoria === "Todos" || p.categoria === activeCategoria)
