@@ -44,7 +44,7 @@ export default function HistoricoMensal() {
 
   const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET);
   const mesEditavel =
-    mes >= mesCorrido || (mes === mesCorrido - 1 && podeEditarMesAnterior(profile?.unidade_nome));
+    mes >= mesCorrido || (mes === mesCorrido - 1 && podeEditarMesAnterior());
 
   useEffect(() => {
     let active = true;

@@ -66,7 +66,7 @@ export default function FormularioDiario() {
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
   const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
-  const mesAnteriorLiberado = podeEditarMesAnterior(profile?.unidade_nome, hoje);
+  const mesAnteriorLiberado = podeEditarMesAnterior(hoje);
   // Segue o mês da data selecionada no formulário (pode ser o mês anterior,
   // liberado até o dia 5) em vez de travar no mês corrente do calendário.
   const mesReferencia = dataSelecionada ?? hoje;
@@ -93,7 +93,7 @@ export default function FormularioDiario() {
       const dia = date.getDay();
       const isWeekend = dia === 0 || dia === 6;
       const isHoliday = FERIADOS_SET.has(dateToIso(date));
-      // ponytail: janela permitida = mês atual até dez/ano corrente + mês anterior até o dia 4
+      // janela permitida = mês atual até dez/ano corrente + mês anterior até o 2º dia útil do mês atual
       const isMesAtualOuFuturo = !isBefore(date, inicioMesAtual) && isSameYear(date, hoje);
       const isMesAnteriorLiberado =
         mesAnteriorLiberado && !isBefore(date, inicioMesAnterior) && isBefore(date, inicioMesAtual);
@@ -271,7 +271,7 @@ export default function FormularioDiario() {
                   />
                   <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
                     {mesAnteriorLiberado
-                      ? `Mês anterior (até o dia 4) e mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`
+                      ? `Mês anterior (até o 2º dia útil do mês) e mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`
                       : `Dias úteis do mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`}
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { FERIADOS_SET } from "./feriados";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,11 +30,6 @@ export function anoMesAtual(): { ano: number; mes: number } {
   return { ano: now.getFullYear(), mes: now.getMonth() + 1 };
 }
 
-// ponytail: liberação temporária p/ Tatuapé, remover o "|| unidadeNome === 'Tatuapé'" quando o usuário sinalizar
-export function podeEditarMesAnterior(unidadeNome: string | null | undefined, hoje: Date = new Date()): boolean {
-  return hoje.getDate() < 5 || unidadeNome === "Tatuapé";
-}
-
 export function diasUteisDoMes(ano: number, mes: number, feriados: Set<string>): Date[] {
   const dias: Date[] = [];
   const total = new Date(ano, mes, 0).getDate();
@@ -46,4 +42,10 @@ export function diasUteisDoMes(ano: number, mes: number, feriados: Set<string>):
     dias.push(dt);
   }
   return dias;
+}
+
+export function podeEditarMesAnterior(hoje: Date = new Date()): boolean {
+  const diasUteis = diasUteisDoMes(hoje.getFullYear(), hoje.getMonth() + 1, FERIADOS_SET);
+  const segundoDiaUtil = diasUteis[1];
+  return !!segundoDiaUtil && hoje.getDate() <= segundoDiaUtil.getDate();
 }
