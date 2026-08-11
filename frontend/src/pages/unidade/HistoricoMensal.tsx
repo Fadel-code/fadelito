@@ -7,7 +7,7 @@ import { useRegistros } from "../../hooks/useRegistros";
 import { TURMAS, MESES } from "../../types";
 import type { Turma } from "../../types";
 import { FERIADOS_SET } from "../../lib/feriados";
-import { diasUteisDoMes, dateToIso } from "../../lib/utils";
+import { diasUteisDoMes, dateToIso, podeEditarMesAnterior } from "../../lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { Edit2 } from "lucide-react";
@@ -43,7 +43,8 @@ export default function HistoricoMensal() {
   });
 
   const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET);
-  const mesEditavel = mes >= mesCorrido;
+  const mesEditavel =
+    mes >= mesCorrido || (mes === mesCorrido - 1 && podeEditarMesAnterior(profile?.unidade_nome));
 
   useEffect(() => {
     let active = true;

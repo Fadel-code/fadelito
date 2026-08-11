@@ -29,6 +29,11 @@ export function anoMesAtual(): { ano: number; mes: number } {
   return { ano: now.getFullYear(), mes: now.getMonth() + 1 };
 }
 
+// ponytail: liberação temporária p/ Tatuapé, remover o "|| unidadeNome === 'Tatuapé'" quando o usuário sinalizar
+export function podeEditarMesAnterior(unidadeNome: string | null | undefined, hoje: Date = new Date()): boolean {
+  return hoje.getDate() < 5 || unidadeNome === "Tatuapé";
+}
+
 export function diasUteisDoMes(ano: number, mes: number, feriados: Set<string>): Date[] {
   const dias: Date[] = [];
   const total = new Date(ano, mes, 0).getDate();

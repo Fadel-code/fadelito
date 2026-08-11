@@ -10,7 +10,7 @@ import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgen
 import { TURMAS, registroVazio } from "../../types";
 import type { RegistroInput } from "../../types";
 import { FERIADOS_SET } from "../../lib/feriados";
-import { dateToIso } from "../../lib/utils";
+import { dateToIso, podeEditarMesAnterior } from "../../lib/utils";
 import FormularioTurmas from "../../components/FormularioTurmas";
 import { Button } from "../../components/ui/button";
 import { Calendar } from "../../components/ui/calendar";
@@ -66,8 +66,7 @@ export default function FormularioDiario() {
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
   const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
-  // ponytail: liberação temporária pedida p/ Tatuapé, remover quando o usuário sinalizar
-  const podeEditarMesAnterior = hoje.getDate() < 5 || profile?.unidade_nome === "Tatuapé";
+  const mesAnteriorLiberado = podeEditarMesAnterior(profile?.unidade_nome, hoje);
   // Segue o mês da data selecionada no formulário (pode ser o mês anterior,
   // liberado até o dia 5) em vez de travar no mês corrente do calendário.
   const mesReferencia = dataSelecionada ?? hoje;
@@ -97,11 +96,11 @@ export default function FormularioDiario() {
       // ponytail: janela permitida = mês atual até dez/ano corrente + mês anterior até o dia 4
       const isMesAtualOuFuturo = !isBefore(date, inicioMesAtual) && isSameYear(date, hoje);
       const isMesAnteriorLiberado =
-        podeEditarMesAnterior && !isBefore(date, inicioMesAnterior) && isBefore(date, inicioMesAtual);
+        mesAnteriorLiberado && !isBefore(date, inicioMesAnterior) && isBefore(date, inicioMesAtual);
       const isPermitido = isMesAtualOuFuturo || isMesAnteriorLiberado;
       return isWeekend || isHoliday || !isPermitido;
     },
-    [hoje, inicioMesAtual, inicioMesAnterior, podeEditarMesAnterior]
+    [hoje, inicioMesAtual, inicioMesAnterior, mesAnteriorLiberado]
   );
 
   useEffect(() => {
@@ -267,11 +266,11 @@ export default function FormularioDiario() {
                     disabled={isDesabilitado}
                     locale={ptBR}
                     defaultMonth={startOfMonth(hoje)}
-                    fromMonth={podeEditarMesAnterior ? inicioMesAnterior : inicioMesAtual}
+                    fromMonth={mesAnteriorLiberado ? inicioMesAnterior : inicioMesAtual}
                     toMonth={endOfYear(hoje)}
                   />
                   <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                    {podeEditarMesAnterior
+                    {mesAnteriorLiberado
                       ? `Mês anterior (até o dia 4) e mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`
                       : `Dias úteis do mês atual em diante habilitados (até dez/${format(hoje, "yyyy")}).`}
                   </div>
