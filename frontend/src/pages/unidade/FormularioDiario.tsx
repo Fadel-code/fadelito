@@ -66,7 +66,8 @@ export default function FormularioDiario() {
   const hoje = new Date();
   const inicioMesAtual = startOfMonth(hoje);
   const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
-  const podeEditarMesAnterior = hoje.getDate() < 5;
+  // ponytail: liberação temporária pedida p/ Tatuapé, remover quando o usuário sinalizar
+  const podeEditarMesAnterior = hoje.getDate() < 5 || profile?.unidade_nome === "Tatuapé";
   // Segue o mês da data selecionada no formulário (pode ser o mês anterior,
   // liberado até o dia 5) em vez de travar no mês corrente do calendário.
   const mesReferencia = dataSelecionada ?? hoje;
