@@ -141,8 +141,10 @@ export default function Desfechos() {
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
-  // Leads marcados como "removido" (não são desta unidade) saem da lista de aguardando desfecho
-  const leadsPendentes = leads.filter((l) => eventos.get(l.id)?.tipo !== "removido");
+  // Leads que já têm evento registrado (qualquer tipo) saem da lista de aguardando
+  // desfecho — inclusive "Visitou"/"Em negociação", cujo stage no CRM continua elegível
+  // para permitir decisão futura, mas a atualização passa a ser feita em Desfechos Realizados.
+  const leadsPendentes = leads.filter((l) => !eventos.has(l.id));
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -201,7 +203,6 @@ export default function Desfechos() {
           <div className="space-y-3">
             {leadsPendentes.map((lead) => {
               const linha = estado[lead.id] ?? { tipo: "", observacao: "" };
-              const ev = eventos.get(lead.id);
               const isSalvando = salvando === lead.id;
               return (
                 <div key={lead.id} className="card p-5">
@@ -238,11 +239,6 @@ export default function Desfechos() {
                           </span>
                         )}
                       </div>
-                      {ev?.synced_at && (
-                        <p className="mt-1 text-[11px] text-emerald-600">
-                          ✓ registrado em {format(new Date(ev.synced_at), "dd/MM HH:mm")}
-                        </p>
-                      )}
                     </div>
 
                     <div className="flex-1 min-w-[260px]">
@@ -279,7 +275,7 @@ export default function Desfechos() {
                         onClick={() => handleSalvar(lead)}
                         disabled={!linha.tipo || !linha.observacao.trim() || isSalvando}
                       >
-                        {isSalvando ? "Salvando..." : ev ? "Atualizar" : "Registrar"}
+                        {isSalvando ? "Salvando..." : "Registrar"}
                       </Button>
                       <Button
                         variant="ghost"
