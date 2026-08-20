@@ -339,7 +339,7 @@ export default function Desfechos() {
             <DialogTitle>Remover lead do desfecho</DialogTitle>
             <DialogDescription>
               <strong>{modalRemover?.lead.name}</strong> vai sair da lista de desfechos desta unidade.
-              Descreva o motivo (ex.: "visitou a unidade Klabin, não esta").
+              Descreva o motivo (ex.: "visitou a unidade Moema, não esta").
             </DialogDescription>
           </DialogHeader>
           <textarea

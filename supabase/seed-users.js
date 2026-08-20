@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Seed — Cria os 35 usuários de unidade + 1 de marketing via Supabase Admin API
+ * Seed — Cria os 31 usuários de unidade + 1 de marketing via Supabase Admin API
  *
  * Uso:
  *   SUPABASE_URL=https://xxxx.supabase.co \
@@ -17,13 +17,13 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 }
 
 const UNIDADES = [
-  "Aclamação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Brooklin",
-  "Campinas", "Campo Belo", "Granja", "Guarulhos", "Higienópolis",
-  "Indianópolis", "Ipiranga", "Jardins", "Klabin", "Lapa",
-  "Marajoara", "Moema", "Mooca", "Osasco", "Panamby",
-  "Paraíso", "Perdizes", "Pinheiros", "Piracicaba", "Portal",
-  "Real Parque", "Santo André", "São Caetano", "Saúde", "Tatuapé",
-  "Vila Gumercindo", "Vila Leopoldina", "Vila Madalena", "Vila Mariana", "Vila Sônia",
+  "Aclamação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Campinas",
+  "Campo Belo", "Granja", "Guarulhos", "Higienópolis", "Indianópolis",
+  "Ipiranga", "Jardins", "Lapa", "Marajoara", "Moema",
+  "Mooca", "Osasco", "Panamby", "Paraíso", "Pinheiros",
+  "Piracicaba", "Portal", "Santo André", "São Caetano", "Saúde",
+  "Tatuapé", "Vila Gumercindo", "Vila Leopoldina", "Vila Madalena", "Vila Mariana",
+  "Vila Sônia",
 ];
 
 const SENHA_PADRAO = "Fadelito2026!";
