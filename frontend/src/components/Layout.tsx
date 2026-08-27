@@ -16,9 +16,12 @@ import {
   X,
   Menu,
   BookOpen,
+  Repeat,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
+import { useRematriculaProgresso } from "../hooks/useRematriculaProgresso";
+import { REMATRICULA_META } from "../types";
 import { cn } from "../lib/utils";
 import {
   Dialog,
@@ -46,11 +49,13 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  emphasize?: boolean;
 }
 
 const NAV_UNIDADE: NavItem[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
+  { to: "/unidade/rematricula", label: "Rematrícula 2026", icon: Repeat, emphasize: true },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
   { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
@@ -58,6 +63,7 @@ const NAV_UNIDADE: NavItem[] = [
 const NAV_MARKETING: NavItem[] = [
   { to: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/marketing/desfechos", label: "Desfechos", icon: CalendarCheck },
+  { to: "/marketing/rematricula", label: "Rematrícula 2026", icon: Repeat, emphasize: true },
   { to: "/marketing/graficos", label: "Gráficos", icon: BarChart2 },
   { to: "/marketing/ranking", label: "Ranking", icon: Trophy },
   { to: "/marketing/usuarios", label: "Usuários", icon: Users },
@@ -69,6 +75,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
+  const rematriculaPct = useRematriculaProgresso();
 
   const [bannerVisivel, setBannerVisivel] = useState(
     () => role === "unidade" && !localStorage.getItem(BANNER_KEY)
@@ -193,7 +200,9 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const showBadge = item.to === "/unidade/desfechos" && pendingCount > 0;
+            const showPendingBadge = item.to === "/unidade/desfechos" && pendingCount > 0;
+            const showRematriculaBadge =
+              item.to.endsWith("/rematricula") && rematriculaPct !== null && rematriculaPct < REMATRICULA_META;
             return (
               <NavLink
                 key={item.to}
@@ -201,18 +210,31 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                 onClick={() => setMobileNavAberto(false)}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                     isActive
-                      ? "bg-primary-500 text-white"
-                      : "text-white/50 hover:bg-white/10 hover:text-white"
+                      ? "bg-primary-500 text-white font-medium"
+                      : item.emphasize
+                        ? "border border-sun/25 bg-sun/10 text-sun-soft font-semibold hover:bg-sun/20 hover:text-sun"
+                        : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
                   )
                 }
               >
                 <item.icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                {showBadge && (
+                {showPendingBadge && (
                   <span className="ml-auto bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {pendingCount}
+                  </span>
+                )}
+                {showRematriculaBadge && (
+                  <span
+                    title="% de contratos assinados — abaixo da meta de 90%"
+                    className={cn(
+                      "ml-auto text-[10px] font-bold rounded-full h-[18px] flex items-center justify-center px-1.5",
+                      rematriculaPct! < REMATRICULA_META * 0.7 ? "bg-red-500 text-white" : "bg-sun-soft text-[#001233]"
+                    )}
+                  >
+                    {Math.round(rematriculaPct! * 100)}%
                   </span>
                 )}
               </NavLink>

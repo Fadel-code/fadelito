@@ -225,6 +225,54 @@ export interface EventoLead {
 }
 
 // ============================================================
+// Rematrícula 2026 — acompanhamento por unidade
+// ============================================================
+
+export type RematriculaStatus = "pendente" | "rematriculado" | "nao_rematriculado";
+
+export const REMATRICULA_META = 0.9; // meta de 90% de rematriculados
+
+export interface RematriculaAluno {
+  id: string;
+  unidade_id: string;
+  nome: string;
+  turma: string | null;
+  contrato_assinado: boolean;
+  motivo: string | null;
+  quem_contatou: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: { unidade_nome: string | null };
+}
+
+export interface RematriculaKpis {
+  total: number;
+  rematriculados: number;
+  naoRematriculados: number;
+  pendentes: number;
+  pct: number; // 0-1, rematriculados / total
+}
+
+// Contrato assinado = rematriculado. Sem contrato, mas com motivo registrado = não
+// rematriculou (família já decidiu). Sem nenhum dos dois = ainda em aberto.
+export function derivarStatusRematricula(a: { contrato_assinado: boolean; motivo: string | null }): RematriculaStatus {
+  if (a.contrato_assinado) return "rematriculado";
+  if (a.motivo && a.motivo.trim()) return "nao_rematriculado";
+  return "pendente";
+}
+
+export function calcularKpisRematricula(
+  alunos: { contrato_assinado: boolean; motivo: string | null }[]
+): RematriculaKpis {
+  const total = alunos.length;
+  const rematriculados = alunos.filter((a) => a.contrato_assinado).length;
+  const naoRematriculados = alunos.filter((a) => derivarStatusRematricula(a) === "nao_rematriculado").length;
+  const pendentes = total - rematriculados - naoRematriculados;
+  const pct = total > 0 ? rematriculados / total : 0;
+  return { total, rematriculados, naoRematriculados, pendentes, pct };
+}
+
+// ============================================================
 // Assistente Fadelito — biblioteca de protocolos
 // ============================================================
 
