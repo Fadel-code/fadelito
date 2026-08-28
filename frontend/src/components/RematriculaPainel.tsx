@@ -1,7 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
-import MetaGauge from "./MetaGauge";
 import { Button } from "./ui/button";
 
 const STATUS_PILL: Record<string, string> = {
@@ -90,10 +89,9 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
 
   return (
     <div className="space-y-6">
-      {/* Hero: meta + indicadores */}
-      <div className="card p-6 flex flex-col sm:flex-row items-center gap-6">
-        <MetaGauge pct={kpis.pct} label="Meta 90%" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1 w-full">
+      {/* Hero: indicadores — meta da rede fica só na visão de marketing/supervisão */}
+      <div className="card p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <div className="flex items-center gap-1.5 text-gray-400">
               <Users className="h-3.5 w-3.5" />
