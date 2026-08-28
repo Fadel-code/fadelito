@@ -26,7 +26,6 @@ const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
-const Rematricula = lazy(() => import("./pages/unidade/Rematricula"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
 
 function PageLoader() {
@@ -157,7 +156,6 @@ export default function App() {
           <Route path="formulario" element={<FormularioDiario />} />
           <Route path="historico" element={<HistoricoMensal />} />
           <Route path="desfechos" element={<Desfechos />} />
-          <Route path="rematricula" element={<Rematricula />} />
           <Route path="assistente" element={<AssistenteFadelito />} />
           <Route index element={<Navigate to="formulario" replace />} />
         </Route>

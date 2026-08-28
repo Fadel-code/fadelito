@@ -55,7 +55,6 @@ interface NavItem {
 const NAV_UNIDADE: NavItem[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
-  { to: "/unidade/rematricula", label: "Rematrícula 2026", icon: Repeat, emphasize: true },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
   { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
