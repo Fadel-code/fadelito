@@ -1,8 +1,11 @@
-import { RefreshCw, Users, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { RefreshCw, Users, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
+import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
+import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
 import { calcularKpisRematricula, REMATRICULA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
 import MetaGauge from "../../components/MetaGauge";
+import RematriculaPainel from "../../components/RematriculaPainel";
 import { Button } from "../../components/ui/button";
 
 interface LinhaUnidade {
@@ -37,7 +40,9 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 }
 
 export default function RematriculaMarketing() {
+  const { profile } = useAuth();
   const { alunos, loading, carregar } = useRematricula();
+  const preview = useRematriculaPreview();
 
   const kpisRede = calcularKpisRematricula(alunos);
   const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
@@ -137,6 +142,20 @@ export default function RematriculaMarketing() {
           </table>
         )}
       </div>
+
+      {/* Prévia — exatamente a tela que a unidade vê, isolada num "sandbox" pra não passar por dado real */}
+      {profile?.role === "supervisao" && (
+        <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Eye className="h-4 w-4 text-primary-600" />
+            <p className="text-xs font-bold text-primary-700 uppercase tracking-wide">Prévia — tela da unidade</p>
+          </div>
+          <p className="text-gray-500 text-sm mb-5">
+            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas. Os dados abaixo são só de exemplo — nada aqui é salvo.
+          </p>
+          <RematriculaPainel unidadeId="previa" {...preview} />
+        </div>
+      )}
     </div>
   );
 }
