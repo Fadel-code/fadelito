@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone } from "lucide-react";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { calcularKpisRematricula, derivarStatusRematricula } from "../../types";
@@ -17,17 +17,19 @@ const STATUS_LABEL: Record<string, string> = {
   nao_rematriculado: "Não rematriculou",
 };
 
-function StepBadge({ n, active }: { n: number; active?: boolean }) {
+function StepBadge({ n }: { n: number }) {
   return (
-    <span
-      className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-        active ? "bg-primary-500 text-white" : "bg-gray-200 text-gray-500"
-      }`}
-    >
+    <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-500 text-sm font-bold text-white">
       {n}
     </span>
   );
 }
+
+const ETAPAS = [
+  { icon: UserPlus, titulo: "Cadastre o aluno", desc: "Nome e turma / período de 2025" },
+  { icon: Phone, titulo: "Registre o contato", desc: "Quem falou com a família" },
+  { icon: FileCheck, titulo: "Confirme o desfecho", desc: "Contrato assinado, ou o motivo se não renovar" },
+] as const;
 
 interface LinhaState {
   contratoAssinado: boolean;
@@ -123,69 +125,57 @@ export default function Rematricula() {
         </div>
       </div>
 
-      {/* Como funciona — as 3 etapas, para não escondermos as próximas até o aluno existir */}
+      {/* Como funciona — explicação pura, sem elementos interativos falsos */}
       <div className="card p-6">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Como funciona</p>
-        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
-          {/* Etapa 1 — ativa: o formulário de verdade */}
-          <div className="sm:pr-6 pb-5 sm:pb-0">
-            <div className="flex items-center gap-2">
-              <StepBadge n={1} active />
-              <UserPlus className="h-3.5 w-3.5 text-primary-500" />
-              <p className="font-semibold text-gray-800 text-sm">Cadastre o aluno</p>
+        <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-5">Como funciona a rematrícula</p>
+        <div className="grid sm:grid-cols-3 gap-6 sm:gap-4">
+          {ETAPAS.map((etapa, i) => (
+            <div key={etapa.titulo} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
+              {i < ETAPAS.length - 1 && (
+                <ChevronRight className="hidden sm:block absolute top-2.5 -right-5 h-4 w-4 text-gray-300" aria-hidden="true" />
+              )}
+              <StepBadge n={i + 1} />
+              <div className="sm:mt-1">
+                <div className="flex items-center gap-1.5 sm:justify-center">
+                  <etapa.icon className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
+                  <p className="font-semibold text-gray-800 text-sm">{etapa.titulo}</p>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">{etapa.desc}</p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Nome e turma / período de 2025</p>
-            <form onSubmit={handleAdicionar} className="space-y-2">
-              <input
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Nome completo"
-              />
-              <input
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={turma}
-                onChange={(e) => setTurma(e.target.value)}
-                placeholder="Ex: Jardim - manhã"
-              />
-              <Button type="submit" disabled={!nome.trim() || adicionando} className="w-full justify-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                {adicionando ? "Adicionando..." : "Adicionar aluno"}
-              </Button>
-            </form>
-          </div>
-
-          {/* Etapa 2 — prévia (some do jeito real assim que o aluno é cadastrado) */}
-          <div className="sm:px-6 pt-5 sm:pt-0 pb-5 sm:pb-0 opacity-60">
-            <div className="flex items-center gap-2">
-              <StepBadge n={2} />
-              <Phone className="h-3.5 w-3.5 text-gray-400" />
-              <p className="font-semibold text-gray-800 text-sm">Registre o contato</p>
-            </div>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Quem falou com a família</p>
-            <input
-              disabled
-              placeholder="Quem fez contato com a família"
-              className="w-full rounded-md border border-dashed border-gray-300 bg-gray-50 p-2 text-sm text-gray-400 cursor-not-allowed"
-            />
-            <p className="text-[11px] text-gray-400 mt-2">Aparece na lista assim que o aluno for cadastrado</p>
-          </div>
-
-          {/* Etapa 3 — prévia */}
-          <div className="sm:pl-6 pt-5 opacity-60">
-            <div className="flex items-center gap-2">
-              <StepBadge n={3} />
-              <FileCheck className="h-3.5 w-3.5 text-gray-400" />
-              <p className="font-semibold text-gray-800 text-sm">Confirme o desfecho</p>
-            </div>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Contrato assinado, ou o motivo se a família não renovar</p>
-            <label className="flex items-center gap-2 text-sm text-gray-400 cursor-not-allowed w-fit">
-              <input type="checkbox" disabled className="h-4 w-4 rounded border-gray-300" />
-              Contrato assinado
-            </label>
-            <p className="text-[11px] text-gray-400 mt-2">Aparece na lista assim que o aluno for cadastrado</p>
-          </div>
+          ))}
         </div>
+      </div>
+
+      {/* Adicionar aluno — a ação de verdade, separada da explicação acima */}
+      <div className="card p-6">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
+        <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1">
+            <label htmlFor="rematricula-nome" className="sr-only">Nome completo</label>
+            <input
+              id="rematricula-nome"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Nome completo"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="rematricula-turma" className="sr-only">Turma / período</label>
+            <input
+              id="rematricula-turma"
+              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={turma}
+              onChange={(e) => setTurma(e.target.value)}
+              placeholder="Ex: Jardim - manhã"
+            />
+          </div>
+          <Button type="submit" disabled={!nome.trim() || adicionando} className="justify-center gap-2 sm:w-auto">
+            <UserPlus className="h-4 w-4" />
+            {adicionando ? "Adicionando..." : "Adicionar aluno"}
+          </Button>
+        </form>
       </div>
 
       {/* Lista */}
