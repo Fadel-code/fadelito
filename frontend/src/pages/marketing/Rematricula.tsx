@@ -151,7 +151,7 @@ export default function RematriculaMarketing() {
             <p className="text-xs font-bold text-primary-700 uppercase tracking-wide">Prévia — tela da unidade</p>
           </div>
           <p className="text-gray-500 text-sm mb-5">
-            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas. Os dados abaixo são só de exemplo — nada aqui é salvo.
+            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas. Dados de exemplo abaixo.
           </p>
           <RematriculaPainel unidadeId="previa" {...preview} />
         </div>
