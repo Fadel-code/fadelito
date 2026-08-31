@@ -1,5 +1,5 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight } from "lucide-react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight, Search, X } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
 import { Button } from "./ui/button";
 
@@ -13,6 +13,10 @@ const STATUS_LABEL: Record<string, string> = {
   rematriculado: "Rematriculado",
   nao_rematriculado: "Não rematriculou",
 };
+
+function normalizar(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -32,6 +36,7 @@ interface LinhaState {
   contratoAssinado: boolean;
   motivo: string;
   quemContatou: string;
+  observacao: string;
 }
 
 interface RematriculaPainelProps {
@@ -40,7 +45,7 @@ interface RematriculaPainelProps {
   loading: boolean;
   salvando: string | null;
   adicionar: (unidadeId: string, nome: string, turma: string) => Promise<boolean>;
-  atualizar: (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string) => Promise<boolean>;
+  atualizar: (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string, observacao: string) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
 }
 
@@ -51,13 +56,26 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
   const [estado, setEstado] = useState<Record<string, LinhaState>>({});
+  const [busca, setBusca] = useState("");
 
   const meus = alunos.filter((a) => a.unidade_id === unidadeId);
+
+  const filtrados = useMemo(() => {
+    const termo = normalizar(busca.trim());
+    if (!termo) return meus;
+    return meus.filter((a) => normalizar(a.nome).includes(termo));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meus, busca]);
 
   useEffect(() => {
     const init: Record<string, LinhaState> = {};
     for (const a of meus) {
-      init[a.id] = { contratoAssinado: a.contrato_assinado, motivo: a.motivo ?? "", quemContatou: a.quem_contatou ?? "" };
+      init[a.id] = {
+        contratoAssinado: a.contrato_assinado,
+        motivo: a.motivo ?? "",
+        quemContatou: a.quem_contatou ?? "",
+        observacao: a.observacao ?? "",
+      };
     }
     setEstado(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,7 +102,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   async function handleSalvar(id: string) {
     const linha = estado[id];
     if (!linha) return;
-    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou);
+    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao);
   }
 
   return (
@@ -189,72 +207,109 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           Adicione o primeiro aluno acima para começar a acompanhar a rematrícula.
         </div>
       ) : (
-        <div className="space-y-3">
-          {meus.map((a) => {
-            const linha = estado[a.id] ?? {
-              contratoAssinado: a.contrato_assinado,
-              motivo: a.motivo ?? "",
-              quemContatou: a.quem_contatou ?? "",
-            };
-            const isSalvando = salvando === a.id;
-            const alterado =
-              linha.contratoAssinado !== a.contrato_assinado ||
-              linha.motivo !== (a.motivo ?? "") ||
-              linha.quemContatou !== (a.quem_contatou ?? "");
-            const statusAtual = derivarStatusRematricula(a);
-            return (
-              <div key={a.id} className="card p-5">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="min-w-[180px]">
-                    <p className="font-semibold text-gray-900">{a.nome}</p>
-                    {a.turma && <p className="text-xs text-gray-500 mt-0.5">{a.turma}</p>}
-                    <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[statusAtual]}`}>
-                      {STATUS_LABEL[statusAtual]}
-                    </span>
-                  </div>
+        <div className="card p-4 sm:p-6">
+          <div className="relative mb-4">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder={`Buscar entre ${meus.length} alunos pelo nome...`}
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              aria-label="Buscar aluno pelo nome"
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                aria-label="Limpar busca"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
-                  <div className="flex-1 min-w-[280px]">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                        checked={linha.contratoAssinado}
-                        onChange={(e) => setLinha(a.id, { contratoAssinado: e.target.checked })}
-                      />
-                      <FileCheck className="h-3.5 w-3.5 text-gray-400" />
-                      Contrato assinado
-                    </label>
-                    <div className="mt-2 grid sm:grid-cols-2 gap-2">
-                      <input
-                        className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="Quem fez contato com a família"
-                        value={linha.quemContatou}
-                        onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
-                      />
-                      {!linha.contratoAssinado && (
-                        <input
-                          className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          placeholder="Motivo da não rematrícula (se já decidido)"
-                          value={linha.motivo}
-                          onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
-                        />
-                      )}
+          {filtrados.length === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-400">Nenhum aluno encontrado para "{busca}".</p>
+          ) : (
+            <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
+              {filtrados.map((a) => {
+                const linha = estado[a.id] ?? {
+                  contratoAssinado: a.contrato_assinado,
+                  motivo: a.motivo ?? "",
+                  quemContatou: a.quem_contatou ?? "",
+                  observacao: a.observacao ?? "",
+                };
+                const isSalvando = salvando === a.id;
+                const alterado =
+                  linha.contratoAssinado !== a.contrato_assinado ||
+                  linha.motivo !== (a.motivo ?? "") ||
+                  linha.quemContatou !== (a.quem_contatou ?? "") ||
+                  linha.observacao !== (a.observacao ?? "");
+                const statusAtual = derivarStatusRematricula(a);
+                return (
+                  <div key={a.id} className="card p-5">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="min-w-[180px]">
+                        <p className="font-semibold text-gray-900">{a.nome}</p>
+                        {a.turma && <p className="text-xs text-gray-500 mt-0.5">{a.turma}</p>}
+                        <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[statusAtual]}`}>
+                          {STATUS_LABEL[statusAtual]}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-[280px]">
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                            checked={linha.contratoAssinado}
+                            onChange={(e) => setLinha(a.id, { contratoAssinado: e.target.checked })}
+                          />
+                          <FileCheck className="h-3.5 w-3.5 text-gray-400" />
+                          Contrato assinado
+                        </label>
+                        <div className="mt-2 grid sm:grid-cols-2 gap-2">
+                          <input
+                            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Quem fez contato com a família"
+                            value={linha.quemContatou}
+                            onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
+                          />
+                          {linha.contratoAssinado ? (
+                            <input
+                              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Observação (opcional)"
+                              value={linha.observacao}
+                              onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
+                            />
+                          ) : (
+                            <input
+                              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Motivo da não rematrícula (se já decidido)"
+                              value={linha.motivo}
+                              onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-stretch gap-1.5">
+                        <Button onClick={() => handleSalvar(a.id)} disabled={!alterado || isSalvando} size="sm">
+                          {isSalvando ? "Salvando..." : "Salvar"}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => remover(a.id)} disabled={isSalvando} className="gap-1.5 text-gray-400 hover:text-red-500">
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remover
+                        </Button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-col items-stretch gap-1.5">
-                    <Button onClick={() => handleSalvar(a.id)} disabled={!alterado || isSalvando} size="sm">
-                      {isSalvando ? "Salvando..." : "Salvar"}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => remover(a.id)} disabled={isSalvando} className="gap-1.5 text-gray-400 hover:text-red-500">
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Remover
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -57,7 +57,7 @@ export function useRematricula() {
   );
 
   const atualizar = useCallback(
-    async (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string) => {
+    async (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string, observacao: string) => {
       setSalvando(id);
       try {
         const { error } = await supabase
@@ -66,6 +66,7 @@ export function useRematricula() {
             contrato_assinado: contratoAssinado,
             motivo: contratoAssinado ? null : motivo.trim() || null,
             quem_contatou: quemContatou.trim() || null,
+            observacao: observacao.trim() || null,
           })
           .eq("id", id);
         if (error) throw error;

@@ -240,6 +240,7 @@ export interface RematriculaAluno {
   contrato_assinado: boolean;
   motivo: string | null;
   quem_contatou: string | null;
+  observacao: string | null;
   created_at: string;
   updated_at: string;
   profiles?: { unidade_nome: string | null };

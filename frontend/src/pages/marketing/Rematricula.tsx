@@ -42,7 +42,10 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const { alunos, loading, carregar } = useRematricula();
-  const preview = useRematriculaPreview();
+  // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
+  // a tela de verdade antes de liberar pra unidades. Edição fica só local (não grava
+  // no Supabase — a policy de update já bloqueia escrita de quem não é a própria unidade).
+  const preview = useRematriculaPreview(alunos.length ? alunos : undefined);
 
   const kpisRede = calcularKpisRematricula(alunos);
   const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
@@ -143,7 +146,9 @@ export default function RematriculaMarketing() {
         )}
       </div>
 
-      {/* Prévia — exatamente a tela que a unidade vê, isolada num "sandbox" pra não passar por dado real */}
+      {/* Prévia — a tela que a unidade vai ver, semeada com dados reais só pra a
+          supervisão testar antes de liberar pra unidades. Edição fica local (não grava
+          no Supabase — a policy de update já bloqueia escrita de quem não é a própria unidade). */}
       {profile?.role === "supervisao" && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -151,9 +156,10 @@ export default function RematriculaMarketing() {
             <p className="text-xs font-bold text-primary-700 uppercase tracking-wide">Prévia — tela da unidade</p>
           </div>
           <p className="text-gray-500 text-sm mb-5">
-            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas. Dados de exemplo abaixo.
+            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas.
+            Dados reais abaixo, só pra teste — edições feitas aqui não são salvas.
           </p>
-          <RematriculaPainel unidadeId="previa" {...preview} />
+          <RematriculaPainel unidadeId={preview.alunos[0]?.unidade_id ?? "previa"} {...preview} />
         </div>
       )}
     </div>
