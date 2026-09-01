@@ -228,9 +228,14 @@ export interface EventoLead {
 // Rematrícula 2026 — acompanhamento por unidade
 // ============================================================
 
-export type RematriculaStatus = "pendente" | "rematriculado" | "nao_rematriculado";
+export type RematriculaStatus = "pendente" | "negociando" | "rematriculado" | "nao_rematriculado";
 
 export const REMATRICULA_META = 0.9; // meta de 90% de rematriculados
+
+export interface RematriculaHistoricoEntry {
+  data: string; // ISO
+  texto: string;
+}
 
 export interface RematriculaAluno {
   id: string;
@@ -241,6 +246,9 @@ export interface RematriculaAluno {
   motivo: string | null;
   quem_contatou: string | null;
   observacao: string | null;
+  negociando: boolean;
+  inadimplente: boolean;
+  negociacao_historico: RematriculaHistoricoEntry[];
   created_at: string;
   updated_at: string;
   profiles?: { unidade_nome: string | null };
@@ -254,16 +262,18 @@ export interface RematriculaKpis {
   pct: number; // 0-1, rematriculados / total
 }
 
-// Contrato assinado = rematriculado. Sem contrato, mas com motivo registrado = não
-// rematriculou (família já decidiu). Sem nenhum dos dois = ainda em aberto.
-export function derivarStatusRematricula(a: { contrato_assinado: boolean; motivo: string | null }): RematriculaStatus {
+// Contrato assinado = rematriculado. Senão, negociando = família ainda decidindo.
+// Senão, com motivo registrado = não rematriculou (família já decidiu). Sem nenhum
+// dos três = ainda em aberto.
+export function derivarStatusRematricula(a: { contrato_assinado: boolean; motivo: string | null; negociando: boolean }): RematriculaStatus {
   if (a.contrato_assinado) return "rematriculado";
+  if (a.negociando) return "negociando";
   if (a.motivo && a.motivo.trim()) return "nao_rematriculado";
   return "pendente";
 }
 
 export function calcularKpisRematricula(
-  alunos: { contrato_assinado: boolean; motivo: string | null }[]
+  alunos: { contrato_assinado: boolean; motivo: string | null; negociando: boolean }[]
 ): RematriculaKpis {
   const total = alunos.length;
   const rematriculados = alunos.filter((a) => a.contrato_assinado).length;

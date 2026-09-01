@@ -54,7 +54,7 @@ export default function RematriculaMarketing() {
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2026</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
           <p className="text-gray-500 text-sm mt-1">Acompanhamento da rematrícula em toda a rede</p>
         </div>
         <Button variant="outline" size="icon" onClick={carregar} title="Atualizar" aria-label="Atualizar">

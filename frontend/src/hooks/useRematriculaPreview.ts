@@ -29,6 +29,9 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
         motivo: null,
         quem_contatou: null,
         observacao: null,
+        negociando: false,
+        inadimplente: false,
+        negociacao_historico: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -36,29 +39,53 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
     return true;
   }, []);
 
-  const atualizar = useCallback(async (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string, observacao: string) => {
-    setSalvando(id);
-    setAlunos((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              contrato_assinado: contratoAssinado,
-              motivo: contratoAssinado ? null : motivo.trim() || null,
-              quem_contatou: quemContatou.trim() || null,
-              observacao: observacao.trim() || null,
-            }
-          : a
-      )
-    );
-    setSalvando(null);
-    return true;
-  }, []);
+  const atualizar = useCallback(
+    async (
+      id: string,
+      contratoAssinado: boolean,
+      motivo: string,
+      quemContatou: string,
+      observacao: string,
+      negociando: boolean,
+      inadimplente: boolean
+    ) => {
+      setSalvando(id);
+      setAlunos((prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                contrato_assinado: contratoAssinado,
+                motivo: contratoAssinado ? null : motivo.trim() || null,
+                quem_contatou: quemContatou.trim() || null,
+                observacao: observacao.trim() || null,
+                negociando,
+                inadimplente,
+              }
+            : a
+        )
+      );
+      setSalvando(null);
+      return true;
+    },
+    []
+  );
 
   const remover = useCallback(async (id: string) => {
     setAlunos((prev) => prev.filter((a) => a.id !== id));
     return true;
   }, []);
 
-  return { alunos, loading: false, salvando, adicionar, atualizar, remover };
+  const adicionarHistorico = useCallback(async (id: string, texto: string) => {
+    setAlunos((prev) =>
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, negociacao_historico: [...(a.negociacao_historico ?? []), { data: new Date().toISOString(), texto: texto.trim() }] }
+          : a
+      )
+    );
+    return true;
+  }, []);
+
+  return { alunos, loading: false, salvando, adicionar, atualizar, remover, adicionarHistorico };
 }

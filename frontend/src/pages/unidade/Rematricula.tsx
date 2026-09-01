@@ -9,7 +9,7 @@ export default function Rematricula() {
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2026</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
         <p className="text-gray-500 text-sm mt-1">
           {profile?.unidade_nome} — acompanhe a rematrícula dos alunos da unidade.
         </p>

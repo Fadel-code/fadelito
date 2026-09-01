@@ -57,7 +57,15 @@ export function useRematricula() {
   );
 
   const atualizar = useCallback(
-    async (id: string, contratoAssinado: boolean, motivo: string, quemContatou: string, observacao: string) => {
+    async (
+      id: string,
+      contratoAssinado: boolean,
+      motivo: string,
+      quemContatou: string,
+      observacao: string,
+      negociando: boolean,
+      inadimplente: boolean
+    ) => {
       setSalvando(id);
       try {
         const { error } = await supabase
@@ -67,6 +75,8 @@ export function useRematricula() {
             motivo: contratoAssinado ? null : motivo.trim() || null,
             quem_contatou: quemContatou.trim() || null,
             observacao: observacao.trim() || null,
+            negociando,
+            inadimplente,
           })
           .eq("id", id);
         if (error) throw error;
@@ -96,5 +106,23 @@ export function useRematricula() {
     [carregar]
   );
 
-  return { alunos, loading, salvando, carregar, adicionar, atualizar, remover };
+  // Append-only: soma um registro datado ao histórico de negociação e salva na hora,
+  // separado do botão "Salvar" da linha pra não se perder junto com edições em rascunho.
+  const adicionarHistorico = useCallback(
+    async (id: string, texto: string) => {
+      const aluno = alunos.find((a) => a.id === id);
+      if (!aluno) return false;
+      const historico = [...(aluno.negociacao_historico ?? []), { data: new Date().toISOString(), texto: texto.trim() }];
+      const { error } = await supabase.from("rematricula_alunos").update({ negociacao_historico: historico }).eq("id", id);
+      if (error) {
+        toast.error("Erro ao registrar histórico");
+        return false;
+      }
+      await carregar();
+      return true;
+    },
+    [alunos, carregar]
+  );
+
+  return { alunos, loading, salvando, carregar, adicionar, atualizar, remover, adicionarHistorico };
 }
