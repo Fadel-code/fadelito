@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight, Search, X } from "lucide-react";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight, Search, X, MessageCircle, AlertTriangle } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
 import { Button } from "./ui/button";
 
@@ -139,7 +139,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     <div className="space-y-6">
       {/* Hero: indicadores — meta da rede fica só na visão de marketing/supervisão */}
       <div className="card p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
             <div className="flex items-center gap-1.5 text-gray-400">
               <Users className="h-3.5 w-3.5" />
@@ -155,6 +155,13 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
             <p className="text-2xl font-bold text-green-600 mt-1">{kpis.rematriculados}</p>
           </div>
           <div>
+            <div className="flex items-center gap-1.5 text-blue-500">
+              <MessageCircle className="h-3.5 w-3.5" />
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Em conversa</p>
+            </div>
+            <p className="text-2xl font-bold text-blue-500 mt-1">{kpis.negociando}</p>
+          </div>
+          <div>
             <div className="flex items-center gap-1.5 text-red-500">
               <XCircle className="h-3.5 w-3.5" />
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Não rematriculados</p>
@@ -167,6 +174,13 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Pendentes</p>
             </div>
             <p className="text-2xl font-bold text-amber-500 mt-1">{kpis.pendentes}</p>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-orange-500">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Inadimplentes</p>
+            </div>
+            <p className="text-2xl font-bold text-orange-500 mt-1">{kpis.inadimplentes}</p>
           </div>
         </div>
       </div>
@@ -313,7 +327,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                               checked={linha.negociando}
                               onChange={(e) => setLinha(a.id, { negociando: e.target.checked })}
                             />
-                            Negociando com a família
+                            Ainda em conversa com a família
                           </label>
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input

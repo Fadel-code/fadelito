@@ -1,4 +1,4 @@
-import { RefreshCw, Users, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
+import { RefreshCw, Users, CheckCircle2, XCircle, Clock, Eye, MessageCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
@@ -65,7 +65,7 @@ export default function RematriculaMarketing() {
       {/* Hero: meta da rede + indicadores */}
       <div className="card p-6 flex flex-col sm:flex-row items-center gap-6 mb-6">
         <MetaGauge pct={kpisRede.pct} label="Meta 90%" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1 w-full">
           <div>
             <div className="flex items-center gap-1.5 text-gray-400">
               <Users className="h-3.5 w-3.5" />
@@ -81,6 +81,13 @@ export default function RematriculaMarketing() {
             <p className="text-2xl font-bold text-green-600 mt-1">{kpisRede.rematriculados}</p>
           </div>
           <div>
+            <div className="flex items-center gap-1.5 text-blue-500">
+              <MessageCircle className="h-3.5 w-3.5" />
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Em conversa</p>
+            </div>
+            <p className="text-2xl font-bold text-blue-500 mt-1">{kpisRede.negociando}</p>
+          </div>
+          <div>
             <div className="flex items-center gap-1.5 text-red-500">
               <XCircle className="h-3.5 w-3.5" />
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Não rematriculados</p>
@@ -93,6 +100,13 @@ export default function RematriculaMarketing() {
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Pendentes</p>
             </div>
             <p className="text-2xl font-bold text-amber-500 mt-1">{kpisRede.pendentes}</p>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-orange-500">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Inadimplentes</p>
+            </div>
+            <p className="text-2xl font-bold text-orange-500 mt-1">{kpisRede.inadimplentes}</p>
           </div>
         </div>
       </div>

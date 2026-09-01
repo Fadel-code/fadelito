@@ -258,6 +258,8 @@ export interface RematriculaKpis {
   total: number;
   rematriculados: number;
   naoRematriculados: number;
+  negociando: number;
+  inadimplentes: number;
   pendentes: number;
   pct: number; // 0-1, rematriculados / total
 }
@@ -273,14 +275,16 @@ export function derivarStatusRematricula(a: { contrato_assinado: boolean; motivo
 }
 
 export function calcularKpisRematricula(
-  alunos: { contrato_assinado: boolean; motivo: string | null; negociando: boolean }[]
+  alunos: { contrato_assinado: boolean; motivo: string | null; negociando: boolean; inadimplente?: boolean }[]
 ): RematriculaKpis {
   const total = alunos.length;
   const rematriculados = alunos.filter((a) => a.contrato_assinado).length;
   const naoRematriculados = alunos.filter((a) => derivarStatusRematricula(a) === "nao_rematriculado").length;
-  const pendentes = total - rematriculados - naoRematriculados;
+  const negociando = alunos.filter((a) => derivarStatusRematricula(a) === "negociando").length;
+  const inadimplentes = alunos.filter((a) => a.inadimplente).length;
+  const pendentes = total - rematriculados - naoRematriculados - negociando;
   const pct = total > 0 ? rematriculados / total : 0;
-  return { total, rematriculados, naoRematriculados, pendentes, pct };
+  return { total, rematriculados, naoRematriculados, negociando, inadimplentes, pendentes, pct };
 }
 
 // ============================================================
