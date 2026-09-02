@@ -68,7 +68,6 @@ const NAV_UNIDADE: NavEntry[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
-  { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
 
 const NAV_MARKETING: NavEntry[] = [
@@ -214,24 +213,25 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
           <p className="text-white/50 text-xs mt-1">
             {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
           </p>
-          {role === "marketing" && (
-            <NavLink
-              to="/marketing/protocolos"
-              onClick={() => setMobileNavAberto(false)}
-              className={({ isActive }) =>
-                cn(
-                  "mt-3 flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm font-bold transition-colors cursor-pointer",
-                  isActive ? "bg-sun text-ink" : "bg-sun/90 text-ink hover:bg-sun"
-                )
-              }
-            >
-              <BookOpen className="h-4 w-4 flex-shrink-0" />
-              <span className="flex-1">Assistente Fadelito</span>
-              <span className="text-[9px] font-bold uppercase tracking-wide bg-ink/15 text-ink rounded-full px-1.5 py-0.5">
-                Novo
-              </span>
-            </NavLink>
-          )}
+          <NavLink
+            to={role === "marketing" ? "/marketing/protocolos" : "/unidade/assistente"}
+            onClick={() => setMobileNavAberto(false)}
+            className={({ isActive }) =>
+              cn(
+                "mt-3 flex items-center gap-2.5 w-full rounded-xl px-3 py-3 text-sm font-bold cursor-pointer",
+                "shadow-md shadow-sun/20 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sun/30",
+                isActive ? "bg-sun text-ink" : "bg-sun/90 text-ink hover:bg-sun"
+              )
+            }
+          >
+            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-ink/10">
+              <BookOpen className="h-4 w-4" />
+            </span>
+            <span className="flex-1 leading-tight">Assistente Fadelito</span>
+            <span className="text-[9px] font-bold uppercase tracking-wide bg-ink text-sun-soft rounded-full px-1.5 py-0.5">
+              Novo
+            </span>
+          </NavLink>
         </div>
 
         {/* Nav */}
