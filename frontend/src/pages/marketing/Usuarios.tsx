@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { UserPlus, RefreshCw, KeyRound, Eye, EyeOff, Lock } from "lucide-react";
+import { useAuth } from "../../App";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../types";
 import { UNIDADES } from "../../types";
@@ -34,6 +36,7 @@ async function adminUpdatePassword(userId: string, password: string) {
 }
 
 export default function Usuarios() {
+  const { profile } = useAuth();
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
   const [gestores, setGestores] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,6 +168,12 @@ export default function Usuarios() {
         )}
       </td>
     );
+  }
+
+  // Supervisão tem a mesma hierarquia de leitura da unidade — gestão de usuários e
+  // senhas fica restrita a marketing, mesmo que a rota seja acessada direto pela URL.
+  if (profile?.role === "supervisao") {
+    return <Navigate to="/marketing/dashboard" replace />;
   }
 
   return (

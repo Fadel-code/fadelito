@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ClipboardList,
   CalendarCheck,
-  BarChart2,
-  Trophy,
   Users,
-  FileText,
   History,
   LogOut,
   MessageSquare,
@@ -17,6 +14,7 @@ import {
   Menu,
   BookOpen,
   Repeat,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -50,29 +48,48 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   emphasize?: boolean;
+  /** Oculto pra supervisão (mesma hierarquia de leitura da unidade). */
+  marketingOnly?: boolean;
 }
 
-const NAV_UNIDADE: NavItem[] = [
+interface NavGroup {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavItem[];
+}
+
+type NavEntry = NavItem | NavGroup;
+
+function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return "items" in entry;
+}
+
+const NAV_UNIDADE: NavEntry[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
   { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
 
-const NAV_MARKETING: NavItem[] = [
+const NAV_MARKETING: NavEntry[] = [
   { to: "/marketing/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/marketing/desfechos", label: "Desfechos", icon: CalendarCheck },
+  {
+    label: "Visitas",
+    icon: CalendarCheck,
+    items: [
+      { to: "/marketing/desfechos", label: "Desfechos", icon: CalendarCheck },
+      { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
+    ],
+  },
   { to: "/marketing/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true },
-  { to: "/marketing/graficos", label: "Gráficos", icon: BarChart2 },
-  { to: "/marketing/ranking", label: "Ranking", icon: Trophy },
-  { to: "/marketing/usuarios", label: "Usuários", icon: Users },
-  { to: "/marketing/audit", label: "Audit Log", icon: FileText },
-  { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
+  // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
+  { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
 ];
 
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
   const rematriculaPct = useRematriculaProgresso();
 
@@ -95,7 +112,28 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
     setModalAberto(true);
   }, [pendingCount, role]);
 
-  const navItems = role === "unidade" ? NAV_UNIDADE : NAV_MARKETING;
+  const navItems = (role === "unidade" ? NAV_UNIDADE : NAV_MARKETING).filter(
+    (entry) => !("marketingOnly" in entry && entry.marketingOnly && profile?.role === "supervisao")
+  );
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const abertos = new Set<string>();
+    for (const entry of navItems) {
+      if (isNavGroup(entry) && entry.items.some((item) => location.pathname.startsWith(item.to))) {
+        abertos.add(entry.label);
+      }
+    }
+    return abertos;
+  });
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   const [mobileNavAberto, setMobileNavAberto] = useState(false);
 
@@ -198,28 +236,73 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const showPendingBadge = item.to === "/unidade/desfechos" && pendingCount > 0;
+          {navItems.map((entry) => {
+            if (isNavGroup(entry)) {
+              const isOpen = openGroups.has(entry.label);
+              const hasActiveChild = entry.items.some((item) => location.pathname.startsWith(item.to));
+              return (
+                <div key={entry.label}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(entry.label)}
+                    className={cn(
+                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors",
+                      hasActiveChild && !isOpen
+                        ? "text-white font-medium"
+                        : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    <entry.icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1 text-left">{entry.label}</span>
+                    <ChevronDown className={cn("h-4 w-4 flex-shrink-0 transition-transform", isOpen && "rotate-180")} />
+                  </button>
+                  {isOpen && (
+                    <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-1">
+                      {entry.items.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => setMobileNavAberto(false)}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                              isActive
+                                ? "bg-primary-500 text-white font-medium"
+                                : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                            )
+                          }
+                        >
+                          <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="flex-1">{item.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const showPendingBadge = entry.to === "/unidade/desfechos" && pendingCount > 0;
             const showRematriculaBadge =
-              item.to.endsWith("/rematricula") && rematriculaPct !== null && rematriculaPct < REMATRICULA_META;
+              entry.to.endsWith("/rematricula") && rematriculaPct !== null && rematriculaPct < REMATRICULA_META;
             return (
               <NavLink
-                key={item.to}
-                to={item.to}
+                key={entry.to}
+                to={entry.to}
                 onClick={() => setMobileNavAberto(false)}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                     isActive
                       ? "bg-primary-500 text-white font-medium"
-                      : item.emphasize
+                      : entry.emphasize
                         ? "border border-sun/25 bg-sun/10 text-sun-soft font-semibold hover:bg-sun/20 hover:text-sun"
                         : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
                   )
                 }
               >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                <span className="flex-1">{item.label}</span>
+                <entry.icon className="h-4 w-4 flex-shrink-0" />
+                <span className="flex-1">{entry.label}</span>
                 {showPendingBadge && (
                   <span className="ml-auto bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {pendingCount}

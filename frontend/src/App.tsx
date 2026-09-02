@@ -19,10 +19,7 @@ const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
 const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
 const Desfechos = lazy(() => import("./pages/unidade/Desfechos"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
-const Graficos = lazy(() => import("./pages/marketing/Graficos"));
-const Ranking = lazy(() => import("./pages/marketing/Ranking"));
 const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
-const AuditLog = lazy(() => import("./pages/marketing/AuditLog"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
@@ -170,10 +167,7 @@ export default function App() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="graficos" element={<Graficos />} />
-          <Route path="ranking" element={<Ranking />} />
           <Route path="usuarios" element={<Usuarios />} />
-          <Route path="audit" element={<AuditLog />} />
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
