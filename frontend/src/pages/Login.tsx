@@ -26,40 +26,85 @@ export default function Login() {
   const [mostrarReset, setMostrarReset] = useState(false);
   const [emailReset, setEmailReset] = useState("");
   const [enviandoReset, setEnviandoReset] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+
+  async function redirectByRole() {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, ativo")
+      .eq("id", userData.user.id)
+      .single();
+
+    if (!profile?.ativo) {
+      await supabase.auth.signOut();
+      toast.error("Usuário inativo. Contate o marketing.");
+      return;
+    }
+
+    if (profile.role === "marketing" || profile.role === "supervisao") {
+      navigate("/marketing/dashboard");
+    } else {
+      navigate("/unidade/formulario");
+    }
+  }
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     if (!email || !senha) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: senha,
       });
 
       if (error) throw error;
 
-      // Buscar role para redirecionar
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, ativo")
-        .eq("id", data.user.id)
-        .single();
-
-      if (!profile?.ativo) {
-        await supabase.auth.signOut();
-        toast.error("Usuário inativo. Contate o marketing.");
-        return;
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal && aal.nextLevel === "aal2" && aal.nextLevel !== aal.currentLevel) {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const factor = factors?.totp?.[0];
+        if (factor) {
+          setMfaFactorId(factor.id);
+          setLoading(false);
+          return;
+        }
       }
 
-      if (profile.role === "marketing" || profile.role === "supervisao") {
-        navigate("/marketing/dashboard");
-      } else {
-        navigate("/unidade/formulario");
-      }
+      await redirectByRole();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao fazer login";
       toast.error(msg === "Invalid login credentials" ? "E-mail ou senha incorretos." : msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleMfaVerify(e: FormEvent) {
+    e.preventDefault();
+    if (!mfaFactorId || !mfaCode) return;
+    setLoading(true);
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeError) throw challengeError;
+
+      const { error } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaCode,
+      });
+      if (error) throw error;
+
+      await redirectByRole();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Código inválido.");
+      setMfaCode("");
     } finally {
       setLoading(false);
     }
@@ -104,7 +149,41 @@ export default function Login() {
         />
 
         <div className="relative z-10 w-full max-w-[380px] rounded-[18px] border border-white/[0.14] bg-white/[0.06] p-[30px] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_24px_60px_-10px_rgba(0,0,0,0.55)]">
-          {!mostrarReset ? (
+          {mfaFactorId ? (
+            <>
+              <h1 className="text-lg font-extrabold text-white">Verificação em duas etapas</h1>
+              <p className="mt-1.5 text-sm text-white/50">
+                Digite o código do seu app autenticador.
+              </p>
+              <form onSubmit={handleMfaVerify} className="mt-6 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="mfaCode" className={labelClass}>
+                    Código
+                  </Label>
+                  <Input
+                    id="mfaCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    autoFocus
+                    className={inputClass}
+                  />
+                </div>
+                <Button type="submit" disabled={loading} className={ctaClass}>
+                  {loading ? "Verificando..." : "Verificar"}
+                </Button>
+              </form>
+              <button
+                onClick={() => { setMfaFactorId(null); setMfaCode(""); }}
+                className="mt-4 w-full text-center text-sm text-white/50 transition-colors hover:text-white"
+              >
+                ← Voltar ao login
+              </button>
+            </>
+          ) : !mostrarReset ? (
             <>
               <h1 className="text-lg font-extrabold text-white">Bem-vindo de volta</h1>
               <p className="mt-1.5 text-sm text-white/50">
