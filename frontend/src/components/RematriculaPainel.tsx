@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight, Search, X, MessageCircle, AlertTriangle } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
 import { Button } from "./ui/button";
+import StatTile from "./StatTile";
 
 const STATUS_PILL: Record<string, string> = {
   pendente: "bg-amber-100 text-amber-700",
@@ -140,48 +141,12 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
       {/* Hero: indicadores — meta da rede fica só na visão de marketing/supervisão */}
       <div className="card p-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <Users className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide">A rematricular</p>
-            </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{kpis.total}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-green-500">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Rematriculados</p>
-            </div>
-            <p className="text-2xl font-bold text-green-600 mt-1">{kpis.rematriculados}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-blue-500">
-              <MessageCircle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Em conversa</p>
-            </div>
-            <p className="text-2xl font-bold text-blue-500 mt-1">{kpis.negociando}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-red-500">
-              <XCircle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Não rematriculados</p>
-            </div>
-            <p className="text-2xl font-bold text-red-500 mt-1">{kpis.naoRematriculados}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-amber-500">
-              <Clock className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Pendentes</p>
-            </div>
-            <p className="text-2xl font-bold text-amber-500 mt-1">{kpis.pendentes}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-orange-500">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Inadimplentes</p>
-            </div>
-            <p className="text-2xl font-bold text-orange-500 mt-1">{kpis.inadimplentes}</p>
-          </div>
+          <StatTile icon={Users} label="A rematricular" value={kpis.total} />
+          <StatTile icon={CheckCircle2} label="Rematriculados" value={kpis.rematriculados} color="green" />
+          <StatTile icon={MessageCircle} label="Em conversa" value={kpis.negociando} color="blue" />
+          <StatTile icon={XCircle} label="Não rematriculados" value={kpis.naoRematriculados} color="red" />
+          <StatTile icon={Clock} label="Pendentes" value={kpis.pendentes} color="amber" />
+          <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpis.inadimplentes} color="orange" />
         </div>
       </div>
 

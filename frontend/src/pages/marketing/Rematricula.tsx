@@ -6,6 +6,7 @@ import { calcularKpisRematricula, REMATRICULA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
 import MetaGauge from "../../components/MetaGauge";
 import RematriculaPainel from "../../components/RematriculaPainel";
+import StatTile from "../../components/StatTile";
 import { Button } from "../../components/ui/button";
 
 interface LinhaUnidade {
@@ -66,48 +67,12 @@ export default function RematriculaMarketing() {
       <div className="card p-6 flex flex-col sm:flex-row items-center gap-6 mb-6">
         <MetaGauge pct={kpisRede.pct} label="Meta 90%" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1 w-full">
-          <div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <Users className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide">A rematricular</p>
-            </div>
-            <p className="text-2xl font-bold text-gray-800 mt-1">{kpisRede.total}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-green-500">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Rematriculados</p>
-            </div>
-            <p className="text-2xl font-bold text-green-600 mt-1">{kpisRede.rematriculados}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-blue-500">
-              <MessageCircle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Em conversa</p>
-            </div>
-            <p className="text-2xl font-bold text-blue-500 mt-1">{kpisRede.negociando}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-red-500">
-              <XCircle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Não rematriculados</p>
-            </div>
-            <p className="text-2xl font-bold text-red-500 mt-1">{kpisRede.naoRematriculados}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-amber-500">
-              <Clock className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Pendentes</p>
-            </div>
-            <p className="text-2xl font-bold text-amber-500 mt-1">{kpisRede.pendentes}</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-orange-500">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Inadimplentes</p>
-            </div>
-            <p className="text-2xl font-bold text-orange-500 mt-1">{kpisRede.inadimplentes}</p>
-          </div>
+          <StatTile icon={Users} label="A rematricular" value={kpisRede.total} />
+          <StatTile icon={CheckCircle2} label="Rematriculados" value={kpisRede.rematriculados} color="green" />
+          <StatTile icon={MessageCircle} label="Em conversa" value={kpisRede.negociando} color="blue" />
+          <StatTile icon={XCircle} label="Não rematriculados" value={kpisRede.naoRematriculados} color="red" />
+          <StatTile icon={Clock} label="Pendentes" value={kpisRede.pendentes} color="amber" />
+          <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpisRede.inadimplentes} color="orange" />
         </div>
       </div>
 

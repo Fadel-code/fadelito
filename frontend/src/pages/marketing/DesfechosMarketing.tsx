@@ -35,11 +35,23 @@ const TIPO_STYLE: Record<DesfechoTipo, string> = {
   removido:        "bg-gray-200 text-gray-600",
 };
 
+const FILTRO_KEY = "fadelito_filtro_desfechos_marketing";
+
 export default function DesfechosMarketing() {
   const mesCorrido = new Date().getMonth() + 1;
   const hojeIso = dateToIso(new Date());
-  const [mes, setMes] = useState(mesCorrido);
-  const [dia, setDia] = useState("todos");
+  const [mes, setMes] = useState(() => {
+    const salvo = localStorage.getItem(FILTRO_KEY);
+    return salvo ? (JSON.parse(salvo).mes ?? mesCorrido) : mesCorrido;
+  });
+  const [dia, setDia] = useState(() => {
+    const salvo = localStorage.getItem(FILTRO_KEY);
+    return salvo ? (JSON.parse(salvo).dia ?? "todos") : "todos";
+  });
+
+  useEffect(() => {
+    localStorage.setItem(FILTRO_KEY, JSON.stringify({ mes, dia }));
+  }, [mes, dia]);
   const [rows, setRows] = useState<UnidadeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -208,7 +220,7 @@ export default function DesfechosMarketing() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-amber-200 p-5">
+        <div className={`bg-white rounded-xl border border-amber-200 p-5 ${totais.visita_realizada > 0 ? "ring-2 ring-amber-200" : ""}`}>
           <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Pendentes</p>
           <p className="text-3xl font-bold text-amber-600 mt-1">{totais.visita_realizada}</p>
           <p className="text-xs text-gray-400 mt-1">Visitaram, aguardando desfecho</p>

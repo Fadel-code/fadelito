@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, subMonths, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff, TrendingUp } from "lucide-react";
+import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff, TrendingUp, X } from "lucide-react";
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
@@ -46,13 +46,12 @@ export default function FormularioDiario() {
   const [linhas, setLinhas] = useState<RegistroInput[]>(inicializarLinhas());
   const [temRegistros, setTemRegistros] = useState(false);
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
-  const [modalObsAberto, setModalObsAberto] = useState(false);
   const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
-  const [modalDesfechoAberto, setModalDesfechoAberto] = useState(false);
   const [modalSemVisitaAberto, setModalSemVisitaAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
   const [obsExistente, setObsExistente] = useState("");
   const [conversaoMes, setConversaoMes] = useState<string | null>(null);
+  const [avisoDesfecho, setAvisoDesfecho] = useState(false);
 
   const { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao, carregarPorMes } = useRegistros({
     unidadeId: profile!.id,
@@ -108,6 +107,7 @@ export default function FormularioDiario() {
     let active = true;
     const iso = dateToIso(dataSelecionada);
     setTemRegistros(false);
+    setAvisoDesfecho(false);
     carregarPorData(iso).then(({ linhas, existe }) => {
       if (!active) return;
       setLinhas(linhas);
@@ -130,27 +130,17 @@ export default function FormularioDiario() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [mostrarCalendario]);
 
-  function handleSalvar() {
-    if (!dataSelecionada) return;
-    setObservacao(obsExistente);
-    setModalObsAberto(true);
-  }
-
-  async function handleConfirmarSalvar() {
+  async function handleSalvar() {
     if (!dataSelecionada || !observacao.trim()) return;
     const iso = dateToIso(dataSelecionada);
     const ok = await salvar(iso, linhas);
-    if (ok) {
-      const obsOk = await salvarObservacao(iso, observacao.trim());
-      if (!obsOk) return;
-      setObsExistente(observacao.trim());
-      setTemRegistros(true);
-      setModalObsAberto(false);
-      setModalDesfechoAberto(true);
-      carregarConversaoMes();
-      return;
-    }
-    setModalObsAberto(false);
+    if (!ok) return;
+    const obsOk = await salvarObservacao(iso, observacao.trim());
+    if (!obsOk) return;
+    setObsExistente(observacao.trim());
+    setTemRegistros(true);
+    setAvisoDesfecho(true);
+    carregarConversaoMes();
   }
 
   async function handleConfirmarSemVisitas() {
@@ -303,9 +293,55 @@ export default function FormularioDiario() {
 
           <FormularioTurmas linhas={linhas} onChange={setLinhas} />
 
-          {obsExistente && (
-            <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              <span className="font-semibold">Observação do dia:</span> {obsExistente}
+          <div className="mt-4">
+            <label htmlFor="obs-input" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Observação do dia{" "}
+              <span className="text-red-500" aria-hidden="true">*</span>
+            </label>
+            <textarea
+              id="obs-input"
+              className={`w-full rounded-md border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                observacao.trim() === "" ? "border-red-400" : "border-gray-300"
+              }`}
+              rows={3}
+              placeholder="Insira o nome e telefone de cada visita, para registro no CRM"
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              required
+              aria-required="true"
+              aria-invalid={observacao.trim() === ""}
+              aria-describedby={observacao.trim() === "" ? "obs-erro" : undefined}
+            />
+            {observacao.trim() === "" && (
+              <p id="obs-erro" role="alert" className="mt-1 text-xs text-red-500">
+                Preencha o nome e telefone da visita para salvar.
+              </p>
+            )}
+          </div>
+
+          {avisoDesfecho && (
+            <div className="mt-4 rounded-lg bg-primary-50 border border-primary-200 px-4 py-3 flex items-center gap-3">
+              <ClipboardCheck className="h-4 w-4 text-primary-500 flex-shrink-0" />
+              <p className="text-sm text-primary-800 flex-1">
+                Dados salvos! Quer registrar agora o{" "}
+                <button
+                  onClick={() => {
+                    localStorage.setItem(BANNER_KEY, "1");
+                    navigate("/unidade/desfechos");
+                  }}
+                  className="underline underline-offset-2 font-semibold hover:text-primary-900"
+                >
+                  desfecho das visitas de hoje
+                </button>
+                ?
+              </p>
+              <button
+                onClick={() => setAvisoDesfecho(false)}
+                aria-label="Fechar aviso"
+                className="flex-shrink-0 p-1 rounded text-primary-400 hover:bg-primary-100 hover:text-primary-700 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 
@@ -333,7 +369,7 @@ export default function FormularioDiario() {
                 <CalendarOff className="h-4 w-4" />
                 Não tivemos visitas hoje
               </Button>
-              <Button onClick={handleSalvar} disabled={salvando || removendo} size="lg">
+              <Button onClick={handleSalvar} disabled={salvando || removendo || observacao.trim() === ""} size="lg">
                 <Save className="h-4 w-4" />
                 {salvando ? "Salvando..." : "Salvar dados"}
               </Button>
@@ -405,87 +441,6 @@ export default function FormularioDiario() {
             <Button onClick={handleConfirmarSemVisitas} disabled={salvando}>
               <CalendarOff className="h-4 w-4" />
               {salvando ? "Salvando..." : "Confirmar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal pós-save: convite para registrar desfecho */}
-      <Dialog open={modalDesfechoAberto} onOpenChange={setModalDesfechoAberto}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5 text-primary-500" />
-              Registrar Desfecho de Matrículas
-            </DialogTitle>
-            <DialogDescription>
-              Preenchimento salvo com sucesso! Deseja agora registrar o desfecho das visitas do dia —
-              se o lead matriculou, está em negociação ou não fechou?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 mt-1">
-            <Button
-              onClick={() => {
-                localStorage.setItem(BANNER_KEY, "1");
-                setModalDesfechoAberto(false);
-                navigate("/unidade/desfechos");
-              }}
-            >
-              <ClipboardCheck className="h-4 w-4" />
-              Registrar Desfecho agora
-            </Button>
-            <Button variant="outline" onClick={() => setModalDesfechoAberto(false)}>
-              Agora não
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de observação */}
-      <Dialog open={modalObsAberto} onOpenChange={setModalObsAberto}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Observação do dia</DialogTitle>
-            <DialogDescription>
-              Obrigatório — informe o nome e telefone de cada visita para registro no CRM.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-6 pb-2">
-            <label htmlFor="obs-input" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Observação{" "}
-              <span className="text-red-500" aria-hidden="true">*</span>
-            </label>
-            <textarea
-              id="obs-input"
-              className={`w-full rounded-md border p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                observacao.trim() === "" ? "border-red-400" : "border-gray-300"
-              }`}
-              rows={4}
-              placeholder="Insira o nome e telefone da visita"
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-              autoFocus
-              required
-              aria-required="true"
-              aria-invalid={observacao.trim() === ""}
-              aria-describedby={observacao.trim() === "" ? "obs-erro" : undefined}
-            />
-            {observacao.trim() === "" && (
-              <p id="obs-erro" role="alert" className="mt-1 text-xs text-red-500">
-                Preencha o nome e telefone da visita para salvar.
-              </p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalObsAberto(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleConfirmarSalvar}
-              disabled={salvando || observacao.trim() === ""}
-            >
-              <Save className="h-4 w-4" />
-              {salvando ? "Salvando..." : "Confirmar e salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>

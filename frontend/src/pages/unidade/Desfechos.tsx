@@ -148,30 +148,34 @@ export default function Desfechos() {
 
   return (
     <div className="max-w-5xl space-y-8">
-      {/* ── Banner de urgência (não bloqueia o preenchimento, só avisa) ── */}
-      {urgente && (
-        <div className="bg-red-50 border border-red-300 rounded-xl px-4 py-3 flex items-center gap-3">
-          <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-800">
-            <strong>Urgência:</strong>{" "}
-            {nuncaPreencheu
-              ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
-              : (diasPendenteAntigo ?? 0) >= DIAS_URGENCIA
-              ? `há um "Visitou" pendente de decisão há ${diasPendenteAntigo} dia${diasPendenteAntigo === 1 ? "" : "s"} sem atualização.`
-              : `há ${visitasSemDesfecho} visita${visitasSemDesfecho === 1 ? "" : "s"} nova${visitasSemDesfecho === 1 ? "" : "s"} ainda sem nenhum desfecho registrado.`}
-          </p>
-        </div>
-      )}
-
-      {/* ── Banner de pendentes ── */}
-      {pendingVisitas > 0 && (
-        <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-3">
-          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-          <p className="text-sm text-amber-800">
-            <strong>{pendingVisitas} lead{pendingVisitas > 1 ? "s" : ""}</strong>{" "}
-            com "Visitou" aguarda{pendingVisitas > 1 ? "m" : ""} decisão de desfecho — atualize abaixo em{" "}
-            <strong>Desfechos Realizados</strong>.
-          </p>
+      {/* ── Banner de atenção — urgência e pendências compartilham um único aviso,
+          pra não empilhar dois banners na tela que a unidade abre todo dia útil. ── */}
+      {(urgente || pendingVisitas > 0) && (
+        <div
+          className={`rounded-xl px-4 py-3 flex items-start gap-3 border ${
+            urgente ? "bg-red-50 border-red-300" : "bg-amber-50 border-amber-300"
+          }`}
+        >
+          <AlertTriangle className={`h-4 w-4 flex-shrink-0 mt-0.5 ${urgente ? "text-red-600" : "text-amber-600"}`} />
+          <div className={`text-sm space-y-1 ${urgente ? "text-red-800" : "text-amber-800"}`}>
+            {urgente && (
+              <p>
+                <strong>Urgência:</strong>{" "}
+                {nuncaPreencheu
+                  ? "esta unidade ainda não registrou nenhum Desfecho de Visitas."
+                  : (diasPendenteAntigo ?? 0) >= DIAS_URGENCIA
+                  ? `há um "Visitou" pendente de decisão há ${diasPendenteAntigo} dia${diasPendenteAntigo === 1 ? "" : "s"} sem atualização.`
+                  : `há ${visitasSemDesfecho} visita${visitasSemDesfecho === 1 ? "" : "s"} nova${visitasSemDesfecho === 1 ? "" : "s"} ainda sem nenhum desfecho registrado.`}
+              </p>
+            )}
+            {pendingVisitas > 0 && (
+              <p>
+                <strong>{pendingVisitas} lead{pendingVisitas > 1 ? "s" : ""}</strong>{" "}
+                com "Visitou" aguarda{pendingVisitas > 1 ? "m" : ""} decisão de desfecho — atualize abaixo em{" "}
+                <strong>Desfechos Realizados</strong>.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

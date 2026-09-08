@@ -46,6 +46,13 @@ function desfechoLabel(tipo: DesfechoTipo) {
   return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
 }
 
+const FILTRO_KEY = "fadelito_filtro_observacoes";
+
+function filtroSalvo(): Partial<{ unidade: string; mes: string; dia: string; dataInicio: string; dataFim: string }> {
+  const salvo = localStorage.getItem(FILTRO_KEY);
+  return salvo ? JSON.parse(salvo) : {};
+}
+
 export default function Observacoes() {
   const mesCorrido = new Date().getMonth() + 1;
   const [tab, setTab] = useState<"diario" | "desfechos">("diario");
@@ -57,11 +64,15 @@ export default function Observacoes() {
   const [removendo, setRemovendoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
-  const [unidade, setUnidade] = useState("todas");
-  const [mes, setMes] = useState(String(mesCorrido));
-  const [dia, setDia] = useState("todos");
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState("");
+  const [unidade, setUnidade] = useState(() => filtroSalvo().unidade ?? "todas");
+  const [mes, setMes] = useState(() => filtroSalvo().mes ?? String(mesCorrido));
+  const [dia, setDia] = useState(() => filtroSalvo().dia ?? "todos");
+  const [dataInicio, setDataInicio] = useState(() => filtroSalvo().dataInicio ?? "");
+  const [dataFim, setDataFim] = useState(() => filtroSalvo().dataFim ?? "");
+
+  useEffect(() => {
+    localStorage.setItem(FILTRO_KEY, JSON.stringify({ unidade, mes, dia, dataInicio, dataFim }));
+  }, [unidade, mes, dia, dataInicio, dataFim]);
 
   const hojeIso = dateToIso(new Date());
   const diasUteis = mes !== "todos"

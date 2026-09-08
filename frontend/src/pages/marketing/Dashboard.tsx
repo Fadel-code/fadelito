@@ -167,7 +167,7 @@ export default function Dashboard() {
           </div>
           <p className="text-3xl font-bold text-green-600 mt-2">{preencheramNoDia}</p>
         </div>
-        <div className="card p-5">
+        <div className={`card p-5 ${totalUnidades - preencheramNoDia > 0 ? "ring-2 ring-red-200" : ""}`}>
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
               Faltando {labelStatus}

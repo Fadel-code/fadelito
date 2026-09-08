@@ -1,6 +1,6 @@
 import type { ConsolidadoUnidade } from "../types";
 import { Button } from "./ui/button";
-import { Edit2 } from "lucide-react";
+import { Edit2, CheckCircle2, XCircle } from "lucide-react";
 
 interface Props {
   dados: ConsolidadoUnidade[];
@@ -48,8 +48,15 @@ export default function TabelaConsolidada({ dados, mostrarStatus, onEditar }: Pr
             >
               {mostrarStatus && (
                 <td className="px-3 py-2 text-center">
-                  <span title={u.preencheu_hoje ? "Preencheu" : "Não preencheu"}>
-                    {u.preencheu_hoje ? "🟢" : "🔴"}
+                  <span
+                    title={u.preencheu_hoje ? "Preencheu" : "Não preencheu"}
+                    className="inline-flex"
+                  >
+                    {u.preencheu_hoje ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
                   </span>
                 </td>
               )}
