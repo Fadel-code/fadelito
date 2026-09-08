@@ -4,6 +4,8 @@ import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAlun
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
 
+const COMO_FUNCIONA_KEY = "fadelito_rematricula_como_funciona_v1";
+
 const STATUS_PILL: Record<string, string> = {
   pendente: "bg-amber-100 text-amber-700",
   negociando: "bg-blue-100 text-blue-700",
@@ -15,6 +17,16 @@ const STATUS_LABEL: Record<string, string> = {
   negociando: "Negociando",
   rematriculado: "Rematriculado",
   nao_rematriculado: "Não rematriculou",
+};
+
+const STATUS_FILTROS = ["todos", "pendente", "negociando", "rematriculado", "nao_rematriculado"] as const;
+type StatusFiltro = (typeof STATUS_FILTROS)[number];
+const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
+  todos: "Todos",
+  pendente: "Pendentes",
+  negociando: "Em conversa",
+  rematriculado: "Rematriculados",
+  nao_rematriculado: "Não rematriculados",
 };
 
 function normalizar(texto: string): string {
@@ -75,17 +87,29 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const [adicionando, setAdicionando] = useState(false);
   const [estado, setEstado] = useState<Record<string, LinhaState>>({});
   const [busca, setBusca] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos");
   const [novosRegistros, setNovosRegistros] = useState<Record<string, string>>({});
   const [registrando, setRegistrando] = useState<string | null>(null);
+  const [comoFuncionaVisivel, setComoFuncionaVisivel] = useState(
+    () => !localStorage.getItem(COMO_FUNCIONA_KEY)
+  );
 
   const meus = alunos.filter((a) => a.unidade_id === unidadeId);
 
   const filtrados = useMemo(() => {
     const termo = normalizar(busca.trim());
-    if (!termo) return meus;
-    return meus.filter((a) => normalizar(a.nome).includes(termo));
+    return meus.filter((a) => {
+      if (statusFiltro !== "todos" && derivarStatusRematricula(a) !== statusFiltro) return false;
+      if (termo && !normalizar(a.nome).includes(termo)) return false;
+      return true;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meus, busca]);
+  }, [meus, busca, statusFiltro]);
+
+  function dispensarComoFunciona() {
+    localStorage.setItem(COMO_FUNCIONA_KEY, "1");
+    setComoFuncionaVisivel(false);
+  }
 
   useEffect(() => {
     const init: Record<string, LinhaState> = {};
@@ -150,27 +174,37 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         </div>
       </div>
 
-      {/* Como funciona — explicação pura, sem elementos interativos falsos */}
-      <div className="card p-6">
-        <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-5">Como funciona a rematrícula</p>
-        <div className="grid sm:grid-cols-3 gap-6 sm:gap-4">
-          {ETAPAS.map((etapa, i) => (
-            <div key={etapa.titulo} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
-              {i < ETAPAS.length - 1 && (
-                <ChevronRight className="hidden sm:block absolute top-2.5 -right-5 h-4 w-4 text-gray-300" aria-hidden="true" />
-              )}
-              <StepBadge n={i + 1} />
-              <div className="sm:mt-1">
-                <div className="flex items-center gap-1.5 sm:justify-center">
-                  <etapa.icon className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
-                  <p className="font-semibold text-gray-800 text-sm">{etapa.titulo}</p>
+      {/* Como funciona — explicação pura, dispensável depois da primeira visita
+          (mesmo padrão do banner de "nova funcionalidade" em Layout.tsx). */}
+      {comoFuncionaVisivel && (
+        <div className="card p-6 relative">
+          <button
+            onClick={dispensarComoFunciona}
+            aria-label="Fechar explicação"
+            className="absolute top-4 right-4 p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-5">Como funciona a rematrícula</p>
+          <div className="grid sm:grid-cols-3 gap-6 sm:gap-4">
+            {ETAPAS.map((etapa, i) => (
+              <div key={etapa.titulo} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
+                {i < ETAPAS.length - 1 && (
+                  <ChevronRight className="hidden sm:block absolute top-2.5 -right-5 h-4 w-4 text-gray-300" aria-hidden="true" />
+                )}
+                <StepBadge n={i + 1} />
+                <div className="sm:mt-1">
+                  <div className="flex items-center gap-1.5 sm:justify-center">
+                    <etapa.icon className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
+                    <p className="font-semibold text-gray-800 text-sm">{etapa.titulo}</p>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">{etapa.desc}</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{etapa.desc}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Adicionar aluno — a ação de verdade, separada da explicação acima */}
       <div className="card p-6">
@@ -217,6 +251,30 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         </div>
       ) : (
         <div className="card p-4 sm:p-6">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {STATUS_FILTROS.map((s) => {
+              const contagem =
+                s === "todos" ? kpis.total
+                : s === "pendente" ? kpis.pendentes
+                : s === "negociando" ? kpis.negociando
+                : s === "rematriculado" ? kpis.rematriculados
+                : kpis.naoRematriculados;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFiltro(s)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    statusFiltro === s
+                      ? "bg-primary-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {STATUS_FILTRO_LABEL[s]} ({contagem})
+                </button>
+              );
+            })}
+          </div>
           <div className="relative mb-4">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -240,7 +298,11 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           </div>
 
           {filtrados.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-400">Nenhum aluno encontrado para "{busca}".</p>
+            <p className="py-8 text-center text-sm text-gray-400">
+              {busca
+                ? `Nenhum aluno encontrado para "${busca}".`
+                : `Nenhum aluno em "${STATUS_FILTRO_LABEL[statusFiltro]}".`}
+            </p>
           ) : (
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {filtrados.map((a) => {
