@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Users, CheckCircle2, XCircle, Clock, Eye, MessageCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
@@ -8,6 +9,7 @@ import MetaGauge from "../../components/MetaGauge";
 import RematriculaPainel from "../../components/RematriculaPainel";
 import StatTile from "../../components/StatTile";
 import { Button } from "../../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 
 interface LinhaUnidade {
   unidade_id: string;
@@ -50,6 +52,17 @@ export default function RematriculaMarketing() {
 
   const kpisRede = calcularKpisRematricula(alunos);
   const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
+
+  const unidadesPreview = useMemo(
+    () => [...porUnidade].sort((a, b) => a.unidade_nome.localeCompare(b.unidade_nome, "pt-BR")),
+    [porUnidade]
+  );
+  const [previewUnidadeId, setPreviewUnidadeId] = useState("");
+  useEffect(() => {
+    if (!previewUnidadeId && unidadesPreview.length) {
+      setPreviewUnidadeId(unidadesPreview[0].unidade_id);
+    }
+  }, [unidadesPreview, previewUnidadeId]);
 
   return (
     <div>
@@ -134,11 +147,23 @@ export default function RematriculaMarketing() {
             <Eye className="h-4 w-4 text-primary-600" />
             <p className="text-xs font-bold text-primary-700 uppercase tracking-wide">Prévia — tela da unidade</p>
           </div>
-          <p className="text-gray-500 text-sm mb-5">
+          <p className="text-gray-500 text-sm mb-4">
             Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas.
             Dados reais abaixo, só pra teste — edições feitas aqui não são salvas.
           </p>
-          <RematriculaPainel unidadeId={preview.alunos[0]?.unidade_id ?? "previa"} {...preview} />
+          {unidadesPreview.length > 0 && (
+            <div className="mb-5 max-w-xs">
+              <Select value={previewUnidadeId} onValueChange={setPreviewUnidadeId}>
+                <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+                <SelectContent>
+                  {unidadesPreview.map((u) => (
+                    <SelectItem key={u.unidade_id} value={u.unidade_id}>{u.unidade_nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} />
         </div>
       )}
     </div>
