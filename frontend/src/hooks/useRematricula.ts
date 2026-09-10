@@ -13,12 +13,22 @@ export function useRematricula() {
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("rematricula_alunos")
-        .select("*, profiles!inner(unidade_nome)")
-        .order("nome");
-      if (error) throw error;
-      setAlunos((data ?? []) as RematriculaAluno[]);
+      // Supabase corta em 1000 linhas por request — pagina até esgotar (a rede toda já
+      // passa de 2000 alunos desde o seed em lote). Ordem estável via id como desempate.
+      const PAGINA = 1000;
+      let todos: RematriculaAluno[] = [];
+      for (let inicio = 0; ; inicio += PAGINA) {
+        const { data, error } = await supabase
+          .from("rematricula_alunos")
+          .select("*, profiles!inner(unidade_nome)")
+          .order("nome")
+          .order("id")
+          .range(inicio, inicio + PAGINA - 1);
+        if (error) throw error;
+        todos = todos.concat((data ?? []) as RematriculaAluno[]);
+        if (!data || data.length < PAGINA) break;
+      }
+      setAlunos(todos);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar dados de rematrícula");
