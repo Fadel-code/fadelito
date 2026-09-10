@@ -13,9 +13,12 @@ export default function Rematricula() {
         <p className="text-gray-500 text-sm mt-1">
           {profile?.unidade_nome} — acompanhe a rematrícula dos alunos da unidade.
         </p>
+        <p className="text-gray-400 text-xs mt-1">
+          Por enquanto só visualização — a edição será liberada em breve, com orientações.
+        </p>
       </div>
 
-      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} />
+      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} readOnly />
     </div>
   );
 }

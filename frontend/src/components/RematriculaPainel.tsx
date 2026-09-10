@@ -73,6 +73,8 @@ interface RematriculaPainelProps {
   ) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
+  /** Só leitura: esconde cadastro/edição/remoção, mostra só os dados já preenchidos. */
+  readOnly?: boolean;
 }
 
 function formatarData(iso: string): string {
@@ -81,7 +83,7 @@ function formatarData(iso: string): string {
 
 // Tela que a unidade usa para acompanhar a rematrícula — reaproveitada como prévia
 // (read-only nos dados reais, mas com um data source local) na tela da supervisão.
-export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico }: RematriculaPainelProps) {
+export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, readOnly = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
@@ -176,7 +178,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
 
       {/* Como funciona — explicação pura, dispensável depois da primeira visita
           (mesmo padrão do banner de "nova funcionalidade" em Layout.tsx). */}
-      {comoFuncionaVisivel && (
+      {!readOnly && comoFuncionaVisivel && (
         <div className="card p-6 relative">
           <button
             onClick={dispensarComoFunciona}
@@ -207,35 +209,37 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
       )}
 
       {/* Adicionar aluno — a ação de verdade, separada da explicação acima */}
-      <div className="card p-6">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
-        <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1">
-            <label htmlFor={`rematricula-nome-${unidadeId}`} className="sr-only">Nome completo</label>
-            <input
-              id={`rematricula-nome-${unidadeId}`}
-              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Nome completo"
-            />
-          </div>
-          <div className="flex-1">
-            <label htmlFor={`rematricula-turma-${unidadeId}`} className="sr-only">Turma / período</label>
-            <input
-              id={`rematricula-turma-${unidadeId}`}
-              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={turma}
-              onChange={(e) => setTurma(e.target.value)}
-              placeholder="Ex: Jardim - manhã"
-            />
-          </div>
-          <Button type="submit" disabled={!nome.trim() || adicionando} className="justify-center gap-2 sm:w-auto">
-            <UserPlus className="h-4 w-4" />
-            {adicionando ? "Adicionando..." : "Adicionar aluno"}
-          </Button>
-        </form>
-      </div>
+      {!readOnly && (
+        <div className="card p-6">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
+          <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1">
+              <label htmlFor={`rematricula-nome-${unidadeId}`} className="sr-only">Nome completo</label>
+              <input
+                id={`rematricula-nome-${unidadeId}`}
+                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="flex-1">
+              <label htmlFor={`rematricula-turma-${unidadeId}`} className="sr-only">Turma / período</label>
+              <input
+                id={`rematricula-turma-${unidadeId}`}
+                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={turma}
+                onChange={(e) => setTurma(e.target.value)}
+                placeholder="Ex: Jardim - manhã"
+              />
+            </div>
+            <Button type="submit" disabled={!nome.trim() || adicionando} className="justify-center gap-2 sm:w-auto">
+              <UserPlus className="h-4 w-4" />
+              {adicionando ? "Adicionando..." : "Adicionar aluno"}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {/* Lista */}
       {loading && meus.length === 0 ? (
@@ -335,100 +339,119 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                         </span>
                       </div>
 
-                      <div className="flex-1 min-w-[280px]">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                              checked={linha.contratoAssinado}
-                              onChange={(e) => setLinha(a.id, { contratoAssinado: e.target.checked })}
-                            />
-                            <FileCheck className="h-3.5 w-3.5 text-gray-400" />
-                            Contrato assinado
-                          </label>
-                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                              checked={linha.negociando}
-                              onChange={(e) => setLinha(a.id, { negociando: e.target.checked })}
-                            />
-                            Ainda em conversa com a família
-                          </label>
-                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                              checked={linha.inadimplente}
-                              onChange={(e) => setLinha(a.id, { inadimplente: e.target.checked })}
-                            />
-                            Inadimplente
-                          </label>
-                        </div>
-                        <div className="mt-2 grid sm:grid-cols-2 gap-2">
-                          <input
-                            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            placeholder="Quem fez contato com a família"
-                            value={linha.quemContatou}
-                            onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
-                          />
-                          {linha.contratoAssinado ? (
-                            <input
-                              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              placeholder="Observação (opcional)"
-                              value={linha.observacao}
-                              onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
-                            />
-                          ) : linha.negociando ? (
-                            <div className="min-w-0">
-                              {historico.length > 0 && (
-                                <ul className="mb-1.5 max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500">
-                                  {historico.map((h, i) => (
-                                    <li key={i}>
-                                      <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                              <div className="flex gap-1.5">
-                                <input
-                                  className="w-full min-w-0 rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                  placeholder="Novo registro da negociação"
-                                  value={novosRegistros[a.id] ?? ""}
-                                  onChange={(e) => setNovosRegistros((prev) => ({ ...prev, [a.id]: e.target.value }))}
-                                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdicionarHistorico(a.id))}
-                                />
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  onClick={() => handleAdicionarHistorico(a.id)}
-                                  disabled={!(novosRegistros[a.id] ?? "").trim() || registrando === a.id}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <input
-                              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              placeholder="Motivo da não rematrícula (se já decidido)"
-                              value={linha.motivo}
-                              onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
-                            />
+                      {readOnly ? (
+                        <div className="flex-1 min-w-[240px] text-sm text-gray-500 space-y-1">
+                          {a.quem_contatou && <p>Contato: {a.quem_contatou}</p>}
+                          {a.contrato_assinado && a.observacao && <p>{a.observacao}</p>}
+                          {!a.contrato_assinado && a.negociando && historico.length > 0 && (
+                            <ul className="space-y-0.5 text-xs">
+                              {historico.map((h, i) => (
+                                <li key={i}>
+                                  <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
+                                </li>
+                              ))}
+                            </ul>
                           )}
+                          {!a.contrato_assinado && !a.negociando && a.motivo && <p>Motivo: {a.motivo}</p>}
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-[280px]">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                  checked={linha.contratoAssinado}
+                                  onChange={(e) => setLinha(a.id, { contratoAssinado: e.target.checked })}
+                                />
+                                <FileCheck className="h-3.5 w-3.5 text-gray-400" />
+                                Contrato assinado
+                              </label>
+                              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                                  checked={linha.negociando}
+                                  onChange={(e) => setLinha(a.id, { negociando: e.target.checked })}
+                                />
+                                Ainda em conversa com a família
+                              </label>
+                              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                                  checked={linha.inadimplente}
+                                  onChange={(e) => setLinha(a.id, { inadimplente: e.target.checked })}
+                                />
+                                Inadimplente
+                              </label>
+                            </div>
+                            <div className="mt-2 grid sm:grid-cols-2 gap-2">
+                              <input
+                                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Quem fez contato com a família"
+                                value={linha.quemContatou}
+                                onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
+                              />
+                              {linha.contratoAssinado ? (
+                                <input
+                                  className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                  placeholder="Observação (opcional)"
+                                  value={linha.observacao}
+                                  onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
+                                />
+                              ) : linha.negociando ? (
+                                <div className="min-w-0">
+                                  {historico.length > 0 && (
+                                    <ul className="mb-1.5 max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500">
+                                      {historico.map((h, i) => (
+                                        <li key={i}>
+                                          <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  <div className="flex gap-1.5">
+                                    <input
+                                      className="w-full min-w-0 rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                      placeholder="Novo registro da negociação"
+                                      value={novosRegistros[a.id] ?? ""}
+                                      onChange={(e) => setNovosRegistros((prev) => ({ ...prev, [a.id]: e.target.value }))}
+                                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdicionarHistorico(a.id))}
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => handleAdicionarHistorico(a.id)}
+                                      disabled={!(novosRegistros[a.id] ?? "").trim() || registrando === a.id}
+                                    >
+                                      +
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <input
+                                  className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                  placeholder="Motivo da não rematrícula (se já decidido)"
+                                  value={linha.motivo}
+                                  onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
+                                />
+                              )}
+                            </div>
+                          </div>
 
-                      <div className="flex flex-col items-stretch gap-1.5">
-                        <Button onClick={() => handleSalvar(a.id)} disabled={!alterado || isSalvando} size="sm">
-                          {isSalvando ? "Salvando..." : "Salvar"}
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => remover(a.id)} disabled={isSalvando} className="gap-1.5 text-gray-400 hover:text-red-500">
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Remover
-                        </Button>
-                      </div>
+                          <div className="flex flex-col items-stretch gap-1.5">
+                            <Button onClick={() => handleSalvar(a.id)} disabled={!alterado || isSalvando} size="sm">
+                              {isSalvando ? "Salvando..." : "Salvar"}
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => remover(a.id)} disabled={isSalvando} className="gap-1.5 text-gray-400 hover:text-red-500">
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Remover
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

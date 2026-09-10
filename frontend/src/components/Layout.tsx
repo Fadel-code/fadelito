@@ -14,6 +14,7 @@ import {
   Menu,
   BookOpen,
   Repeat,
+  CalendarClock,
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../App";
@@ -67,6 +68,7 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 const NAV_UNIDADE: NavEntry[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
   { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
+  { to: "/unidade/agenda", label: "Agenda", icon: CalendarClock },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
 ];
 
@@ -80,6 +82,7 @@ const NAV_MARKETING: NavEntry[] = [
       { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
     ],
   },
+  { to: "/marketing/agenda", label: "Agenda", icon: CalendarClock },
   { to: "/marketing/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
@@ -111,7 +114,14 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
     setModalAberto(true);
   }, [pendingCount, role]);
 
-  const navItems = (role === "unidade" ? NAV_UNIDADE : NAV_MARKETING).filter(
+  // rematriculaPct só vem null quando a unidade ainda não tem nenhum aluno importado
+  // (ver migration 027) — usamos isso pra só mostrar o menu pra quem já tem dados.
+  const navUnidade =
+    role === "unidade" && rematriculaPct !== null
+      ? [...NAV_UNIDADE.slice(0, 3), { to: "/unidade/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true }, ...NAV_UNIDADE.slice(3)]
+      : NAV_UNIDADE;
+
+  const navItems = (role === "unidade" ? navUnidade : NAV_MARKETING).filter(
     (entry) => !("marketingOnly" in entry && entry.marketingOnly && profile?.role === "supervisao")
   );
 
