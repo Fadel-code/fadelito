@@ -73,7 +73,8 @@ interface RematriculaPainelProps {
   ) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
-  /** Só leitura: esconde cadastro/edição/remoção, mostra só os dados já preenchidos. */
+  /** Esconde edição/remoção dos alunos já cadastrados (mostra só o que já foi preenchido).
+   *  Adicionar aluno continua liberado mesmo nesse modo. */
   readOnly?: boolean;
 }
 
@@ -208,38 +209,37 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         </div>
       )}
 
-      {/* Adicionar aluno — a ação de verdade, separada da explicação acima */}
-      {!readOnly && (
-        <div className="card p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
-          <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1">
-              <label htmlFor={`rematricula-nome-${unidadeId}`} className="sr-only">Nome completo</label>
-              <input
-                id={`rematricula-nome-${unidadeId}`}
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Nome completo"
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor={`rematricula-turma-${unidadeId}`} className="sr-only">Turma / período</label>
-              <input
-                id={`rematricula-turma-${unidadeId}`}
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={turma}
-                onChange={(e) => setTurma(e.target.value)}
-                placeholder="Ex: Jardim - manhã"
-              />
-            </div>
-            <Button type="submit" disabled={!nome.trim() || adicionando} className="justify-center gap-2 sm:w-auto">
-              <UserPlus className="h-4 w-4" />
-              {adicionando ? "Adicionando..." : "Adicionar aluno"}
-            </Button>
-          </form>
-        </div>
-      )}
+      {/* Adicionar aluno — liberado mesmo em modo só-leitura: alguns alunos ficaram
+          de fora da importação em lote e precisam de inclusão manual. */}
+      <div className="card p-6">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
+        <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1">
+            <label htmlFor={`rematricula-nome-${unidadeId}`} className="sr-only">Nome completo</label>
+            <input
+              id={`rematricula-nome-${unidadeId}`}
+              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Nome completo"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor={`rematricula-turma-${unidadeId}`} className="sr-only">Turma / período</label>
+            <input
+              id={`rematricula-turma-${unidadeId}`}
+              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={turma}
+              onChange={(e) => setTurma(e.target.value)}
+              placeholder="Ex: Jardim - manhã"
+            />
+          </div>
+          <Button type="submit" disabled={!nome.trim() || adicionando} className="justify-center gap-2 sm:w-auto">
+            <UserPlus className="h-4 w-4" />
+            {adicionando ? "Adicionando..." : "Adicionar aluno"}
+          </Button>
+        </form>
+      </div>
 
       {/* Lista */}
       {loading && meus.length === 0 ? (
