@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RematriculaAluno } from "../types";
 
-// Mesma interface de useRematricula, mas 100% em memória — não toca o Supabase.
-// Usada pela supervisão para testar a tela da unidade sem gravar no banco real.
-// Aceita uma carga inicial (ex: dados reais de uma unidade) só pra semear a lista —
-// a partir daí toda edição fica local, nunca é escrita de volta no Supabase.
+// Mesma interface de useRematricula, mas adicionar/atualizar/histórico ficam 100% em
+// memória — não tocam o Supabase (remover é sobrescrito por fora com o delete real).
+// Aceita uma carga inicial (ex: dados reais de uma unidade) só pra semear a lista.
 export function useRematriculaPreview(seed?: RematriculaAluno[]) {
   const [alunos, setAlunos] = useState<RematriculaAluno[]>(seed ?? []);
   const [salvando, setSalvando] = useState<string | null>(null);

@@ -44,11 +44,18 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
-  const { alunos, loading, carregar } = useRematricula();
+  const { alunos, loading, carregar, remover: removerReal } = useRematricula();
   // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
-  // a tela de verdade antes de liberar pra unidades. Edição fica só local (não grava
-  // no Supabase — a policy de update já bloqueia escrita de quem não é a própria unidade).
+  // a tela de verdade antes de liberar pra unidades. Adicionar/atualizar/histórico
+  // ficam locais (a policy de update já bloqueia escrita de quem não é a própria
+  // unidade); remover é sobrescrito abaixo pra apagar de verdade no Supabase.
   const preview = useRematriculaPreview(alunos.length ? alunos : undefined);
+
+  async function remover(id: string) {
+    const ok = await removerReal(id);
+    if (ok) await preview.remover(id);
+    return ok;
+  }
 
   const kpisRede = calcularKpisRematricula(alunos);
   const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
@@ -139,8 +146,8 @@ export default function RematriculaMarketing() {
       </div>
 
       {/* Prévia — a tela que a unidade vai ver, semeada com dados reais só pra a
-          supervisão testar antes de liberar pra unidades. Edição fica local (não grava
-          no Supabase — a policy de update já bloqueia escrita de quem não é a própria unidade). */}
+          supervisão testar antes de liberar pra unidades. Adicionar/atualizar/histórico
+          continuam locais (não gravam); remover agora apaga de verdade no Supabase. */}
       {profile?.role === "supervisao" && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -163,7 +170,7 @@ export default function RematriculaMarketing() {
               </Select>
             </div>
           )}
-          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} />
+          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} remover={remover} />
         </div>
       )}
     </div>
