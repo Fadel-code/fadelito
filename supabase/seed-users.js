@@ -17,7 +17,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 }
 
 const UNIDADES = [
-  "Aclamação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Campinas",
+  "Aclimação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Campinas",
   "Campo Belo", "Granja", "Guarulhos", "Higienópolis", "Indianópolis",
   "Ipiranga", "Jardins", "Lapa", "Marajoara", "Moema",
   "Mooca", "Osasco", "Panamby", "Paraíso", "Pinheiros",

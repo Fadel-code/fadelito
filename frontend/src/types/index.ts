@@ -93,7 +93,7 @@ export interface ConsolidadoUnidade {
 }
 
 export const UNIDADES = [
-  "Aclamação",
+  "Aclimação",
   "Anália Franco",
   "Boa Vista",
   "Bonfiglioli",
