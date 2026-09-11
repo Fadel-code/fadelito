@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Users, CheckCircle2, XCircle, Clock, Eye, MessageCircle, AlertTriangle } from "lucide-react";
+import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
@@ -150,10 +150,6 @@ export default function RematriculaMarketing() {
           continuam locais (não gravam); remover agora apaga de verdade no Supabase. */}
       {profile?.role === "supervisao" && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Eye className="h-4 w-4 text-primary-600" />
-            <p className="text-xs font-bold text-primary-700 uppercase tracking-wide">Prévia — tela da unidade</p>
-          </div>
           <p className="text-gray-500 text-sm mb-4">
             Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas.
             Dados reais abaixo, só pra teste — edições feitas aqui não são salvas.

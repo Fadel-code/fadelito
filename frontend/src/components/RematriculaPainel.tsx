@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Phone, ChevronRight, Search, X, MessageCircle, AlertTriangle } from "lucide-react";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
-
-const COMO_FUNCIONA_KEY = "fadelito_rematricula_como_funciona_v1";
 
 const STATUS_PILL: Record<string, string> = {
   pendente: "bg-amber-100 text-amber-700",
@@ -32,20 +30,6 @@ const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
 function normalizar(texto: string): string {
   return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
-
-function StepBadge({ n }: { n: number }) {
-  return (
-    <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-500 text-sm font-bold text-white">
-      {n}
-    </span>
-  );
-}
-
-const ETAPAS = [
-  { icon: UserPlus, titulo: "Cadastre o aluno", desc: "Nome e turma / período de 2026" },
-  { icon: Phone, titulo: "Registre o contato", desc: "Quem falou com a família" },
-  { icon: FileCheck, titulo: "Confirme o desfecho", desc: "Contrato assinado, ou o motivo se não renovar" },
-] as const;
 
 interface LinhaState {
   contratoAssinado: boolean;
@@ -93,9 +77,6 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos");
   const [novosRegistros, setNovosRegistros] = useState<Record<string, string>>({});
   const [registrando, setRegistrando] = useState<string | null>(null);
-  const [comoFuncionaVisivel, setComoFuncionaVisivel] = useState(
-    () => !localStorage.getItem(COMO_FUNCIONA_KEY)
-  );
 
   const meus = alunos.filter((a) => a.unidade_id === unidadeId);
 
@@ -108,11 +89,6 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meus, busca, statusFiltro]);
-
-  function dispensarComoFunciona() {
-    localStorage.setItem(COMO_FUNCIONA_KEY, "1");
-    setComoFuncionaVisivel(false);
-  }
 
   useEffect(() => {
     const init: Record<string, LinhaState> = {};
@@ -176,38 +152,6 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpis.inadimplentes} color="orange" />
         </div>
       </div>
-
-      {/* Como funciona — explicação pura, dispensável depois da primeira visita
-          (mesmo padrão do banner de "nova funcionalidade" em Layout.tsx). */}
-      {!readOnly && comoFuncionaVisivel && (
-        <div className="card p-6 relative">
-          <button
-            onClick={dispensarComoFunciona}
-            aria-label="Fechar explicação"
-            className="absolute top-4 right-4 p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-5">Como funciona a rematrícula</p>
-          <div className="grid sm:grid-cols-3 gap-6 sm:gap-4">
-            {ETAPAS.map((etapa, i) => (
-              <div key={etapa.titulo} className="relative flex items-start gap-3 sm:flex-col sm:items-center sm:text-center">
-                {i < ETAPAS.length - 1 && (
-                  <ChevronRight className="hidden sm:block absolute top-2.5 -right-5 h-4 w-4 text-gray-300" aria-hidden="true" />
-                )}
-                <StepBadge n={i + 1} />
-                <div className="sm:mt-1">
-                  <div className="flex items-center gap-1.5 sm:justify-center">
-                    <etapa.icon className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
-                    <p className="font-semibold text-gray-800 text-sm">{etapa.titulo}</p>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{etapa.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Adicionar aluno — liberado mesmo em modo só-leitura: alguns alunos ficaram
           de fora da importação em lote e precisam de inclusão manual. */}
