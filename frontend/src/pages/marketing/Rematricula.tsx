@@ -150,10 +150,6 @@ export default function RematriculaMarketing() {
           continuam locais (não gravam); remover agora apaga de verdade no Supabase. */}
       {profile?.role === "supervisao" && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
-          <p className="text-gray-500 text-sm mb-4">
-            Como as unidades vão acompanhar a própria rematrícula quando o recurso for liberado a elas.
-            Dados reais abaixo, só pra teste — edições feitas aqui não são salvas.
-          </p>
           {unidadesPreview.length > 0 && (
             <div className="mb-5 max-w-xs">
               <Select value={previewUnidadeId} onValueChange={setPreviewUnidadeId}>
@@ -166,7 +162,7 @@ export default function RematriculaMarketing() {
               </Select>
             </div>
           )}
-          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} remover={remover} />
+          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} remover={remover} permiteRemover />
         </div>
       )}
     </div>
