@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
- * Seed — Cria os 35 usuários de unidade + 1 de marketing via Supabase Admin API
+ * Seed — Cria as contas de Brooklin, Klabin, Perdizes e Real Parque, as 4
+ * unidades removidas em 5df0f84 (2026-08-20) e reintroduzidas depois.
+ * Não mexe nas outras 31 unidades nem no usuário de marketing (rodar o
+ * seed-users.js completo de novo falha ao tentar recriar a marketing, que já
+ * existe, e nunca chega no loop de unidades).
  *
  * Uso:
  *   SUPABASE_URL=https://xxxx.supabase.co \
  *   SUPABASE_SERVICE_ROLE_KEY=eyJ... \
- *   node supabase/seed-users.js
+ *   node supabase/seed-users-pendentes.js
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -16,15 +20,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-const UNIDADES = [
-  "Aclimação", "Anália Franco", "Boa Vista", "Bonfiglioli", "Brooklin",
-  "Campinas", "Campo Belo", "Granja", "Guarulhos", "Higienópolis",
-  "Indianópolis", "Ipiranga", "Jardins", "Klabin", "Lapa",
-  "Marajoara", "Moema", "Mooca", "Osasco", "Panamby",
-  "Paraíso", "Perdizes", "Pinheiros", "Piracicaba", "Portal",
-  "Real Parque", "Santo André", "São Caetano", "Saúde", "Tatuapé",
-  "Vila Gumercindo", "Vila Leopoldina", "Vila Madalena", "Vila Mariana", "Vila Sônia",
-];
+const UNIDADES = ["Brooklin", "Klabin", "Perdizes", "Real Parque"];
 
 const SENHA_PADRAO = "Fadelito2026!";
 
@@ -63,27 +59,8 @@ async function supabaseInsert(table, data) {
 }
 
 async function main() {
-  console.log("🚀 Iniciando seed de usuários Fadelito...\n");
+  console.log("🏫 Criando contas das unidades pendentes...\n");
 
-  // 1. Criar usuário de marketing
-  console.log("📧 Criando usuário marketing...");
-  const marketing = await adminPost("users", {
-    email: "marketing@fadelito.com.br",
-    password: SENHA_PADRAO,
-    email_confirm: true,
-    user_metadata: { role: "marketing" },
-  });
-  await supabaseInsert("profiles", {
-    id: marketing.id,
-    role: "marketing",
-    unidade_nome: null,
-    email: "marketing@fadelito.com.br",
-    ativo: true,
-  });
-  console.log(`   ✅ marketing@fadelito.com.br (${marketing.id})`);
-
-  // 2. Criar usuários das 35 unidades
-  console.log("\n🏫 Criando usuários das unidades...");
   for (const unidade of UNIDADES) {
     const slug = unidade
       .toLowerCase()
@@ -111,16 +88,11 @@ async function main() {
       console.error(`   ❌ ${unidade}: ${err.message}`);
     }
 
-    // Pequeno delay para não sobrecarregar a API
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  console.log("\n✨ Seed concluído!");
-  console.log(`\n📋 Credenciais padrão:`);
-  console.log(`   Senha: ${SENHA_PADRAO}`);
-  console.log(`   Marketing: marketing@fadelito.com.br`);
-  console.log(`   Unidades: <nome-unidade>@fadelito.com.br`);
-  console.log(`\n⚠️  Solicite que cada usuário altere a senha no primeiro acesso.`);
+  console.log(`\n✨ Concluído! Senha padrão: ${SENHA_PADRAO}`);
+  console.log("Depois de rodar isso, cole supabase/migrations/030_rematricula_seed_lote2_pendentes.sql no SQL Editor pra semear os alunos.");
 }
 
 main().catch((err) => {
