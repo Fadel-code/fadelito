@@ -157,7 +157,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
       {/* Adicionar aluno — liberado mesmo em modo só-leitura: alguns alunos ficaram
           de fora da importação em lote e precisam de inclusão manual. */}
       <div className="card p-6">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Adicionar aluno</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">ADICIONAR NOVO ALUNO 2026</p>
         <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
           <div className="flex-1">
             <label htmlFor={`rematricula-nome-${unidadeId}`} className="sr-only">Nome completo</label>
