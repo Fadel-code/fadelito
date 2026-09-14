@@ -44,7 +44,7 @@ export default function MetaGauge({ pct, meta = REMATRICULA_META, size = 116, la
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>
-          {Math.round(clamped * 100)}%
+          {(clamped * 100).toFixed(1)}%
         </span>
         {label && <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-0.5">{label}</span>}
       </div>
