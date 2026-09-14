@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   nao_rematriculado: "Não rematriculou",
 };
 
-const STATUS_FILTROS = ["todos", "pendente", "negociando", "rematriculado", "nao_rematriculado"] as const;
+const STATUS_FILTROS = ["todos", "pendente", "negociando", "rematriculado", "nao_rematriculado", "inadimplente"] as const;
 type StatusFiltro = (typeof STATUS_FILTROS)[number];
 const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
   todos: "Todos",
@@ -25,6 +25,7 @@ const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
   negociando: "Em conversa",
   rematriculado: "Rematriculados",
   nao_rematriculado: "Não rematriculados",
+  inadimplente: "Inadimplentes",
 };
 
 function normalizar(texto: string): string {
@@ -82,7 +83,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const filtrados = useMemo(() => {
     const termo = normalizar(busca.trim());
     return meus.filter((a) => {
-      if (statusFiltro !== "todos" && derivarStatusRematricula(a) !== statusFiltro) return false;
+      if (statusFiltro === "inadimplente" && !a.inadimplente) return false;
+      else if (statusFiltro !== "todos" && statusFiltro !== "inadimplente" && derivarStatusRematricula(a) !== statusFiltro) return false;
       if (termo && !normalizar(a.nome).includes(termo)) return false;
       return true;
     });
@@ -205,6 +207,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                 : s === "pendente" ? kpis.pendentes
                 : s === "negociando" ? kpis.negociando
                 : s === "rematriculado" ? kpis.rematriculados
+                : s === "inadimplente" ? kpis.inadimplentes
                 : kpis.naoRematriculados;
               return (
                 <button
