@@ -83,3 +83,131 @@ export async function exportarExcel(
 
   XLSX.writeFile(wb, `Resultados_Fadelito_${ano}.xlsx`);
 }
+
+// ============================================================
+// Relatório por turma (marketing / supervisão)
+// ============================================================
+
+export interface LinhaTurmaExport {
+  unidade: string;
+  turma: string;
+  visitas: number;
+  visitas_curso_ferias: number;
+  matriculas: number;
+  matriculas_curso_ferias: number;
+  desligamentos: number;
+  transferencias: number;
+  religamentos: number;
+}
+
+function linhaTurmaParaPlanilha(l: LinhaTurmaExport, comUnidade: boolean) {
+  const vt = l.visitas + l.visitas_curso_ferias;
+  const mt = l.matriculas + l.matriculas_curso_ferias;
+  return {
+    ...(comUnidade ? { "Unidade": l.unidade } : {}),
+    "Turma": l.turma,
+    "Visitas": l.visitas,
+    "Visitas CF": l.visitas_curso_ferias,
+    "Visitas Totais": vt,
+    "Matrículas": l.matriculas,
+    "Matrículas CF": l.matriculas_curso_ferias,
+    "Matrículas Totais": mt,
+    "% Aproveitamento": calcAproveitamento(vt, mt),
+    "Desligamentos": l.desligamentos,
+    "Saldo": mt - l.desligamentos,
+    "Transferências": l.transferencias,
+    "Religamentos": l.religamentos,
+  };
+}
+
+function somarLinhasTurma(linhas: LinhaTurmaExport[], turma: string, unidade: string): LinhaTurmaExport {
+  return linhas.reduce<LinhaTurmaExport>(
+    (acc, l) => ({
+      unidade,
+      turma,
+      visitas: acc.visitas + l.visitas,
+      visitas_curso_ferias: acc.visitas_curso_ferias + l.visitas_curso_ferias,
+      matriculas: acc.matriculas + l.matriculas,
+      matriculas_curso_ferias: acc.matriculas_curso_ferias + l.matriculas_curso_ferias,
+      desligamentos: acc.desligamentos + l.desligamentos,
+      transferencias: acc.transferencias + l.transferencias,
+      religamentos: acc.religamentos + l.religamentos,
+    }),
+    {
+      unidade,
+      turma,
+      visitas: 0,
+      visitas_curso_ferias: 0,
+      matriculas: 0,
+      matriculas_curso_ferias: 0,
+      desligamentos: 0,
+      transferencias: 0,
+      religamentos: 0,
+    }
+  );
+}
+
+/** Resumo consolidado (uma linha por turma) + linha de total, na ordem recebida. */
+function montarResumo(detalhe: LinhaTurmaExport[], turmas: string[]) {
+  const resumo = turmas.map((t) =>
+    somarLinhasTurma(detalhe.filter((l) => l.turma === t), t, "—")
+  );
+  resumo.push(somarLinhasTurma(detalhe, "Total", "—"));
+  return resumo.map((l) => linhaTurmaParaPlanilha(l, false));
+}
+
+const COLS_TURMA = [
+  { wch: 20 }, { wch: 14 },
+  { wch: 10 }, { wch: 11 }, { wch: 14 },
+  { wch: 11 }, { wch: 13 }, { wch: 16 },
+  { wch: 16 }, { wch: 14 }, { wch: 8 },
+  { wch: 14 }, { wch: 13 },
+];
+
+function nomeArquivo(escopo: string, mes: number, ano: number, ext: string) {
+  const slug = escopo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_");
+  return `Turmas_${slug}_${MESES[mes - 1]}_${ano}.${ext}`;
+}
+
+/** .xlsx com duas abas: resumo por turma e detalhe unidade × turma. */
+export function exportarTurmasExcel(
+  detalhe: LinhaTurmaExport[],
+  turmas: string[],
+  escopo: string,
+  mes: number,
+  ano: number,
+  comUnidade: boolean
+) {
+  const wb = XLSX.utils.book_new();
+
+  const wsResumo = XLSX.utils.json_to_sheet(montarResumo(detalhe, turmas));
+  wsResumo["!cols"] = COLS_TURMA.slice(1);
+  XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo por Turma");
+
+  const wsDetalhe = XLSX.utils.json_to_sheet(
+    detalhe.map((l) => linhaTurmaParaPlanilha(l, comUnidade))
+  );
+  wsDetalhe["!cols"] = comUnidade ? COLS_TURMA : COLS_TURMA.slice(1);
+  XLSX.utils.book_append_sheet(wb, wsDetalhe, comUnidade ? "Unidade x Turma" : "Detalhe");
+
+  XLSX.writeFile(wb, nomeArquivo(escopo, mes, ano, "xlsx"));
+}
+
+/** CSV UTF-8 com BOM e separador vírgula — abre direto no Google Sheets e no Excel. */
+export function exportarTurmasCsv(
+  detalhe: LinhaTurmaExport[],
+  escopo: string,
+  mes: number,
+  ano: number,
+  comUnidade: boolean
+) {
+  const ws = XLSX.utils.json_to_sheet(detalhe.map((l) => linhaTurmaParaPlanilha(l, comUnidade)));
+  const csv = XLSX.utils.sheet_to_csv(ws, { FS: "," });
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo(escopo, mes, ano, "csv");
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -15,6 +15,7 @@ import {
   BookOpen,
   Repeat,
   ChevronDown,
+  Table2,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -78,6 +79,7 @@ const NAV_MARKETING: NavEntry[] = [
     items: [
       { to: "/marketing/desfechos", label: "Desfechos", icon: CalendarCheck },
       { to: "/marketing/observacoes", label: "Observações", icon: MessageSquare },
+      { to: "/marketing/turmas", label: "Relatório por Turma", icon: Table2 },
     ],
   },
   { to: "/marketing/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true },

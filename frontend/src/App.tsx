@@ -22,6 +22,7 @@ const RematriculaUnidade = lazy(() => import("./pages/unidade/Rematricula"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
 const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
+const RelatorioTurmas = lazy(() => import("./pages/marketing/RelatorioTurmas"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
@@ -173,6 +174,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="usuarios" element={<Usuarios />} />
           <Route path="observacoes" element={<Observacoes />} />
+          <Route path="turmas" element={<RelatorioTurmas />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
