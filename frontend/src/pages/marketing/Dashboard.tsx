@@ -28,6 +28,7 @@ import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
 const TODOS_OS_DIAS = "todos";
+const TODAS_AS_UNIDADES = "todas";
 
 export default function Dashboard() {
   const mesCorrido = new Date().getMonth() + 1;
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const [mes, setMes] = useState(mesCorrido);
   const [dia, setDia] = useState(TODOS_OS_DIAS);
   const [visao, setVisao] = useState<"unidades" | "turmas">("unidades");
+  const [unidadeTurma, setUnidadeTurma] = useState(TODAS_AS_UNIDADES);
   const [modalAberto, setModalAberto] = useState(false);
   const [unidadeEditando, setUnidadeEditando] = useState<ConsolidadoUnidade | null>(null);
 
@@ -42,11 +44,16 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { dados, linhasTurma, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
 
-  // Mesmo recorte (mês/dia) quebrado por turma — alimenta a visão "Por turma" e as
-  // abas de turma do Excel, sem segunda consulta nem segunda exportação.
-  const turmasDetalhe = useMemo(() => detalhePorUnidade(linhasTurma), [linhasTurma]);
-  const turmasResumo = useMemo(() => resumoPorTurma(linhasTurma), [linhasTurma]);
-  const turmasTotal = useMemo(() => somarTurmas(linhasTurma, "—", "Total"), [linhasTurma]);
+  // Mesmo recorte (mês/dia/unidade) quebrado por turma — alimenta a visão "Por turma"
+  // e as abas de turma do Excel, sem segunda consulta nem segunda exportação.
+  const redeInteira = unidadeTurma === TODAS_AS_UNIDADES;
+  const escopoTurmas = useMemo(
+    () => (redeInteira ? linhasTurma : linhasTurma.filter((l) => l.unidade === unidadeTurma)),
+    [linhasTurma, redeInteira, unidadeTurma]
+  );
+  const turmasDetalhe = useMemo(() => detalhePorUnidade(escopoTurmas), [escopoTurmas]);
+  const turmasResumo = useMemo(() => resumoPorTurma(escopoTurmas), [escopoTurmas]);
+  const turmasTotal = useMemo(() => somarTurmas(escopoTurmas, "—", "Total"), [escopoTurmas]);
 
   // Dias úteis do mês selecionado, do mais recente para o mais antigo, limitado a hoje
   const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET)
@@ -155,7 +162,7 @@ export default function Dashboard() {
             title="CSV UTF-8 por unidade e turma — importa direto no Google Sheets"
             onClick={async () => {
               const { exportarTurmasCsv } = await import("../../lib/exportExcel");
-              exportarTurmasCsv(turmasDetalhe, "Rede", mes, ANO, true);
+              exportarTurmasCsv(turmasDetalhe, redeInteira ? "Rede" : unidadeTurma, mes, ANO, redeInteira);
             }}
             className="gap-2"
           >
@@ -238,20 +245,39 @@ export default function Dashboard() {
       <div className="card p-6">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
           <h2 className="font-semibold text-gray-900">
-            {visao === "unidades" ? "Resultados por unidade" : "Resultados por turma — toda a rede"}
+            {visao === "unidades"
+              ? "Resultados por unidade"
+              : `Resultados por turma — ${redeInteira ? "toda a rede" : unidadeTurma}`}
           </h2>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            {(["unidades", "turmas"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setVisao(v)}
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  visao === v ? "bg-primary-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {v === "unidades" ? "Por unidade" : "Por turma"}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 flex-wrap">
+            {visao === "turmas" && (
+              <Select value={unidadeTurma} onValueChange={setUnidadeTurma}>
+                <SelectTrigger className="w-52">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODAS_AS_UNIDADES}>Todas as unidades</SelectItem>
+                  {dados.map((u) => (
+                    <SelectItem key={u.unidade_id} value={u.unidade_nome}>
+                      {u.unidade_nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              {(["unidades", "turmas"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setVisao(v)}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    visao === v ? "bg-primary-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {v === "unidades" ? "Por unidade" : "Por turma"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         {loading ? (
@@ -268,8 +294,8 @@ export default function Dashboard() {
           <>
             <TabelaTurmas linhas={turmasResumo} total={turmasTotal} />
             <p className="text-sm text-gray-500 mt-3">
-              A exportação Excel traz estas turmas em duas abas — consolidado e unidade × turma.
-              Para filtrar por unidade na tela,{" "}
+              As exportações seguem este filtro e trazem também o detalhe unidade × turma
+              {redeInteira ? "" : ` de ${unidadeTurma}`}. Para ver esse detalhe na tela,{" "}
               <button
                 onClick={() => navigate("/marketing/turmas")}
                 className="text-primary-600 font-medium hover:underline"
