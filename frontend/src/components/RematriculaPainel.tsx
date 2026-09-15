@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle } from "lucide-react";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle, UserCheck } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
@@ -60,6 +60,21 @@ interface RematriculaPainelProps {
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
   /** Mostra o botão Remover — só supervisão tem essa permissão (RLS restringe DELETE a role='supervisao'). */
   permiteRemover?: boolean;
+}
+
+// Rótulo fixo acima do campo: o placeholder some assim que tem conteúdo, e aí
+// o valor gravado (ex. o nome de quem contatou) ficava sem contexto na tela.
+function Campo({ label, children, agrupado }: { label: string; children: React.ReactNode; agrupado?: boolean }) {
+  // agrupado: o bloco tem mais de um controle, então não pode ser um <label>.
+  const Tag = agrupado ? "div" : "label";
+  return (
+    <Tag className="block min-w-0">
+      <span className="mb-0.5 block text-[11px] font-medium uppercase tracking-wide text-gray-400">
+        {label}
+      </span>
+      {children}
+    </Tag>
+  );
 }
 
 function formatarData(iso: string): string {
@@ -284,6 +299,14 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                         <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[statusAtual]}`}>
                           {STATUS_LABEL[statusAtual]}
                         </span>
+                        {/* Quem falou com a família fica à vista em qualquer status —
+                            no rematriculado o nome sumia no meio dos campos. */}
+                        {linha.quemContatou.trim() && (
+                          <p className="mt-1.5 flex items-start gap-1 text-xs font-semibold text-primary-700">
+                            <UserCheck className="h-3.5 w-3.5 flex-shrink-0 mt-px text-primary-400" />
+                            <span className="break-words">{linha.quemContatou}</span>
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-[280px]">
@@ -318,21 +341,25 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                           </label>
                         </div>
                         <div className="mt-2 grid sm:grid-cols-2 gap-2">
-                          <input
-                            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            placeholder="Quem fez contato com a família"
-                            value={linha.quemContatou}
-                            onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
-                          />
-                          {linha.contratoAssinado ? (
+                          <Campo label="Quem fez contato com a família">
                             <input
                               className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              placeholder="Observação (opcional)"
-                              value={linha.observacao}
-                              onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
+                              placeholder="Nome de quem falou com a família"
+                              value={linha.quemContatou}
+                              onChange={(e) => setLinha(a.id, { quemContatou: e.target.value })}
                             />
+                          </Campo>
+                          {linha.contratoAssinado ? (
+                            <Campo label="Observação (opcional)">
+                              <input
+                                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Alguma observação"
+                                value={linha.observacao}
+                                onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
+                              />
+                            </Campo>
                           ) : linha.negociando ? (
-                            <div className="min-w-0">
+                            <Campo label="Negociação com a família" agrupado>
                               {historico.length > 0 && (
                                 <ul className="mb-1.5 max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500">
                                   {historico.map((h, i) => (
@@ -359,14 +386,16 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                                   +
                                 </Button>
                               </div>
-                            </div>
+                            </Campo>
                           ) : (
-                            <input
-                              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              placeholder="Motivo da não rematrícula (se já decidido)"
-                              value={linha.motivo}
-                              onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
-                            />
+                            <Campo label="Motivo da não rematrícula">
+                              <input
+                                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Se a família já decidiu, registre o motivo"
+                                value={linha.motivo}
+                                onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
+                              />
+                            </Campo>
                           )}
                         </div>
                       </div>
