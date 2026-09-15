@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import type { ConsolidadoUnidade } from "../types";
+import type { ConsolidadoUnidade, LinhaTurma } from "../types";
 import { dateToIso } from "../lib/utils";
+import { CAMPOS_TURMA, zeradaTurma } from "../lib/turmas";
 
 // dia: ISO date string para filtrar por dia específico; undefined = mês inteiro
 export function useConsolidado(ano: number, mes: number, dia?: string) {
   const [dados, setDados] = useState<ConsolidadoUnidade[]>([]);
+  // Mesmo recorte de dados, quebrado por turma — alimenta o relatório e a exportação
+  // por turma sem custar uma segunda ida ao banco.
+  const [linhasTurma, setLinhasTurma] = useState<LinhaTurma[]>([]);
   const [loading, setLoading] = useState(true);
 
   const carregar = useCallback(async () => {
@@ -115,7 +119,21 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
         }
       );
 
+      const nomePorId = new Map<string, string>(
+        (unidades ?? []).map((u: { id: string; unidade_nome: string }) => [u.id, u.unidade_nome])
+      );
+      const porTurma = new Map<string, LinhaTurma>();
+      for (const r of registros) {
+        const nome = nomePorId.get(r.unidade_id);
+        if (!nome) continue; // unidade inativa — fora do consolidado
+        const chave = `${nome}||${r.turma}`;
+        const linha = porTurma.get(chave) ?? zeradaTurma(nome, r.turma);
+        for (const c of CAMPOS_TURMA) linha[c] += r[c] ?? 0;
+        porTurma.set(chave, linha);
+      }
+
       setDados(consolidado);
+      setLinhasTurma([...porTurma.values()]);
     } finally {
       setLoading(false);
     }
@@ -149,5 +167,5 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
     return () => clearInterval(id);
   }, [carregar]);
 
-  return { dados, loading, recarregar: carregar };
+  return { dados, linhasTurma, loading, recarregar: carregar };
 }

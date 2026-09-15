@@ -75,6 +75,19 @@ export interface AuditLog {
   alterado_em: string;
 }
 
+/** Movimento de uma turma num recorte (uma unidade, ou a rede toda). */
+export interface LinhaTurma {
+  unidade: string;
+  turma: string;
+  visitas: number;
+  visitas_curso_ferias: number;
+  matriculas: number;
+  matriculas_curso_ferias: number;
+  desligamentos: number;
+  transferencias: number;
+  religamentos: number;
+}
+
 export interface ConsolidadoUnidade {
   unidade_id: string;
   unidade_nome: string;

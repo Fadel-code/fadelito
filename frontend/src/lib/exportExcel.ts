@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
-import type { ConsolidadoUnidade } from "../types";
-import { MESES } from "../types";
+import type { ConsolidadoUnidade, LinhaTurma } from "../types";
+import { MESES, TURMAS } from "../types";
 
 function calcAproveitamento(vt: number, mt: number): string {
   return vt > 0 ? `${((mt / vt) * 100).toFixed(1)}%` : "—";
@@ -30,7 +30,10 @@ function linhaParaPlanilha(u: ConsolidadoUnidade) {
 export async function exportarExcel(
   dadosMes: ConsolidadoUnidade[],
   mes: number,
-  ano: number
+  ano: number,
+  // Quebra por turma do mesmo período — vai junto no arquivo pra não precisar
+  // exportar duas vezes em telas diferentes.
+  turmas?: LinhaTurma[]
 ) {
   const wb = XLSX.utils.book_new();
 
@@ -81,6 +84,16 @@ export async function exportarExcel(
     XLSX.utils.book_append_sheet(wb, wsVazia, MESES[m - 1]);
   }
 
+  if (turmas && turmas.length > 0) {
+    const wsResumo = XLSX.utils.json_to_sheet(montarResumo(turmas, TURMAS.map(String)));
+    wsResumo["!cols"] = COLS_TURMA.slice(1);
+    XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo por Turma");
+
+    const wsTurmas = XLSX.utils.json_to_sheet(turmas.map((l) => linhaTurmaParaPlanilha(l, true)));
+    wsTurmas["!cols"] = COLS_TURMA;
+    XLSX.utils.book_append_sheet(wb, wsTurmas, "Unidade x Turma");
+  }
+
   XLSX.writeFile(wb, `Resultados_Fadelito_${ano}.xlsx`);
 }
 
@@ -88,19 +101,7 @@ export async function exportarExcel(
 // Relatório por turma (marketing / supervisão)
 // ============================================================
 
-export interface LinhaTurmaExport {
-  unidade: string;
-  turma: string;
-  visitas: number;
-  visitas_curso_ferias: number;
-  matriculas: number;
-  matriculas_curso_ferias: number;
-  desligamentos: number;
-  transferencias: number;
-  religamentos: number;
-}
-
-function linhaTurmaParaPlanilha(l: LinhaTurmaExport, comUnidade: boolean) {
+function linhaTurmaParaPlanilha(l: LinhaTurma, comUnidade: boolean) {
   const vt = l.visitas + l.visitas_curso_ferias;
   const mt = l.matriculas + l.matriculas_curso_ferias;
   return {
@@ -120,8 +121,8 @@ function linhaTurmaParaPlanilha(l: LinhaTurmaExport, comUnidade: boolean) {
   };
 }
 
-function somarLinhasTurma(linhas: LinhaTurmaExport[], turma: string, unidade: string): LinhaTurmaExport {
-  return linhas.reduce<LinhaTurmaExport>(
+function somarLinhasTurma(linhas: LinhaTurma[], turma: string, unidade: string): LinhaTurma {
+  return linhas.reduce<LinhaTurma>(
     (acc, l) => ({
       unidade,
       turma,
@@ -148,7 +149,7 @@ function somarLinhasTurma(linhas: LinhaTurmaExport[], turma: string, unidade: st
 }
 
 /** Resumo consolidado (uma linha por turma) + linha de total, na ordem recebida. */
-function montarResumo(detalhe: LinhaTurmaExport[], turmas: string[]) {
+function montarResumo(detalhe: LinhaTurma[], turmas: string[]) {
   const resumo = turmas.map((t) =>
     somarLinhasTurma(detalhe.filter((l) => l.turma === t), t, "—")
   );
@@ -171,7 +172,7 @@ function nomeArquivo(escopo: string, mes: number, ano: number, ext: string) {
 
 /** .xlsx com duas abas: resumo por turma e detalhe unidade × turma. */
 export function exportarTurmasExcel(
-  detalhe: LinhaTurmaExport[],
+  detalhe: LinhaTurma[],
   turmas: string[],
   escopo: string,
   mes: number,
@@ -195,7 +196,7 @@ export function exportarTurmasExcel(
 
 /** CSV UTF-8 com BOM e separador vírgula — abre direto no Google Sheets e no Excel. */
 export function exportarTurmasCsv(
-  detalhe: LinhaTurmaExport[],
+  detalhe: LinhaTurma[],
   escopo: string,
   mes: number,
   ano: number,

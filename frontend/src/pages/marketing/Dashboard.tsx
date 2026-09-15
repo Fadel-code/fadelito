@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -11,12 +11,15 @@ import {
   GraduationCap,
   TrendingUp,
   UserMinus,
+  Table2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useConsolidado } from "../../hooks/useConsolidado";
 import type { ConsolidadoUnidade } from "../../types";
 import { MESES } from "../../types";
 import TabelaConsolidada from "../../components/TabelaConsolidada";
+import TabelaTurmas from "../../components/TabelaTurmas";
+import { detalhePorUnidade, resumoPorTurma, somarTurmas } from "../../lib/turmas";
 import ModalEdicaoUnidade from "../../components/ModalEdicaoUnidade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
@@ -31,12 +34,19 @@ export default function Dashboard() {
   const hojeIso = dateToIso(new Date());
   const [mes, setMes] = useState(mesCorrido);
   const [dia, setDia] = useState(TODOS_OS_DIAS);
+  const [visao, setVisao] = useState<"unidades" | "turmas">("unidades");
   const [modalAberto, setModalAberto] = useState(false);
   const [unidadeEditando, setUnidadeEditando] = useState<ConsolidadoUnidade | null>(null);
 
   const diaFiltro = dia === TODOS_OS_DIAS ? undefined : dia;
   const navigate = useNavigate();
-  const { dados, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
+  const { dados, linhasTurma, loading, recarregar } = useConsolidado(ANO, mes, diaFiltro);
+
+  // Mesmo recorte (mês/dia) quebrado por turma — alimenta a visão "Por turma" e as
+  // abas de turma do Excel, sem segunda consulta nem segunda exportação.
+  const turmasDetalhe = useMemo(() => detalhePorUnidade(linhasTurma), [linhasTurma]);
+  const turmasResumo = useMemo(() => resumoPorTurma(linhasTurma), [linhasTurma]);
+  const turmasTotal = useMemo(() => somarTurmas(linhasTurma, "—", "Total"), [linhasTurma]);
 
   // Dias úteis do mês selecionado, do mais recente para o mais antigo, limitado a hoje
   const diasUteis = diasUteisDoMes(ANO, mes, FERIADOS_SET)
@@ -132,12 +142,25 @@ export default function Dashboard() {
             variant="outline"
             onClick={async () => {
               const { exportarExcel } = await import("../../lib/exportExcel");
-              exportarExcel(dados, mes, ANO);
+              exportarExcel(dados, mes, ANO, turmasDetalhe);
             }}
             className="gap-2"
           >
             <FileSpreadsheet className="h-4 w-4" />
             Exportar Excel
+          </Button>
+
+          <Button
+            variant="outline"
+            title="CSV UTF-8 por unidade e turma — importa direto no Google Sheets"
+            onClick={async () => {
+              const { exportarTurmasCsv } = await import("../../lib/exportExcel");
+              exportarTurmasCsv(turmasDetalhe, "Rede", mes, ANO, true);
+            }}
+            className="gap-2"
+          >
+            <Table2 className="h-4 w-4" />
+            Exportar Sheets (CSV)
           </Button>
 
           <Button
@@ -213,6 +236,24 @@ export default function Dashboard() {
 
       {/* Tabela */}
       <div className="card p-6">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h2 className="font-semibold text-gray-900">
+            {visao === "unidades" ? "Resultados por unidade" : "Resultados por turma — toda a rede"}
+          </h2>
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            {(["unidades", "turmas"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVisao(v)}
+                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  visao === v ? "bg-primary-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {v === "unidades" ? "Por unidade" : "Por turma"}
+              </button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <div className="flex items-center justify-center h-48 text-gray-400">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" />
@@ -223,6 +264,21 @@ export default function Dashboard() {
             Nenhum dado para {MESES[mes - 1]} {ANO}
             {filtrouDia && ` — ${format(new Date(dia + "T12:00:00"), "dd/MM", { locale: ptBR })}`}
           </div>
+        ) : visao === "turmas" ? (
+          <>
+            <TabelaTurmas linhas={turmasResumo} total={turmasTotal} />
+            <p className="text-sm text-gray-500 mt-3">
+              A exportação Excel traz estas turmas em duas abas — consolidado e unidade × turma.
+              Para filtrar por unidade na tela,{" "}
+              <button
+                onClick={() => navigate("/marketing/turmas")}
+                className="text-primary-600 font-medium hover:underline"
+              >
+                abra o Relatório por Turma
+              </button>
+              .
+            </p>
+          </>
         ) : (
           <TabelaConsolidada
             dados={dados}
