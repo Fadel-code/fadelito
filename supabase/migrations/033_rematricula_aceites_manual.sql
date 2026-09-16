@@ -54,3 +54,10 @@ CREATE POLICY "rematricula_aceites_update"
     (get_my_role() = 'unidade' AND unidade_id = auth.uid())
     OR get_my_role() = 'supervisao'
   );
+
+CREATE POLICY "rematricula_aceites_delete"
+  ON public.rematricula_aceites FOR DELETE TO authenticated
+  USING (
+    (get_my_role() = 'unidade' AND unidade_id = auth.uid())
+    OR get_my_role() = 'supervisao'
+  );

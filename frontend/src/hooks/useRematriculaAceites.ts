@@ -53,13 +53,19 @@ export function useRematriculaAceites() {
     async (unidadeId: string, dataIso: string, linhasPorTurma: RematriculaAceiteInput[]) => {
       setSalvando(true);
       try {
-        const { error } = await supabase
+        const { data: salvos, error } = await supabase
           .from("rematricula_aceites")
           .upsert(
             linhasPorTurma.map((l) => ({ unidade_id: unidadeId, data: dataIso, turma: l.turma, quantidade: l.quantidade })),
             { onConflict: "unidade_id,data,turma" }
-          );
+          )
+          .select();
         if (error) throw error;
+        // RLS pode bloquear o upsert silenciosamente (0 linhas, sem erro) — sem essa
+        // checagem o toast mentiria "sucesso" (mesmo bug já visto em useRegistros).
+        if ((salvos?.length ?? 0) < linhasPorTurma.length) {
+          throw new Error("Permissão negada pelo banco para salvar esse dia.");
+        }
         await carregar();
         toast.success("Aceites salvos!");
         return true;
@@ -78,12 +84,17 @@ export function useRematriculaAceites() {
     async (unidadeId: string, dataIso: string) => {
       setRemovendo(true);
       try {
-        const { error } = await supabase
+        const { data: removidos, error } = await supabase
           .from("rematricula_aceites")
           .delete()
           .eq("unidade_id", unidadeId)
-          .eq("data", dataIso);
+          .eq("data", dataIso)
+          .select();
         if (error) throw error;
+        // Mesmo cuidado do salvar(): RLS bloqueia DELETE sem erro explícito.
+        if ((removidos?.length ?? 0) === 0) {
+          throw new Error("Permissão negada pelo banco para remover esse dia.");
+        }
         await carregar();
         toast.success("Aceites removidos!");
         return true;
