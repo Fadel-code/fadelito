@@ -1,30 +1,41 @@
 import { useState, useEffect, useMemo, type ChangeEvent } from "react";
 import { format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, ThumbsUp, Save } from "lucide-react";
+import { CalendarIcon, ThumbsUp, Save, Trash2 } from "lucide-react";
 import { TURMAS, aceiteVazio } from "../types";
 import type { RematriculaAceiteDia, RematriculaAceiteInput } from "../types";
 import { dateToIso } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "./ui/dialog";
 
 interface Props {
   unidadeId: string;
   linhas: RematriculaAceiteDia[];
   loading: boolean;
   salvando: boolean;
+  removendo: boolean;
   salvar: (unidadeId: string, dataIso: string, linhasPorTurma: RematriculaAceiteInput[]) => Promise<boolean>;
+  remover: (unidadeId: string, dataIso: string) => Promise<boolean>;
 }
 
 // Preenchimento manual de aceites por dia e por turma — mesmo padrão do
 // Formulário Diário de visitas (calendário + uma linha editável por turma).
 // Usado tanto pela unidade (seus próprios dados) quanto pelo marketing/
 // supervisão (por unidade escolhida).
-export default function AceitesForm({ unidadeId, linhas, loading, salvando, salvar }: Props) {
+export default function AceitesForm({ unidadeId, linhas, loading, salvando, removendo, salvar, remover }: Props) {
   const doUnidade = useMemo(() => linhas.filter((l) => l.unidade_id === unidadeId), [linhas, unidadeId]);
 
   const [dataSelecionada, setDataSelecionada] = useState<Date>(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
   const dataIso = dateToIso(dataSelecionada);
 
   const salvoPorTurma = useMemo(() => {
@@ -56,10 +67,17 @@ export default function AceitesForm({ unidadeId, linhas, loading, salvando, salv
 
   const alterado = linhasDia.some((l) => l.quantidade !== (salvoPorTurma.get(l.turma) ?? 0));
   const totalDia = linhasDia.reduce((soma, l) => soma + l.quantidade, 0);
+  const temPreenchimento = Array.from(salvoPorTurma.values()).some((v) => v > 0);
 
   async function handleSalvar() {
     if (!unidadeId) return;
     await salvar(unidadeId, dataIso, linhasDia);
+  }
+
+  async function handleRemover() {
+    if (!unidadeId) return;
+    const ok = await remover(unidadeId, dataIso);
+    if (ok) setModalRemocaoAberto(false);
   }
 
   const recentes = useMemo(() => {
@@ -154,15 +172,48 @@ export default function AceitesForm({ unidadeId, linhas, loading, salvando, salv
           <p className="text-sm text-gray-600">
             Total do dia: <span className="font-semibold text-cyan-700">{totalDia}</span>
           </p>
-          <Button onClick={handleSalvar} disabled={!unidadeId || !alterado || salvando || loading} size="lg">
-            <Save className="h-4 w-4" />
-            {salvando ? "Salvando..." : "Salvar"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {temPreenchimento && (
+              <Button
+                variant="outline"
+                className="text-red-600 border-red-300 hover:bg-red-50"
+                onClick={() => setModalRemocaoAberto(true)}
+                disabled={salvando || removendo}
+              >
+                <Trash2 className="h-4 w-4" />
+                Remover preenchimento
+              </Button>
+            )}
+            <Button onClick={handleSalvar} disabled={!unidadeId || !alterado || salvando || loading} size="lg">
+              <Save className="h-4 w-4" />
+              {salvando ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-gray-400 mt-3">
           Registre assim que uma família confirmar verbalmente a rematrícula, mesmo antes de assinar o contrato.
         </p>
       </div>
+
+      <Dialog open={modalRemocaoAberto} onOpenChange={setModalRemocaoAberto}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover preenchimento</DialogTitle>
+            <DialogDescription>
+              Todos os aceites de {format(dataSelecionada, "dd/MM/yyyy", { locale: ptBR })} serão removidos. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalRemocaoAberto(false)} disabled={removendo}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
+              <Trash2 className="h-4 w-4" />
+              {removendo ? "Removendo..." : "Sim, remover"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {recentes.length > 0 && (
         <div className="card p-6">

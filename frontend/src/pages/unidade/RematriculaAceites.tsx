@@ -5,7 +5,7 @@ import AceitesForm from "../../components/AceitesForm";
 
 export default function RematriculaAceites() {
   const { profile } = useAuth();
-  const { linhas, total, loading, salvando, salvar } = useRematriculaAceites();
+  const { linhas, total, loading, salvando, removendo, salvar, remover } = useRematriculaAceites();
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -27,7 +27,15 @@ export default function RematriculaAceites() {
         </div>
       </div>
 
-      <AceitesForm unidadeId={profile?.id ?? ""} linhas={linhas} loading={loading} salvando={salvando} salvar={salvar} />
+      <AceitesForm
+        unidadeId={profile?.id ?? ""}
+        linhas={linhas}
+        loading={loading}
+        salvando={salvando}
+        removendo={removendo}
+        salvar={salvar}
+        remover={remover}
+      />
     </div>
   );
 }

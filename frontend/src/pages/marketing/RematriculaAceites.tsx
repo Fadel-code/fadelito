@@ -14,7 +14,7 @@ interface UnidadeOpcao {
 
 export default function RematriculaAceitesMarketing() {
   const { profile } = useAuth();
-  const { linhas, porUnidade, total, loading, salvando, salvar } = useRematriculaAceites();
+  const { linhas, porUnidade, total, loading, salvando, removendo, salvar, remover } = useRematriculaAceites();
 
   const ordenados = useMemo(
     () => [...porUnidade].sort((a, b) => b.quantidade - a.quantidade),
@@ -45,8 +45,16 @@ export default function RematriculaAceitesMarketing() {
         <p className="text-gray-500 text-sm mt-1">Contagem manual de aceites verbais de rematrícula, por unidade</p>
       </div>
 
-      <div className="card p-6 mb-6 max-w-xs">
+      <div className="card p-6 mb-6 flex flex-wrap gap-x-10 gap-y-4">
         <StatTile icon={ThumbsUp} label="Total na rede" value={total} color="cyan" />
+        {podePreencher && unidadeId && (
+          <StatTile
+            icon={ThumbsUp}
+            label={`Total — ${unidades.find((u) => u.id === unidadeId)?.unidade_nome ?? "unidade selecionada"}`}
+            value={porUnidade.find((u) => u.unidade_id === unidadeId)?.quantidade ?? 0}
+            color="blue"
+          />
+        )}
       </div>
 
       {podePreencher && (
@@ -65,7 +73,15 @@ export default function RematriculaAceitesMarketing() {
             </Select>
           </div>
           {unidadeId && (
-            <AceitesForm unidadeId={unidadeId} linhas={linhas} loading={loading} salvando={salvando} salvar={salvar} />
+            <AceitesForm
+              unidadeId={unidadeId}
+              linhas={linhas}
+              loading={loading}
+              salvando={salvando}
+              removendo={removendo}
+              salvar={salvar}
+              remover={remover}
+            />
           )}
         </div>
       )}

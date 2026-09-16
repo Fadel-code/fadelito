@@ -16,6 +16,7 @@ export function useRematriculaAceites() {
   const [linhas, setLinhas] = useState<RematriculaAceiteDia[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -73,6 +74,30 @@ export function useRematriculaAceites() {
     [carregar]
   );
 
+  const remover = useCallback(
+    async (unidadeId: string, dataIso: string) => {
+      setRemovendo(true);
+      try {
+        const { error } = await supabase
+          .from("rematricula_aceites")
+          .delete()
+          .eq("unidade_id", unidadeId)
+          .eq("data", dataIso);
+        if (error) throw error;
+        await carregar();
+        toast.success("Aceites removidos!");
+        return true;
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao remover aceites");
+        return false;
+      } finally {
+        setRemovendo(false);
+      }
+    },
+    [carregar]
+  );
+
   const porUnidade = useMemo(() => {
     const mapa = new Map<string, AceitesPorUnidade>();
     for (const l of linhas) {
@@ -89,5 +114,5 @@ export function useRematriculaAceites() {
 
   const total = useMemo(() => linhas.reduce((soma, l) => soma + l.quantidade, 0), [linhas]);
 
-  return { linhas, porUnidade, total, loading, salvando, carregar, salvar };
+  return { linhas, porUnidade, total, loading, salvando, removendo, carregar, salvar, remover };
 }
