@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle } from "lucide-react";
+import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle, ThumbsUp } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
@@ -86,13 +86,14 @@ export default function RematriculaMarketing() {
       {/* Hero: meta da rede + indicadores */}
       <div className="card p-6 flex flex-col sm:flex-row items-center gap-6 mb-6">
         <MetaGauge pct={kpisRede.pct} label="Meta 90%" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 flex-1 w-full">
           <StatTile icon={Users} label="A rematricular" value={kpisRede.total} />
           <StatTile icon={CheckCircle2} label="Rematriculados" value={kpisRede.rematriculados} color="green" />
           <StatTile icon={MessageCircle} label="Em conversa" value={kpisRede.negociando} color="blue" />
           <StatTile icon={XCircle} label="Não rematriculados" value={kpisRede.naoRematriculados} color="red" />
           <StatTile icon={Clock} label="Pendentes" value={kpisRede.pendentes} color="amber" />
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpisRede.inadimplentes} color="orange" />
+          <StatTile icon={ThumbsUp} label="Aceites" value={kpisRede.aceites} color="cyan" />
         </div>
       </div>
 

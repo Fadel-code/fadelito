@@ -7,6 +7,7 @@ const COLOR_CLASS: Record<string, string> = {
   amber: "text-amber-500",
   orange: "text-orange-500",
   red: "text-red-500",
+  cyan: "text-cyan-500",
 };
 
 const VALUE_COLOR_CLASS: Record<string, string> = {
@@ -16,6 +17,7 @@ const VALUE_COLOR_CLASS: Record<string, string> = {
   amber: "text-amber-500",
   orange: "text-orange-500",
   red: "text-red-500",
+  cyan: "text-cyan-600",
 };
 
 interface Props {

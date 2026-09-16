@@ -74,7 +74,8 @@ export function useRematricula() {
       quemContatou: string,
       observacao: string,
       negociando: boolean,
-      inadimplente: boolean
+      inadimplente: boolean,
+      aceite: boolean
     ) => {
       setSalvando(id);
       try {
@@ -87,6 +88,7 @@ export function useRematricula() {
             observacao: observacao.trim() || null,
             negociando,
             inadimplente,
+            aceite,
           })
           .eq("id", id);
         if (error) throw error;

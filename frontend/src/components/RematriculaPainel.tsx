@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
-import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle, UserCheck } from "lucide-react";
-import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno } from "../types";
+import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle, UserCheck, ThumbsUp } from "lucide-react";
+import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno, type RematriculaHistoricoEntry } from "../types";
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
 
@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   nao_rematriculado: "Não rematriculou",
 };
 
-const STATUS_FILTROS = ["todos", "pendente", "negociando", "rematriculado", "nao_rematriculado", "inadimplente"] as const;
+const STATUS_FILTROS = ["todos", "pendente", "negociando", "rematriculado", "nao_rematriculado", "inadimplente", "aceite"] as const;
 type StatusFiltro = (typeof STATUS_FILTROS)[number];
 const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
   todos: "Todos",
@@ -26,6 +26,18 @@ const STATUS_FILTRO_LABEL: Record<StatusFiltro, string> = {
   rematriculado: "Rematriculados",
   nao_rematriculado: "Não rematriculados",
   inadimplente: "Inadimplentes",
+  aceite: "Aceites",
+};
+// Mesma cor do respectivo StatTile no hero, pra ler "Pendentes" no filtro e
+// no card como a mesma categoria em vez de precisar reler o rótulo.
+const STATUS_FILTRO_COR: Record<StatusFiltro, { ativo: string; inativo: string }> = {
+  todos: { ativo: "bg-primary-500 text-white", inativo: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
+  pendente: { ativo: "bg-amber-500 text-white", inativo: "bg-amber-50 text-amber-700 hover:bg-amber-100" },
+  negociando: { ativo: "bg-blue-500 text-white", inativo: "bg-blue-50 text-blue-700 hover:bg-blue-100" },
+  rematriculado: { ativo: "bg-green-500 text-white", inativo: "bg-green-50 text-green-700 hover:bg-green-100" },
+  nao_rematriculado: { ativo: "bg-red-500 text-white", inativo: "bg-red-50 text-red-700 hover:bg-red-100" },
+  inadimplente: { ativo: "bg-orange-500 text-white", inativo: "bg-orange-50 text-orange-700 hover:bg-orange-100" },
+  aceite: { ativo: "bg-cyan-500 text-white", inativo: "bg-cyan-50 text-cyan-700 hover:bg-cyan-100" },
 };
 
 function normalizar(texto: string): string {
@@ -39,6 +51,7 @@ interface LinhaState {
   observacao: string;
   negociando: boolean;
   inadimplente: boolean;
+  aceite: boolean;
 }
 
 interface RematriculaPainelProps {
@@ -54,7 +67,8 @@ interface RematriculaPainelProps {
     quemContatou: string,
     observacao: string,
     negociando: boolean,
-    inadimplente: boolean
+    inadimplente: boolean,
+    aceite: boolean
   ) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
@@ -81,6 +95,21 @@ function formatarData(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
+// O histórico costuma guardar quem falou com a família. Some da tela quando o aluno
+// vira rematriculado, então é renderizado nos dois estados.
+function HistoricoLista({ historico, className = "" }: { historico: RematriculaHistoricoEntry[]; className?: string }) {
+  if (historico.length === 0) return null;
+  return (
+    <ul className={`max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500 ${className}`}>
+      {historico.map((h, i) => (
+        <li key={i}>
+          <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // Tela que a unidade usa pra acompanhar a rematrícula — reaproveitada como prévia
 // (mesmo componente, data source local) na tela da supervisão.
 export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false }: RematriculaPainelProps) {
@@ -99,7 +128,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     const termo = normalizar(busca.trim());
     return meus.filter((a) => {
       if (statusFiltro === "inadimplente" && !a.inadimplente) return false;
-      else if (statusFiltro !== "todos" && statusFiltro !== "inadimplente" && derivarStatusRematricula(a) !== statusFiltro) return false;
+      else if (statusFiltro === "aceite" && !a.aceite) return false;
+      else if (statusFiltro !== "todos" && statusFiltro !== "inadimplente" && statusFiltro !== "aceite" && derivarStatusRematricula(a) !== statusFiltro) return false;
       if (termo && !normalizar(a.nome).includes(termo)) return false;
       return true;
     });
@@ -116,6 +146,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         observacao: a.observacao ?? "",
         negociando: a.negociando,
         inadimplente: a.inadimplente,
+        aceite: a.aceite,
       };
     }
     setEstado(init);
@@ -143,7 +174,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   async function handleSalvar(id: string) {
     const linha = estado[id];
     if (!linha) return;
-    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente);
+    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente, linha.aceite);
   }
 
   async function handleAdicionarHistorico(id: string) {
@@ -159,13 +190,14 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     <div className="space-y-6">
       {/* Hero: indicadores — meta da rede fica só na visão de marketing/supervisão */}
       <div className="card p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
           <StatTile icon={Users} label="A rematricular" value={kpis.total} />
           <StatTile icon={CheckCircle2} label="Rematriculados" value={kpis.rematriculados} color="green" />
           <StatTile icon={MessageCircle} label="Em conversa" value={kpis.negociando} color="blue" />
           <StatTile icon={XCircle} label="Não rematriculados" value={kpis.naoRematriculados} color="red" />
           <StatTile icon={Clock} label="Pendentes" value={kpis.pendentes} color="amber" />
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpis.inadimplentes} color="orange" />
+          <StatTile icon={ThumbsUp} label="Aceites" value={kpis.aceites} color="cyan" />
         </div>
       </div>
 
@@ -223,17 +255,16 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                 : s === "negociando" ? kpis.negociando
                 : s === "rematriculado" ? kpis.rematriculados
                 : s === "inadimplente" ? kpis.inadimplentes
+                : s === "aceite" ? kpis.aceites
                 : kpis.naoRematriculados;
+              const cor = STATUS_FILTRO_COR[s];
               return (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatusFiltro(s)}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                    statusFiltro === s
-                      ? s === "inadimplente" ? "bg-red-600 text-white" : "bg-primary-500 text-white"
-                      : s === "inadimplente" ? "bg-red-100 text-red-700 hover:bg-red-200"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    statusFiltro === s ? cor.ativo : cor.inativo
                   }`}
                 >
                   {STATUS_FILTRO_LABEL[s]} ({contagem})
@@ -279,6 +310,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                   observacao: a.observacao ?? "",
                   negociando: a.negociando,
                   inadimplente: a.inadimplente,
+                  aceite: a.aceite,
                 };
                 const isSalvando = salvando === a.id;
                 const alterado =
@@ -287,7 +319,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                   linha.quemContatou !== (a.quem_contatou ?? "") ||
                   linha.observacao !== (a.observacao ?? "") ||
                   linha.negociando !== a.negociando ||
-                  linha.inadimplente !== a.inadimplente;
+                  linha.inadimplente !== a.inadimplente ||
+                  linha.aceite !== a.aceite;
                 const statusAtual = derivarStatusRematricula(a);
                 const historico = a.negociacao_historico ?? [];
                 return (
@@ -296,9 +329,17 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                       <div className="min-w-[180px]">
                         <p className={`font-semibold ${a.inadimplente ? "text-red-600" : "text-gray-900"}`}>{a.nome}</p>
                         {a.turma && <p className="text-xs text-gray-500 mt-0.5">{a.turma}</p>}
-                        <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[statusAtual]}`}>
-                          {STATUS_LABEL[statusAtual]}
-                        </span>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[statusAtual]}`}>
+                            {STATUS_LABEL[statusAtual]}
+                          </span>
+                          {linha.aceite && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-100 text-cyan-700">
+                              <ThumbsUp className="h-3 w-3" />
+                              Aceite
+                            </span>
+                          )}
+                        </div>
                         {/* Quem falou com a família fica à vista em qualquer status —
                             no rematriculado o nome sumia no meio dos campos. */}
                         {linha.quemContatou.trim() && (
@@ -333,6 +374,16 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input
                               type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                              checked={linha.aceite}
+                              onChange={(e) => setLinha(a.id, { aceite: e.target.checked })}
+                            />
+                            <ThumbsUp className="h-3.5 w-3.5 text-cyan-400" />
+                            Aceite verbal
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                            <input
+                              type="checkbox"
                               className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
                               checked={linha.inadimplente}
                               onChange={(e) => setLinha(a.id, { inadimplente: e.target.checked })}
@@ -357,18 +408,11 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                                 value={linha.observacao}
                                 onChange={(e) => setLinha(a.id, { observacao: e.target.value })}
                               />
+                              <HistoricoLista historico={historico} className="mt-1.5" />
                             </Campo>
                           ) : linha.negociando ? (
                             <Campo label="Negociação com a família" agrupado>
-                              {historico.length > 0 && (
-                                <ul className="mb-1.5 max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500">
-                                  {historico.map((h, i) => (
-                                    <li key={i}>
-                                      <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                              <HistoricoLista historico={historico} className="mb-1.5" />
                               <div className="flex gap-1.5">
                                 <input
                                   className="w-full min-w-0 rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
