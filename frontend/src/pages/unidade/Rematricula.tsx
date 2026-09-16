@@ -1,10 +1,13 @@
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
+import { useRematriculaAceites } from "../../hooks/useRematriculaAceites";
 import RematriculaPainel from "../../components/RematriculaPainel";
 
 export default function Rematricula() {
   const { profile } = useAuth();
   const rematricula = useRematricula();
+  const { porUnidade } = useRematriculaAceites();
+  const aceites = porUnidade.find((u) => u.unidade_id === profile?.id)?.quantidade ?? 0;
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -15,7 +18,7 @@ export default function Rematricula() {
         </p>
       </div>
 
-      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} />
+      <RematriculaPainel unidadeId={profile?.id ?? ""} aceites={aceites} {...rematricula} />
     </div>
   );
 }

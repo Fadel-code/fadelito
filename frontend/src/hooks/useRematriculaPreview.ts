@@ -30,7 +30,6 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
         observacao: null,
         negociando: false,
         inadimplente: false,
-        aceite: false,
         negociacao_historico: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -47,8 +46,7 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
       quemContatou: string,
       observacao: string,
       negociando: boolean,
-      inadimplente: boolean,
-      aceite: boolean
+      inadimplente: boolean
     ) => {
       setSalvando(id);
       setAlunos((prev) =>
@@ -62,7 +60,6 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
                 observacao: observacao.trim() || null,
                 negociando,
                 inadimplente,
-                aceite,
               }
             : a
         )

@@ -16,6 +16,7 @@ import {
   Repeat,
   ChevronDown,
   Table2,
+  ThumbsUp,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -57,6 +58,7 @@ interface NavGroup {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   items: NavItem[];
+  emphasize?: boolean;
 }
 
 type NavEntry = NavItem | NavGroup;
@@ -82,7 +84,15 @@ const NAV_MARKETING: NavEntry[] = [
       { to: "/marketing/turmas", label: "Relatório por Turma", icon: Table2 },
     ],
   },
-  { to: "/marketing/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true },
+  {
+    label: "Rematrícula 2027",
+    icon: Repeat,
+    emphasize: true,
+    items: [
+      { to: "/marketing/rematricula", label: "Painel", icon: Repeat },
+      { to: "/marketing/rematricula/aceites", label: "Aceites", icon: ThumbsUp },
+    ],
+  },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
 ];
@@ -115,9 +125,21 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
   // rematriculaPct só vem null quando a unidade ainda não tem nenhum aluno importado
   // (ver migration 027) — usamos isso pra só mostrar o menu pra quem já tem dados.
-  const navUnidade =
+  const navUnidade: NavEntry[] =
     role === "unidade" && rematriculaPct !== null
-      ? [...NAV_UNIDADE.slice(0, 2), { to: "/unidade/rematricula", label: "Rematrícula 2027", icon: Repeat, emphasize: true }, ...NAV_UNIDADE.slice(2)]
+      ? [
+          ...NAV_UNIDADE.slice(0, 2),
+          {
+            label: "Rematrícula 2027",
+            icon: Repeat,
+            emphasize: true,
+            items: [
+              { to: "/unidade/rematricula", label: "Painel", icon: Repeat },
+              { to: "/unidade/rematricula/aceites", label: "Aceites", icon: ThumbsUp },
+            ],
+          },
+          ...NAV_UNIDADE.slice(2),
+        ]
       : NAV_UNIDADE;
 
   const navItems = (role === "unidade" ? navUnidade : NAV_MARKETING).filter(
@@ -249,6 +271,10 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             if (isNavGroup(entry)) {
               const isOpen = openGroups.has(entry.label);
               const hasActiveChild = entry.items.some((item) => location.pathname.startsWith(item.to));
+              const showRematriculaBadge =
+                entry.items.some((item) => item.to.endsWith("/rematricula")) &&
+                rematriculaPct !== null &&
+                rematriculaPct < REMATRICULA_META;
               return (
                 <div key={entry.label}>
                   <button
@@ -258,11 +284,24 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                       "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors",
                       hasActiveChild && !isOpen
                         ? "text-white font-medium"
-                        : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                        : entry.emphasize
+                          ? "border border-sun/25 bg-sun/10 text-sun-soft font-semibold hover:bg-sun/20 hover:text-sun"
+                          : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
                     )}
                   >
                     <entry.icon className="h-4 w-4 flex-shrink-0" />
                     <span className="flex-1 text-left">{entry.label}</span>
+                    {showRematriculaBadge && (
+                      <span
+                        title="% de contratos assinados — abaixo da meta de 90%"
+                        className={cn(
+                          "text-[10px] font-bold rounded-full h-[18px] flex items-center justify-center px-1.5",
+                          rematriculaPct! < REMATRICULA_META * 0.7 ? "bg-red-500 text-white" : "bg-sun-soft text-[#001233]"
+                        )}
+                      >
+                        {Math.round(rematriculaPct! * 100)}%
+                      </span>
+                    )}
                     <ChevronDown className={cn("h-4 w-4 flex-shrink-0 transition-transform", isOpen && "rotate-180")} />
                   </button>
                   {isOpen && (
@@ -271,6 +310,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                         <NavLink
                           key={item.to}
                           to={item.to}
+                          end
                           onClick={() => setMobileNavAberto(false)}
                           className={({ isActive }) =>
                             cn(
@@ -292,8 +332,6 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             }
 
             const showPendingBadge = entry.to === "/unidade/desfechos" && pendingCount > 0;
-            const showRematriculaBadge =
-              entry.to.endsWith("/rematricula") && rematriculaPct !== null && rematriculaPct < REMATRICULA_META;
             return (
               <NavLink
                 key={entry.to}
@@ -315,17 +353,6 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                 {showPendingBadge && (
                   <span className="ml-auto bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {pendingCount}
-                  </span>
-                )}
-                {showRematriculaBadge && (
-                  <span
-                    title="% de contratos assinados — abaixo da meta de 90%"
-                    className={cn(
-                      "ml-auto text-[10px] font-bold rounded-full h-[18px] flex items-center justify-center px-1.5",
-                      rematriculaPct! < REMATRICULA_META * 0.7 ? "bg-red-500 text-white" : "bg-sun-soft text-[#001233]"
-                    )}
-                  >
-                    {Math.round(rematriculaPct! * 100)}%
                   </span>
                 )}
               </NavLink>

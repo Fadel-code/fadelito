@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle, ThumbsUp } from "lucide-react";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
+import { useRematriculaAceites } from "../../hooks/useRematriculaAceites";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
 import { calcularKpisRematricula, REMATRICULA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
@@ -45,6 +46,7 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const { alunos, loading, carregar, remover: removerReal } = useRematricula();
+  const { porUnidade: aceitesPorUnidade, total: aceitesTotal } = useRematriculaAceites();
   // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
   // a tela de verdade antes de liberar pra unidades. Adicionar/atualizar/histórico
   // ficam locais (a policy de update já bloqueia escrita de quem não é a própria
@@ -93,7 +95,7 @@ export default function RematriculaMarketing() {
           <StatTile icon={XCircle} label="Não rematriculados" value={kpisRede.naoRematriculados} color="red" />
           <StatTile icon={Clock} label="Pendentes" value={kpisRede.pendentes} color="amber" />
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpisRede.inadimplentes} color="orange" />
-          <StatTile icon={ThumbsUp} label="Aceites" value={kpisRede.aceites} color="cyan" />
+          <StatTile icon={ThumbsUp} label="Aceites" value={aceitesTotal} color="cyan" />
         </div>
       </div>
 
@@ -163,7 +165,13 @@ export default function RematriculaMarketing() {
               </Select>
             </div>
           )}
-          <RematriculaPainel unidadeId={previewUnidadeId || "previa"} {...preview} remover={remover} permiteRemover />
+          <RematriculaPainel
+            unidadeId={previewUnidadeId || "previa"}
+            aceites={aceitesPorUnidade.find((u) => u.unidade_id === previewUnidadeId)?.quantidade ?? 0}
+            {...preview}
+            remover={remover}
+            permiteRemover
+          />
         </div>
       )}
     </div>

@@ -19,6 +19,7 @@ const FormularioDiario = lazy(() => import("./pages/unidade/FormularioDiario"));
 const HistoricoMensal = lazy(() => import("./pages/unidade/HistoricoMensal"));
 const Desfechos = lazy(() => import("./pages/unidade/Desfechos"));
 const RematriculaUnidade = lazy(() => import("./pages/unidade/Rematricula"));
+const RematriculaAceitesUnidade = lazy(() => import("./pages/unidade/RematriculaAceites"));
 const Dashboard = lazy(() => import("./pages/marketing/Dashboard"));
 const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
@@ -26,6 +27,7 @@ const RelatorioTurmas = lazy(() => import("./pages/marketing/RelatorioTurmas"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
+const RematriculaAceitesMarketing = lazy(() => import("./pages/marketing/RematriculaAceites"));
 const ContaMfa = lazy(() => import("./pages/ContaMfa"));
 
 function PageLoader() {
@@ -157,6 +159,7 @@ export default function App() {
           <Route path="historico" element={<HistoricoMensal />} />
           <Route path="desfechos" element={<Desfechos />} />
           <Route path="rematricula" element={<RematriculaUnidade />} />
+          <Route path="rematricula/aceites" element={<RematriculaAceitesUnidade />} />
           <Route path="assistente" element={<AssistenteFadelito />} />
           <Route path="mfa" element={<ContaMfa />} />
           <Route index element={<Navigate to="formulario" replace />} />
@@ -177,6 +180,7 @@ export default function App() {
           <Route path="turmas" element={<RelatorioTurmas />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
+          <Route path="rematricula/aceites" element={<RematriculaAceitesMarketing />} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
           <Route path="mfa" element={<ContaMfa />} />
           <Route index element={<Navigate to="dashboard" replace />} />
