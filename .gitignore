@@ -12,6 +12,7 @@ frontend/build/
 .env.*.local
 frontend/.env
 frontend/.env.local
+frontend/.env.production
 
 # Supabase local
 supabase/.branches/

@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ClipboardList,
+  Calendar,
   CalendarCheck,
   Users,
   History,
@@ -69,7 +70,14 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 
 const NAV_UNIDADE: NavEntry[] = [
   { to: "/unidade/formulario", label: "Formulário Diário", icon: ClipboardList },
-  { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
+  {
+    label: "Visitas",
+    icon: CalendarCheck,
+    items: [
+      { to: "/unidade/desfechos", label: "Desfecho das Visitas", icon: CalendarCheck },
+      { to: "/unidade/agenda", label: "Agenda", icon: Calendar },
+    ],
+  },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
 ];
 
@@ -103,6 +111,9 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const location = useLocation();
   const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
   const rematriculaPct = useRematriculaProgresso();
+  // Agenda é um embed que precisa da área de conteúdo inteira — sem o respiro
+  // de padding que as outras páginas (formulários, tabelas) usam.
+  const fullBleed = location.pathname.endsWith("/agenda");
 
   const [bannerVisivel, setBannerVisivel] = useState(
     () => role === "unidade" && !localStorage.getItem(BANNER_KEY)
@@ -155,6 +166,23 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
     }
     return abertos;
   });
+
+  useEffect(() => {
+    // navItems é recriado a cada render, então não entra nas deps — só o pathname
+    // decide quando reabrir um grupo que ficou fora de vista numa navegação via SPA.
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const entry of navItems) {
+        if (isNavGroup(entry) && !next.has(entry.label) && entry.items.some((item) => location.pathname.startsWith(item.to))) {
+          next.add(entry.label);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => {
@@ -275,6 +303,8 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                 entry.items.some((item) => item.to.endsWith("/rematricula")) &&
                 rematriculaPct !== null &&
                 rematriculaPct < REMATRICULA_META;
+              const showDesfechosBadge =
+                entry.items.some((item) => item.to.endsWith("/desfechos")) && pendingCount > 0;
               return (
                 <div key={entry.label}>
                   <button
@@ -302,36 +332,48 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                         {Math.round(rematriculaPct! * 100)}%
                       </span>
                     )}
+                    {showDesfechosBadge && (
+                      <span className="bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {pendingCount}
+                      </span>
+                    )}
                     <ChevronDown className={cn("h-4 w-4 flex-shrink-0 transition-transform", isOpen && "rotate-180")} />
                   </button>
                   {isOpen && (
                     <div className="mt-1 ml-4 pl-3 border-l border-white/10 space-y-1">
-                      {entry.items.map((item) => (
-                        <NavLink
-                          key={item.to}
-                          to={item.to}
-                          end
-                          onClick={() => setMobileNavAberto(false)}
-                          className={({ isActive }) =>
-                            cn(
-                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                              isActive
-                                ? "bg-primary-500 text-white font-medium"
-                                : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
-                            )
-                          }
-                        >
-                          <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="flex-1">{item.label}</span>
-                        </NavLink>
-                      ))}
+                      {entry.items.map((item) => {
+                        const showItemPendingBadge = item.to === "/unidade/desfechos" && pendingCount > 0;
+                        return (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end
+                            onClick={() => setMobileNavAberto(false)}
+                            className={({ isActive }) =>
+                              cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                                isActive
+                                  ? "bg-primary-500 text-white font-medium"
+                                  : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                              )
+                            }
+                          >
+                            <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                            {showItemPendingBadge && (
+                              <span className="bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                                {pendingCount}
+                              </span>
+                            )}
+                          </NavLink>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
               );
             }
 
-            const showPendingBadge = entry.to === "/unidade/desfechos" && pendingCount > 0;
             return (
               <NavLink
                 key={entry.to}
@@ -350,11 +392,6 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               >
                 <entry.icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{entry.label}</span>
-                {showPendingBadge && (
-                  <span className="ml-auto bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {pendingCount}
-                  </span>
-                )}
               </NavLink>
             );
           })}
@@ -377,8 +414,9 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
-        {/* Topbar */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-3.5">
+        {/* Topbar — some no desktop na Agenda: a área de conteúdo já assume o
+            teto da tela, e o toggle mobile abaixo continua acessível. */}
+        <header className={cn("bg-white border-b border-gray-200 px-4 sm:px-8 py-3.5", fullBleed && "lg:hidden")}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -388,28 +426,30 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">
-                  {saudacao()}
-                  {role === "unidade" && profile?.unidade_nome ? `, ${profile.unidade_nome}` : ""}
-                </p>
-                <p className="text-xs text-gray-400 truncate hidden sm:block">
-                  {capitalizar(
-                    new Date().toLocaleDateString("pt-BR", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  )}
-                </p>
-              </div>
+              {!fullBleed && (
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">
+                    {saudacao()}
+                    {role === "unidade" && profile?.unidade_nome ? `, ${profile.unidade_nome}` : ""}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate hidden sm:block">
+                    {capitalizar(
+                      new Date().toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Banner nova funcionalidade */}
-        {bannerVisivel && (
+        {/* Banner nova funcionalidade — some na Agenda, mesma lógica do topbar */}
+        {bannerVisivel && !fullBleed && (
           <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 sm:px-8 py-3 flex items-center gap-4">
             <Sparkles className="h-5 w-5 flex-shrink-0 text-primary-100" />
             <div className="flex-1 min-w-0">
@@ -437,7 +477,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         )}
 
         {/* Page content */}
-        <div className="flex-1 p-4 sm:p-8">
+        <div className={cn("flex-1", fullBleed ? "min-h-0" : "p-4 sm:p-8")}>
           <Outlet />
         </div>
       </main>

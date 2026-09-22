@@ -26,6 +26,7 @@ const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const RelatorioTurmas = lazy(() => import("./pages/marketing/RelatorioTurmas"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
+const Agenda = lazy(() => import("./pages/Agenda"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
 const RematriculaAceitesMarketing = lazy(() => import("./pages/marketing/RematriculaAceites"));
 const ContaMfa = lazy(() => import("./pages/ContaMfa"));
@@ -158,6 +159,7 @@ export default function App() {
           <Route path="formulario" element={<FormularioDiario />} />
           <Route path="historico" element={<HistoricoMensal />} />
           <Route path="desfechos" element={<Desfechos />} />
+          <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaUnidade />} />
           <Route path="rematricula/aceites" element={<RematriculaAceitesUnidade />} />
           <Route path="assistente" element={<AssistenteFadelito />} />
