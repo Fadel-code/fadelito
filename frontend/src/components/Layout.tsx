@@ -105,6 +105,8 @@ const NAV_MARKETING: NavEntry[] = [
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
 ];
 
+const AGENDA_MARKETING_ITEM: NavItem = { to: "/marketing/agenda", label: "Agenda", icon: Calendar };
+
 export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
@@ -153,7 +155,18 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         ]
       : NAV_UNIDADE;
 
-  const navItems = (role === "unidade" ? navUnidade : NAV_MARKETING).filter(
+  // Agenda embutida: mesma feature da unidade, mas só pra supervisão — marketing
+  // segue sem essa aba por enquanto (rota bloqueada em Agenda.tsx mesmo se acessada direto).
+  const navMarketing: NavEntry[] =
+    profile?.role === "supervisao"
+      ? NAV_MARKETING.map((entry) =>
+          isNavGroup(entry) && entry.label === "Visitas"
+            ? { ...entry, items: [entry.items[0], AGENDA_MARKETING_ITEM, ...entry.items.slice(1)] }
+            : entry
+        )
+      : NAV_MARKETING;
+
+  const navItems = (role === "unidade" ? navUnidade : navMarketing).filter(
     (entry) => !("marketingOnly" in entry && entry.marketingOnly && profile?.role === "supervisao")
   );
 

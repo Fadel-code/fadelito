@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "../App";
 import { Button } from "../components/ui/button";
@@ -22,6 +23,12 @@ export default function Agenda() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  // Agenda em /marketing é só pra supervisão por enquanto — bloqueia acesso direto
+  // por URL mesmo sem o item aparecer no menu da marketing.
+  if (profile?.role === "marketing") {
+    return <Navigate to="/marketing/dashboard" replace />;
+  }
 
   return (
     <div className="h-full bg-white">

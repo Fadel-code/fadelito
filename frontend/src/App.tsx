@@ -181,6 +181,7 @@ export default function App() {
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="turmas" element={<RelatorioTurmas />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
+          <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
           <Route path="rematricula/aceites" element={<RematriculaAceitesMarketing />} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
