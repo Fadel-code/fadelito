@@ -26,6 +26,8 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_CRM_API_URL: ${{ secrets.VITE_CRM_API_URL }}
+          VITE_AGENDA_API_URL: ${{ secrets.VITE_AGENDA_API_URL }}
+          VITE_AGENDA_FRONTEND_URL: ${{ secrets.VITE_AGENDA_FRONTEND_URL }}
         run: npm run build
 
       - name: Deploy to VPS
