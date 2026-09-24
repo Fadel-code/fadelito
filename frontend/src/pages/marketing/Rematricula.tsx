@@ -45,7 +45,7 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
-  const { alunos, loading, carregar, remover: removerReal } = useRematricula();
+  const { alunos, loading, carregar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
   const { porUnidade: aceitesPorUnidade, total: aceitesTotal } = useRematriculaAceites();
   // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
   // a tela de verdade antes de liberar pra unidades. Adicionar/atualizar/histórico
@@ -56,6 +56,23 @@ export default function RematriculaMarketing() {
   async function remover(id: string) {
     const ok = await removerReal(id);
     if (ok) await preview.remover(id);
+    return ok;
+  }
+
+  // Grava de verdade no Supabase — a policy/trigger de rematricula_alunos garante
+  // que só o campo inadimplente é aplicado quando quem chama é supervisão; os
+  // demais campos continuam existindo só na prévia local.
+  async function atualizar(
+    id: string,
+    contratoAssinado: boolean,
+    motivo: string,
+    quemContatou: string,
+    observacao: string,
+    negociando: boolean,
+    inadimplente: boolean
+  ) {
+    const ok = await atualizarReal(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente);
+    if (ok) await preview.atualizar(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente);
     return ok;
   }
 
@@ -170,7 +187,9 @@ export default function RematriculaMarketing() {
             aceites={aceitesPorUnidade.find((u) => u.unidade_id === previewUnidadeId)?.quantidade ?? 0}
             {...preview}
             remover={remover}
+            atualizar={atualizar}
             permiteRemover
+            permiteMarcarInadimplente
           />
         </div>
       )}

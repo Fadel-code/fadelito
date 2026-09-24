@@ -72,6 +72,8 @@ interface RematriculaPainelProps {
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
   /** Mostra o botão Remover — só supervisão tem essa permissão (RLS restringe DELETE a role='supervisao'). */
   permiteRemover?: boolean;
+  /** Libera o checkbox de Inadimplente — só supervisão marca (RLS ignora essa coluna vinda de outro role). */
+  permiteMarcarInadimplente?: boolean;
 }
 
 // Rótulo fixo acima do campo: o placeholder some assim que tem conteúdo, e aí
@@ -110,7 +112,7 @@ function HistoricoLista({ historico, className = "" }: { historico: RematriculaH
 
 // Tela que a unidade usa pra acompanhar a rematrícula — reaproveitada como prévia
 // (mesmo componente, data source local) na tela da supervisão.
-export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, aceites, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false }: RematriculaPainelProps) {
+export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, aceites, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
@@ -358,15 +360,23 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                             />
                             Ainda em conversa com a família
                           </label>
-                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                              checked={linha.inadimplente}
-                              onChange={(e) => setLinha(a.id, { inadimplente: e.target.checked })}
-                            />
-                            Inadimplente
-                          </label>
+                          {permiteMarcarInadimplente ? (
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                                checked={linha.inadimplente}
+                                onChange={(e) => setLinha(a.id, { inadimplente: e.target.checked })}
+                              />
+                              Inadimplente
+                            </label>
+                          ) : (
+                            a.inadimplente && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                                Inadimplente
+                              </span>
+                            )
+                          )}
                         </div>
                         <div className="mt-2 grid sm:grid-cols-2 gap-2">
                           <Campo label="Quem fez contato com a família">
