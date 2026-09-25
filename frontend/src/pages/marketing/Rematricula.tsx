@@ -76,8 +76,13 @@ export default function RematriculaMarketing() {
     return ok;
   }
 
-  const kpisRede = calcularKpisRematricula(alunos);
-  const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
+  // TEMP: lista da Vila Leopoldina subiu tardiamente e a unidade só vai começar a
+  // contabilizar depois do período — excluída do painel de marketing (meta da rede e
+  // ranking) pra não derrubar a média geral. Reverter quando a unidade sinalizar.
+  const alunosRede = alunos.filter((a) => a.profiles?.unidade_nome !== "Vila Leopoldina");
+
+  const kpisRede = calcularKpisRematricula(alunosRede);
+  const porUnidade = agruparPorUnidade(alunosRede).sort((a, b) => a.pct - b.pct);
 
   const unidadesPreview = useMemo(
     () => [...porUnidade].sort((a, b) => a.unidade_nome.localeCompare(b.unidade_nome, "pt-BR")),
