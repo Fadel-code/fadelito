@@ -165,6 +165,63 @@ const COLS_TURMA = [
   { wch: 14 }, { wch: 13 },
 ];
 
+// ============================================================
+// Relatório de Rematrícula (marketing)
+// ============================================================
+
+interface LinhaRematriculaPlanilha {
+  unidade_nome: string;
+  total: number;
+  rematriculados: number;
+  naoRematriculados: number;
+  pendentes: number;
+  pct: number;
+}
+
+function linhaRematriculaParaPlanilha(u: LinhaRematriculaPlanilha) {
+  return {
+    "Unidade": u.unidade_nome,
+    "A rematricular": u.total,
+    "Rematriculados": u.rematriculados,
+    "Não rematriculados": u.naoRematriculados,
+    "Pendentes": u.pendentes,
+    "% Rematrícula": `${(u.pct * 100).toFixed(1)}%`,
+  };
+}
+
+const COLS_REMATRICULA = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 12 }, { wch: 14 }];
+
+function linhasRematricula(porUnidade: LinhaRematriculaPlanilha[], kpisRede: Omit<LinhaRematriculaPlanilha, "unidade_nome">) {
+  return [...porUnidade, { unidade_nome: "Total da Rede", ...kpisRede }].map(linhaRematriculaParaPlanilha);
+}
+
+export function exportarRematriculaExcel(
+  porUnidade: LinhaRematriculaPlanilha[],
+  kpisRede: Omit<LinhaRematriculaPlanilha, "unidade_nome">
+) {
+  const ws = XLSX.utils.json_to_sheet(linhasRematricula(porUnidade, kpisRede));
+  ws["!cols"] = COLS_REMATRICULA;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Rematrícula");
+  XLSX.writeFile(wb, `Rematricula_${new Date().getFullYear()}.xlsx`);
+}
+
+/** CSV UTF-8 com BOM — abre direto no Google Sheets e no Excel. */
+export function exportarRematriculaCsv(
+  porUnidade: LinhaRematriculaPlanilha[],
+  kpisRede: Omit<LinhaRematriculaPlanilha, "unidade_nome">
+) {
+  const ws = XLSX.utils.json_to_sheet(linhasRematricula(porUnidade, kpisRede));
+  const csv = XLSX.utils.sheet_to_csv(ws, { FS: "," });
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Rematricula_${new Date().getFullYear()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function nomeArquivo(escopo: string, mes: number, ano: number, ext: string) {
   const slug = escopo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_");
   return `Turmas_${slug}_${MESES[mes - 1]}_${ano}.${ext}`;

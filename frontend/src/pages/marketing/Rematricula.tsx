@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle, ThumbsUp } from "lucide-react";
+import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTriangle, ThumbsUp, FileSpreadsheet, Table2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { useRematriculaAceites } from "../../hooks/useRematriculaAceites";
@@ -84,6 +85,19 @@ export default function RematriculaMarketing() {
   const kpisRede = calcularKpisRematricula(alunosRede);
   const porUnidade = agruparPorUnidade(alunosRede).sort((a, b) => a.pct - b.pct);
 
+  async function exportar(formato: "xlsx" | "csv") {
+    if (porUnidade.length === 0) {
+      toast.error("Nada para exportar ainda.");
+      return;
+    }
+    const lib = await import("../../lib/exportExcel");
+    if (formato === "xlsx") {
+      lib.exportarRematriculaExcel(porUnidade, kpisRede);
+    } else {
+      lib.exportarRematriculaCsv(porUnidade, kpisRede);
+    }
+  }
+
   const unidadesPreview = useMemo(
     () => [...porUnidade].sort((a, b) => a.unidade_nome.localeCompare(b.unidade_nome, "pt-BR")),
     [porUnidade]
@@ -102,9 +116,26 @@ export default function RematriculaMarketing() {
           <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
           <p className="text-gray-500 text-sm mt-1">Acompanhamento da rematrícula em toda a rede</p>
         </div>
-        <Button variant="outline" size="icon" onClick={carregar} title="Atualizar" aria-label="Atualizar">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button variant="outline" size="icon" onClick={carregar} title="Atualizar" aria-label="Atualizar">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+
+          <Button variant="outline" onClick={() => exportar("xlsx")} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar Excel
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => exportar("csv")}
+            className="gap-2"
+            title="CSV UTF-8 — importa direto no Google Sheets e no Excel"
+          >
+            <Table2 className="h-4 w-4" />
+            Exportar Sheets (CSV)
+          </Button>
+        </div>
       </div>
 
       {/* Hero: meta da rede + indicadores */}
