@@ -98,7 +98,6 @@ const NAV_MARKETING: NavEntry[] = [
     emphasize: true,
     items: [
       { to: "/marketing/rematricula", label: "Painel", icon: Repeat },
-      { to: "/marketing/rematricula/aceites", label: "Aceites", icon: ThumbsUp },
     ],
   },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
@@ -148,7 +147,6 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             emphasize: true,
             items: [
               { to: "/unidade/rematricula", label: "Painel", icon: Repeat },
-              { to: "/unidade/rematricula/aceites", label: "Aceites", icon: ThumbsUp },
             ],
           },
           ...NAV_UNIDADE.slice(2),

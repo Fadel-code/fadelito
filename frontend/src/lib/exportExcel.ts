@@ -173,8 +173,11 @@ interface LinhaRematriculaPlanilha {
   unidade_nome: string;
   total: number;
   rematriculados: number;
+  negociando: number;
   naoRematriculados: number;
   pendentes: number;
+  inadimplentes: number;
+  aguardandoContrato: number;
   pct: number;
 }
 
@@ -183,13 +186,16 @@ function linhaRematriculaParaPlanilha(u: LinhaRematriculaPlanilha) {
     "Unidade": u.unidade_nome,
     "A rematricular": u.total,
     "Rematriculados": u.rematriculados,
+    "Em conversa": u.negociando,
     "Não rematriculados": u.naoRematriculados,
     "Pendentes": u.pendentes,
+    "Inadimplentes": u.inadimplentes,
+    "Aguardando contrato assinado": u.aguardandoContrato,
     "% Rematrícula": `${(u.pct * 100).toFixed(1)}%`,
   };
 }
 
-const COLS_REMATRICULA = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 12 }, { wch: 14 }];
+const COLS_REMATRICULA = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 14 }];
 
 function linhasRematricula(porUnidade: LinhaRematriculaPlanilha[], kpisRede: Omit<LinhaRematriculaPlanilha, "unidade_nome">) {
   return [...porUnidade, { unidade_nome: "Total da Rede", ...kpisRede }].map(linhaRematriculaParaPlanilha);
@@ -203,7 +209,7 @@ export function exportarRematriculaExcel(
   ws["!cols"] = COLS_REMATRICULA;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Rematrícula");
-  XLSX.writeFile(wb, `Rematricula_${new Date().getFullYear()}.xlsx`);
+  XLSX.writeFile(wb, "Rematrícula 2027.xlsx");
 }
 
 /** CSV UTF-8 com BOM — abre direto no Google Sheets e no Excel. */
@@ -217,7 +223,7 @@ export function exportarRematriculaCsv(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Rematricula_${new Date().getFullYear()}.csv`;
+  a.download = "Rematrícula 2027.csv";
   a.click();
   URL.revokeObjectURL(url);
 }

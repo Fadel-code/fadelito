@@ -265,6 +265,7 @@ export interface RematriculaAluno {
   observacao: string | null;
   negociando: boolean;
   inadimplente: boolean;
+  aceite: boolean; // aguardando contrato assinado: família aceitou mas ainda não assinou
   negociacao_historico: RematriculaHistoricoEntry[];
   created_at: string;
   updated_at: string;
@@ -277,6 +278,7 @@ export interface RematriculaKpis {
   naoRematriculados: number;
   negociando: number;
   inadimplentes: number;
+  aguardandoContrato: number;
   pendentes: number;
   pct: number; // 0-1, rematriculados / total
 }
@@ -292,17 +294,18 @@ export function derivarStatusRematricula(a: { contrato_assinado: boolean; motivo
 }
 
 export function calcularKpisRematricula(
-  alunos: { contrato_assinado: boolean; motivo: string | null; negociando: boolean; inadimplente?: boolean }[]
+  alunos: { contrato_assinado: boolean; motivo: string | null; negociando: boolean; inadimplente?: boolean; aceite?: boolean }[]
 ): RematriculaKpis {
   const elegiveis = alunos.filter((a) => !a.inadimplente);
   const total = elegiveis.length;
   const rematriculados = elegiveis.filter((a) => a.contrato_assinado).length;
   const naoRematriculados = elegiveis.filter((a) => derivarStatusRematricula(a) === "nao_rematriculado").length;
   const negociando = elegiveis.filter((a) => derivarStatusRematricula(a) === "negociando").length;
+  const aguardandoContrato = elegiveis.filter((a) => a.aceite && !a.contrato_assinado).length;
   const inadimplentes = alunos.filter((a) => a.inadimplente).length;
   const pendentes = total - rematriculados - naoRematriculados - negociando;
   const pct = total > 0 ? rematriculados / total : 0;
-  return { total, rematriculados, naoRematriculados, negociando, inadimplentes, pendentes, pct };
+  return { total, rematriculados, naoRematriculados, negociando, inadimplentes, aguardandoContrato, pendentes, pct };
 }
 
 // ============================================================

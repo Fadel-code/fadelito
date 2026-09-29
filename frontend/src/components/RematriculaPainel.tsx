@@ -49,6 +49,7 @@ interface LinhaState {
   observacao: string;
   negociando: boolean;
   inadimplente: boolean;
+  aceite: boolean;
 }
 
 interface RematriculaPainelProps {
@@ -56,8 +57,6 @@ interface RematriculaPainelProps {
   alunos: RematriculaAluno[];
   loading: boolean;
   salvando: string | null;
-  /** Total de aceites verbais da unidade — contagem manual, preenchida na aba Aceites. */
-  aceites: number;
   adicionar: (unidadeId: string, nome: string, turma: string) => Promise<boolean>;
   atualizar: (
     id: string,
@@ -66,7 +65,8 @@ interface RematriculaPainelProps {
     quemContatou: string,
     observacao: string,
     negociando: boolean,
-    inadimplente: boolean
+    inadimplente: boolean,
+    aceite: boolean
   ) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
@@ -112,7 +112,7 @@ function HistoricoLista({ historico, className = "" }: { historico: RematriculaH
 
 // Tela que a unidade usa pra acompanhar a rematrícula — reaproveitada como prévia
 // (mesmo componente, data source local) na tela da supervisão.
-export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, aceites, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
+export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
@@ -145,6 +145,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         observacao: a.observacao ?? "",
         negociando: a.negociando,
         inadimplente: a.inadimplente,
+        aceite: a.aceite,
       };
     }
     setEstado(init);
@@ -172,7 +173,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   async function handleSalvar(id: string) {
     const linha = estado[id];
     if (!linha) return;
-    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente);
+    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente, linha.aceite);
   }
 
   async function handleAdicionarHistorico(id: string) {
@@ -195,7 +196,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           <StatTile icon={XCircle} label="Não rematriculados" value={kpis.naoRematriculados} color="red" />
           <StatTile icon={Clock} label="Pendentes" value={kpis.pendentes} color="amber" />
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpis.inadimplentes} color="orange" />
-          <StatTile icon={ThumbsUp} label="Aceites" value={aceites} color="cyan" />
+          <StatTile icon={ThumbsUp} label="Aguardando contrato assinado" value={kpis.aguardandoContrato} color="cyan" />
         </div>
       </div>
 
@@ -307,6 +308,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                   observacao: a.observacao ?? "",
                   negociando: a.negociando,
                   inadimplente: a.inadimplente,
+                  aceite: a.aceite,
                 };
                 const isSalvando = salvando === a.id;
                 const alterado =
@@ -315,7 +317,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                   linha.quemContatou !== (a.quem_contatou ?? "") ||
                   linha.observacao !== (a.observacao ?? "") ||
                   linha.negociando !== a.negociando ||
-                  linha.inadimplente !== a.inadimplente;
+                  linha.inadimplente !== a.inadimplente ||
+                  linha.aceite !== a.aceite;
                 const statusAtual = derivarStatusRematricula(a);
                 const historico = a.negociacao_historico ?? [];
                 return (
@@ -359,6 +362,15 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                               onChange={(e) => setLinha(a.id, { negociando: e.target.checked })}
                             />
                             Ainda em conversa com a família
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                              checked={linha.aceite}
+                              onChange={(e) => setLinha(a.id, { aceite: e.target.checked })}
+                            />
+                            Aguardando contrato assinado
                           </label>
                           {permiteMarcarInadimplente ? (
                             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">

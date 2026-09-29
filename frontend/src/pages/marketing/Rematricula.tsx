@@ -3,7 +3,6 @@ import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTri
 import toast from "react-hot-toast";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
-import { useRematriculaAceites } from "../../hooks/useRematriculaAceites";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
 import { calcularKpisRematricula, REMATRICULA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
@@ -18,8 +17,11 @@ interface LinhaUnidade {
   unidade_nome: string;
   total: number;
   rematriculados: number;
+  negociando: number;
   naoRematriculados: number;
   pendentes: number;
+  inadimplentes: number;
+  aguardandoContrato: number;
   pct: number;
 }
 
@@ -37,8 +39,11 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
       unidade_nome: lista[0].profiles?.unidade_nome ?? "—",
       total: kpis.total,
       rematriculados: kpis.rematriculados,
+      negociando: kpis.negociando,
       naoRematriculados: kpis.naoRematriculados,
       pendentes: kpis.pendentes,
+      inadimplentes: kpis.inadimplentes,
+      aguardandoContrato: kpis.aguardandoContrato,
       pct: kpis.pct,
     };
   });
@@ -47,7 +52,6 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const { alunos, loading, carregar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
-  const { porUnidade: aceitesPorUnidade, total: aceitesTotal } = useRematriculaAceites();
   // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
   // a tela de verdade antes de liberar pra unidades. Adicionar/atualizar/histórico
   // ficam locais (a policy de update já bloqueia escrita de quem não é a própria
@@ -70,10 +74,11 @@ export default function RematriculaMarketing() {
     quemContatou: string,
     observacao: string,
     negociando: boolean,
-    inadimplente: boolean
+    inadimplente: boolean,
+    aceite: boolean
   ) {
-    const ok = await atualizarReal(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente);
-    if (ok) await preview.atualizar(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente);
+    const ok = await atualizarReal(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente, aceite);
+    if (ok) await preview.atualizar(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente, aceite);
     return ok;
   }
 
@@ -148,7 +153,7 @@ export default function RematriculaMarketing() {
           <StatTile icon={XCircle} label="Não rematriculados" value={kpisRede.naoRematriculados} color="red" />
           <StatTile icon={Clock} label="Pendentes" value={kpisRede.pendentes} color="amber" />
           <StatTile icon={AlertTriangle} label="Inadimplentes" value={kpisRede.inadimplentes} color="orange" />
-          <StatTile icon={ThumbsUp} label="Aceites" value={aceitesTotal} color="cyan" />
+          <StatTile icon={ThumbsUp} label="Aguardando contrato assinado" value={kpisRede.aguardandoContrato} color="cyan" />
         </div>
       </div>
 
@@ -220,7 +225,6 @@ export default function RematriculaMarketing() {
           )}
           <RematriculaPainel
             unidadeId={previewUnidadeId || "previa"}
-            aceites={aceitesPorUnidade.find((u) => u.unidade_id === previewUnidadeId)?.quantidade ?? 0}
             {...preview}
             remover={remover}
             atualizar={atualizar}
