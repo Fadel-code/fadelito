@@ -303,7 +303,8 @@ export function calcularKpisRematricula(
   const negociando = elegiveis.filter((a) => derivarStatusRematricula(a) === "negociando").length;
   const aguardandoContrato = elegiveis.filter((a) => a.aceite && !a.contrato_assinado).length;
   const inadimplentes = alunos.filter((a) => a.inadimplente).length;
-  const pendentes = total - rematriculados - naoRematriculados - negociando;
+  // Aguardando contrato sai de "Pendentes": família já aceitou, só falta assinar.
+  const pendentes = elegiveis.filter((a) => derivarStatusRematricula(a) === "pendente" && !a.aceite).length;
   const pct = total > 0 ? rematriculados / total : 0;
   return { total, rematriculados, naoRematriculados, negociando, inadimplentes, aguardandoContrato, pendentes, pct };
 }

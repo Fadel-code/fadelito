@@ -130,6 +130,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     return meus.filter((a) => {
       if (statusFiltro === "inadimplente" && !a.inadimplente) return false;
       else if (statusFiltro !== "todos" && statusFiltro !== "inadimplente" && derivarStatusRematricula(a) !== statusFiltro) return false;
+      else if (statusFiltro === "pendente" && a.aceite) return false;
       if (termo && !normalizar(a.nome).includes(termo)) return false;
       return true;
     });
