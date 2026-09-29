@@ -50,6 +50,7 @@ interface LinhaState {
   negociando: boolean;
   inadimplente: boolean;
   aceite: boolean;
+  naoRematriculou: boolean; // só UI: libera o campo de motivo; persistido pelo motivo preenchido
 }
 
 interface RematriculaPainelProps {
@@ -146,6 +147,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         negociando: a.negociando,
         inadimplente: a.inadimplente,
         aceite: a.aceite,
+        naoRematriculou: derivarStatusRematricula(a) === "nao_rematriculado",
       };
     }
     setEstado(init);
@@ -301,6 +303,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           ) : (
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {filtrados.map((a) => {
+                const statusInicial = derivarStatusRematricula(a);
                 const linha = estado[a.id] ?? {
                   contratoAssinado: a.contrato_assinado,
                   motivo: a.motivo ?? "",
@@ -309,6 +312,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                   negociando: a.negociando,
                   inadimplente: a.inadimplente,
                   aceite: a.aceite,
+                  naoRematriculou: statusInicial === "nao_rematriculado",
                 };
                 const isSalvando = salvando === a.id;
                 const alterado =
@@ -349,7 +353,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                               type="checkbox"
                               className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                               checked={linha.contratoAssinado}
-                              onChange={(e) => setLinha(a.id, { contratoAssinado: e.target.checked })}
+                              onChange={(e) => setLinha(a.id, e.target.checked ? { contratoAssinado: true, naoRematriculou: false, motivo: "" } : { contratoAssinado: false })}
                             />
                             <FileCheck className="h-3.5 w-3.5 text-gray-400" />
                             Contrato assinado
@@ -359,7 +363,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                               type="checkbox"
                               className="h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                               checked={linha.negociando}
-                              onChange={(e) => setLinha(a.id, { negociando: e.target.checked })}
+                              onChange={(e) => setLinha(a.id, e.target.checked ? { negociando: true, naoRematriculou: false, motivo: "" } : { negociando: false })}
                             />
                             Ainda em conversa com a família
                           </label>
@@ -368,9 +372,25 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                               type="checkbox"
                               className="h-4 w-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
                               checked={linha.aceite}
-                              onChange={(e) => setLinha(a.id, { aceite: e.target.checked })}
+                              onChange={(e) => setLinha(a.id, e.target.checked ? { aceite: true, naoRematriculou: false, motivo: "" } : { aceite: false })}
                             />
                             Aguardando contrato assinado
+                          </label>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                              checked={linha.naoRematriculou}
+                              onChange={(e) =>
+                                setLinha(
+                                  a.id,
+                                  e.target.checked
+                                    ? { naoRematriculou: true, contratoAssinado: false, negociando: false, aceite: false }
+                                    : { naoRematriculou: false, motivo: "" }
+                                )
+                              }
+                            />
+                            Não rematriculou
                           </label>
                           {permiteMarcarInadimplente ? (
                             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
@@ -430,7 +450,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                                 </Button>
                               </div>
                             </Campo>
-                          ) : (
+                          ) : linha.naoRematriculou ? (
                             <Campo label="Motivo da não rematrícula">
                               <input
                                 className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -439,7 +459,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                                 onChange={(e) => setLinha(a.id, { motivo: e.target.value })}
                               />
                             </Campo>
-                          )}
+                          ) : null}
                         </div>
                       </div>
 
