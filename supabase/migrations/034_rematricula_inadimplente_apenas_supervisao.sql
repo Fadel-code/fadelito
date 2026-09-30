@@ -23,11 +23,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS trg_rematricula_restringir_campos ON public.rematricula_alunos;
 CREATE TRIGGER trg_rematricula_restringir_campos
   BEFORE UPDATE ON public.rematricula_alunos
   FOR EACH ROW EXECUTE FUNCTION public.rematricula_restringir_campos_por_role();
 
-DROP POLICY "rematricula_update" ON public.rematricula_alunos;
+DROP POLICY IF EXISTS "rematricula_update" ON public.rematricula_alunos;
 
 CREATE POLICY "rematricula_update"
   ON public.rematricula_alunos FOR UPDATE TO authenticated
