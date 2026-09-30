@@ -16,9 +16,11 @@ export function useRematriculaProgresso(visaoRede = false) {
     let ativo = true;
     async function carregar() {
       const base = () => {
+        // inadimplente fora do denominador, igual a calcularKpisRematricula (senão o badge diverge do painel)
         const q = supabase
           .from("rematricula_alunos")
-          .select("id, profiles!inner(unidade_nome)", { count: "exact", head: true });
+          .select("id, profiles!inner(unidade_nome)", { count: "exact", head: true })
+          .eq("inadimplente", false);
         return visaoRede ? q.not("profiles.unidade_nome", "in", FILTRO_FORA) : q;
       };
       const [{ count: total }, { count: assinados }] = await Promise.all([
@@ -28,8 +30,14 @@ export function useRematriculaProgresso(visaoRede = false) {
       if (ativo) setPct(total ? (assinados ?? 0) / total : null);
     }
     carregar();
+    // Sem isso o badge fica congelado no valor do primeiro carregamento da sessão.
+    const channel = supabase
+      .channel(`rematricula-progresso-${visaoRede}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rematricula_alunos" }, carregar)
+      .subscribe();
     return () => {
       ativo = false;
+      supabase.removeChannel(channel);
     };
   }, [visaoRede]);
 
