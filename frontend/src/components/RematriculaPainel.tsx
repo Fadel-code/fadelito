@@ -73,6 +73,7 @@ interface RematriculaPainelProps {
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
   /** Mostra o botão Remover — só supervisão tem essa permissão (RLS restringe DELETE a role='supervisao'). */
   permiteRemover?: boolean;
+  permiteAdicionar?: boolean;
   /** Libera o checkbox de Inadimplente — só supervisão marca (RLS ignora essa coluna vinda de outro role). */
   permiteMarcarInadimplente?: boolean;
 }
@@ -126,7 +127,7 @@ function linhaInicial(a: RematriculaAluno): LinhaState {
   };
 }
 
-export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
+export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteAdicionar = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
@@ -209,8 +210,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
         </div>
       </div>
 
-      {/* Adicionar aluno — liberado mesmo em modo só-leitura: alguns alunos ficaram
-          de fora da importação em lote e precisam de inclusão manual. */}
+      {/* Adicionar aluno — só marketing/supervisão (unidades não incluem alunos). */}
+      {permiteAdicionar && (
       <div className="card p-6">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">ADICIONAR NOVO ALUNO 2026</p>
         <form onSubmit={handleAdicionar} className="flex flex-col sm:flex-row gap-2">
@@ -240,6 +241,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           </Button>
         </form>
       </div>
+      )}
 
       {/* Lista */}
       {loading && meus.length === 0 ? (

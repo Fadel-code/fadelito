@@ -236,6 +236,7 @@ export default function RematriculaMarketing() {
             remover={remover}
             atualizar={atualizar}
             permiteRemover
+            permiteAdicionar
             permiteMarcarInadimplente
           />
         </div>
