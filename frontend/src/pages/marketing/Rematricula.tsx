@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
-import { calcularKpisRematricula, REMATRICULA_META } from "../../types";
+import { calcularKpisRematricula, REMATRICULA_META, REMATRICULA_FORA_DA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
 import MetaGauge from "../../components/MetaGauge";
 import RematriculaPainel from "../../components/RematriculaPainel";
@@ -90,9 +90,8 @@ export default function RematriculaMarketing() {
   const alunosRede = alunos.filter((a) => a.profiles?.unidade_nome !== "Vila Leopoldina");
 
   // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
-  const FORA_DA_META = ["Brooklin", "Klabin", "Real Parque", "Perdizes"];
   const kpisRede = calcularKpisRematricula(
-    alunosRede.filter((a) => !FORA_DA_META.includes(a.profiles?.unidade_nome ?? ""))
+    alunosRede.filter((a) => !REMATRICULA_FORA_DA_META.includes(a.profiles?.unidade_nome ?? ""))
   );
   const porUnidade = agruparPorUnidade(alunosRede).sort((a, b) => a.pct - b.pct);
 

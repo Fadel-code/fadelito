@@ -113,7 +113,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
-  const rematriculaPct = useRematriculaProgresso();
+  const rematriculaPct = useRematriculaProgresso(role === "marketing");
   // Agenda é um embed que precisa da área de conteúdo inteira — sem o respiro
   // de padding que as outras páginas (formulários, tabelas) usam.
   const fullBleed = location.pathname.endsWith("/agenda");

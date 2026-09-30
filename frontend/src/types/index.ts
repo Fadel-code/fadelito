@@ -248,6 +248,8 @@ export interface EventoLead {
 export type RematriculaStatus = "pendente" | "negociando" | "rematriculado" | "nao_rematriculado";
 
 export const REMATRICULA_META = 0.9; // meta de 90% de rematriculados
+// Unidades que não entram no cálculo da meta geral da rede (seguem no ranking).
+export const REMATRICULA_FORA_DA_META = ["Brooklin", "Klabin", "Real Parque", "Perdizes"];
 
 export interface RematriculaHistoricoEntry {
   data: string; // ISO
