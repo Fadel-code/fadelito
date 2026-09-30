@@ -7,6 +7,7 @@ import { detalhePorUnidade, resumoPorTurma, somarTurmas } from "../../lib/turmas
 import TabelaTurmas from "../../components/TabelaTurmas";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
+import { atualizarOuRecarregar } from "../../lib/versao";
 
 const ANO = new Date().getFullYear();
 const TODAS = "todas";
@@ -81,7 +82,7 @@ export default function RelatorioTurmas() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={recarregar} title="Atualizar" aria-label="Atualizar">
+          <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(recarregar)} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 

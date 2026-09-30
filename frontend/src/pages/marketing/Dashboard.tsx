@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
+import { atualizarOuRecarregar } from "../../lib/versao";
 
 const ANO = new Date().getFullYear();
 const TODOS_OS_DIAS = "todos";
@@ -133,7 +134,7 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={recarregar} title="Atualizar" aria-label="Atualizar">
+          <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(recarregar)} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 

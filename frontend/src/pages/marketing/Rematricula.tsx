@@ -11,6 +11,7 @@ import RematriculaPainel from "../../components/RematriculaPainel";
 import StatTile from "../../components/StatTile";
 import { Button } from "../../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { atualizarOuRecarregar } from "../../lib/versao";
 
 interface LinhaUnidade {
   unidade_id: string;
@@ -128,7 +129,7 @@ export default function RematriculaMarketing() {
           <p className="text-gray-500 text-sm mt-1">Acompanhamento da rematrícula em toda a rede</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <Button variant="outline" size="icon" onClick={carregar} title="Atualizar" aria-label="Atualizar">
+          <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(carregar)} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 
