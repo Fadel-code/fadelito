@@ -20,7 +20,7 @@
 --
 -- Fica SEM supervisora (a planilha não diz quem assumiu; a tela de Configuração avisa):
 --  * Linha F: Vila Madalena a partir de abril (resolvido na 040: Silvia até abril, Lilian de maio em diante).
---  * Linha P: Osasco, Moema, Marajoara e Vila Leopoldina a partir de setembro.
+--  * Linha P: Osasco, Moema, Marajoara e Vila Leopoldina a partir de setembro. (resolvido na 041: Marilia segue).
 --
 -- ATENÇÃO: substitui TODA a carteira (supervisora_unidades). Ajustes manuais feitos na
 -- aba Configuração antes desta migration serão perdidos.
