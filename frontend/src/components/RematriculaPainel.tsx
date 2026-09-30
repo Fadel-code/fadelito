@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileCheck, Search, X, MessageCircle, AlertTriangle, UserCheck, ThumbsUp } from "lucide-react";
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno, type RematriculaHistoricoEntry } from "../types";
 import { Button } from "./ui/button";
@@ -131,7 +131,9 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
-  const [estado, setEstado] = useState<Record<string, LinhaState>>({});
+  // Só o que a pessoa mexeu e ainda não salvou, por cima do que vem do banco: quando a lista
+  // recarrega (outra pessoa da unidade salvou), o rascunho fica e o resto acompanha o banco.
+  const [rascunho, setRascunho] = useState<Record<string, Partial<LinhaState>>>({});
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos");
   const [novosRegistros, setNovosRegistros] = useState<Record<string, string>>({});
@@ -151,21 +153,12 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meus, busca, statusFiltro]);
 
-  useEffect(() => {
-    const init: Record<string, LinhaState> = {};
-    for (const a of meus) init[a.id] = linhaInicial(a);
-    setEstado(init);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alunos, unidadeId]);
-
   const kpis = calcularKpisRematricula(meus);
 
+  const linhaDe = (a: RematriculaAluno): LinhaState => ({ ...linhaInicial(a), ...rascunho[a.id] });
+
   function setLinha(id: string, patch: Partial<LinhaState>) {
-    const aluno = alunos.find((a) => a.id === id);
-    setEstado((prev) => {
-      const base = prev[id] ?? (aluno ? linhaInicial(aluno) : undefined);
-      return base ? { ...prev, [id]: { ...base, ...patch } } : prev;
-    });
+    setRascunho((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
   async function handleAdicionar(e: FormEvent) {
@@ -180,10 +173,10 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
     }
   }
 
-  async function handleSalvar(id: string) {
-    const linha = estado[id];
-    if (!linha) return;
-    await atualizar(id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente, linha.aceite);
+  async function handleSalvar(a: RematriculaAluno) {
+    const linha = linhaDe(a);
+    const ok = await atualizar(a.id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente, linha.aceite);
+    if (ok) setRascunho(({ [a.id]: _salvo, ...resto }) => resto);
   }
 
   async function handleAdicionarHistorico(id: string) {
@@ -313,7 +306,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {filtrados.map((a) => {
                 const statusInicial = derivarStatusRematricula(a);
-                const linha = estado[a.id] ?? linhaInicial(a);
+                const linha = linhaDe(a);
                 const isSalvando = salvando === a.id;
                 const alterado =
                   linha.contratoAssinado !== a.contrato_assinado ||
@@ -464,7 +457,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                       </div>
 
                       <div className="flex flex-col items-stretch gap-1.5">
-                        <Button onClick={() => handleSalvar(a.id)} disabled={!alterado || isSalvando} size="sm">
+                        <Button onClick={() => handleSalvar(a)} disabled={!alterado || isSalvando} size="sm">
                           {isSalvando ? "Salvando..." : "Salvar"}
                         </Button>
                         {permiteRemover && (
