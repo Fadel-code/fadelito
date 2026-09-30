@@ -3,6 +3,10 @@ import { supabase } from "../lib/supabase";
 import type { RematriculaAluno } from "../types";
 import toast from "react-hot-toast";
 
+// "José  Silva" e "JOSE SILVA" são o mesmo aluno: acento, caixa e espaço repetido não contam.
+const chaveNome = (nome: string) =>
+  nome.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
 // Busca todos os alunos visíveis ao usuário logado (RLS filtra: unidade vê só os seus,
 // marketing/supervisão veem todos). Mesmo hook serve as duas telas.
 export function useRematricula() {
@@ -53,6 +57,22 @@ export function useRematricula() {
 
   const adicionar = useCallback(
     async (unidadeId: string, nome: string, turma: string) => {
+      // A lista da tela pode estar velha (outra pessoa acabou de incluir o mesmo aluno),
+      // então confere no banco na hora. ponytail: sem UNIQUE no banco, duas inclusões no
+      // mesmo instante ainda passam; índice único em (unidade_id, nome normalizado) se ocorrer.
+      const { data: existentes, error: erroBusca } = await supabase
+        .from("rematricula_alunos")
+        .select("nome")
+        .eq("unidade_id", unidadeId);
+      if (erroBusca) {
+        toast.error("Erro ao adicionar aluno");
+        return false;
+      }
+      const repetido = existentes?.find((e) => chaveNome(e.nome) === chaveNome(nome));
+      if (repetido) {
+        toast.error(`"${repetido.nome}" já está cadastrado nesta unidade`);
+        return false;
+      }
       const { error } = await supabase
         .from("rematricula_alunos")
         .insert({ unidade_id: unidadeId, nome: nome.trim(), turma: turma.trim() || null });
