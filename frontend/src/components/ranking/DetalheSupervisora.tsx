@@ -63,22 +63,21 @@ export default function DetalheSupervisora({ linha: l, outroCalculo, nomeUnidade
       <div className="space-y-2 text-sm text-gray-800">
         <p>
           {variosMeses ? <>Em <strong className="font-semibold">{faixa}</strong>, </> : null}
-          {l.supervisora.nome} acompanhou <strong className="font-semibold">{plural(l.detalhe.length, "unidade", "unidades")}</strong>
-          {sairam.length > 0 && variosMeses ? ` (${sairam.length} ${sairam.length === 1 ? "saiu" : "saíram"} da carteira no caminho)` : ""}. Aproveitamento nesse tempo:{" "}
-          <strong className="font-semibold tabular-nums text-gray-900">{pct(l.aproveitamento)}</strong>{" "}
-          <span className="tabular-nums text-gray-700">({num(l.matriculas)} matrículas em {num(l.visitas)} visitas)</span>.
+          {l.supervisora.nome} teve <strong className="font-semibold">{plural(l.detalhe.length, "unidade", "unidades")}</strong>
+          {sairam.length > 0 && variosMeses ? ` (${sairam.length} ${sairam.length === 1 ? "já saiu" : "já saíram"} da carteira)` : ""}. Fez{" "}
+          <span className="tabular-nums">{num(l.matriculas)} matrículas em {num(l.visitas)} visitas</span>:{" "}
+          <strong className="font-semibold tabular-nums text-gray-900">{pct(l.aproveitamento)}</strong>.
         </p>
         {variosMeses && (
           <p className="text-gray-700">
-            Cada unidade só conta nos meses em que estava com {l.supervisora.nome}. Os meses em que esteve com outra supervisora vão para ela.
+            Cada unidade só conta nos meses em que estava com {l.supervisora.nome}.
           </p>
         )}
         {l.aproveitamento !== null && outroCalculo.valor !== null && Math.abs(outroCalculo.valor - l.aproveitamento) >= 0.0005 && (
           <p className="text-gray-700">
-            Pela <strong className="font-semibold">{outroCalculo.rotulo.toLowerCase()}</strong> seria{" "}
-            <strong className="font-semibold tabular-nums text-gray-900">{pct(outroCalculo.valor)}</strong> (
-            {outroCalculo.valor > l.aproveitamento ? "+" : "−"}
-            {(Math.abs(outroCalculo.valor - l.aproveitamento) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} p.p.).
+            Pelo outro cálculo ({outroCalculo.rotulo.toLowerCase()}) seria{" "}
+            <strong className="font-semibold tabular-nums text-gray-900">{pct(outroCalculo.valor)}</strong>, {(Math.abs(outroCalculo.valor - l.aproveitamento) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}{" "}
+            pontos {outroCalculo.valor > l.aproveitamento ? "a mais" : "a menos"}.
           </p>
         )}
       </div>
@@ -114,7 +113,7 @@ export default function DetalheSupervisora({ linha: l, outroCalculo, nomeUnidade
             <thead className="bg-gray-50 text-xs text-gray-700">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left font-semibold">Unidade</th>
-                <th scope="col" className="px-3 py-2 text-left font-semibold">{variosMeses ? "Com ela" : "Situação"}</th>
+                <th scope="col" className="px-3 py-2 text-left font-semibold">{variosMeses ? "Meses com ela" : "Situação"}</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Visitas</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Matrículas</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Aproveitamento</th>
@@ -157,7 +156,7 @@ export default function DetalheSupervisora({ linha: l, outroCalculo, nomeUnidade
                       <td className="px-3 py-2 text-right text-gray-800">{num(d.matriculas)}</td>
                       <td className="px-3 py-2 text-right font-semibold text-gray-900">
                         {pct(d.aproveitamento)}
-                        {(d.aproveitamento ?? 0) > 1 && <span className="ml-0.5 text-amber-700" title="Mais matrículas que visitas">*</span>}
+                        {(d.aproveitamento ?? 0) > 1 && <span className="ml-0.5 text-gray-500" title="Mais matrículas do que visitas">*</span>}
                       </td>
                       <td className="px-3 py-2 text-right text-gray-800">{pct(d.perda)}</td>
                     </tr>
@@ -166,12 +165,9 @@ export default function DetalheSupervisora({ linha: l, outroCalculo, nomeUnidade
               ))}
           </table>
         </div>
-        {variosMeses && (
-          <p className="mt-2 text-xs text-gray-700">Visitas, matrículas e aproveitamento de cada unidade contam só os meses com {l.supervisora.nome}.</p>
-        )}
         {l.detalhe.some((d) => (d.aproveitamento ?? 0) > 1) && (
-          <p className="mt-1 text-xs text-amber-800">
-            * Acima de 100%: a unidade registrou mais matrículas que visitas (matrícula sem visita lançada, ou dado da planilha a conferir).
+          <p className="mt-2 text-xs text-gray-700">
+            * Acima de 100%: há mais matrículas do que visitas lançadas. Vale conferir os dados.
           </p>
         )}
       </section>

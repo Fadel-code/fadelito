@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronRight, Minus, Trophy } from "lucide-react";
+import { Info, ArrowDownRight, ArrowUpRight, ChevronRight, Minus, Trophy } from "lucide-react";
 import {
   faixasDeMeses,
   type Atribuicao,
@@ -153,8 +153,8 @@ export default function ItemRanking({ posicao, linha: l, escala, rede, delta, pe
               {pct(l.perda)}
               {l.unidadesSemBase > 0 && (
                 <>
-                  <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />
-                  <span className="sr-only">incompleta: {l.unidadesSemBase} unidade(s) sem alunos ativos informados</span>
+                  <Info className="h-3.5 w-3.5 text-gray-500" aria-hidden />
+                  <span className="sr-only">{l.unidadesSemBase} {l.unidadesSemBase === 1 ? "unidade ainda não tem" : "unidades ainda não têm"} alunos ativos informados</span>
                 </>
               )}
             </span>

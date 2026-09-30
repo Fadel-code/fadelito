@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { Info, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { MESES, mesAnterior, type Linha } from "../../lib/rankingSupervisoras";
 import type { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
@@ -120,17 +120,20 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
       </div>
 
       {problemasCarteira.length > 0 && (
-        <div role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+        <div role="status" className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" aria-hidden />
           <div className="space-y-0.5">
-            {problemasCarteira.map((p) => (
-              <p key={p.linha + p.tipo}>
-                <strong className="font-semibold">
-                  Linha {p.linha} {p.tipo === "sem" ? "sem supervisora" : "com duas supervisoras"} em {rotuloMes(mesIsoRef)}:
-                </strong>{" "}
-                {p.unidades.map((u) => u.nome).join(", ")}.{p.tipo === "sem" ? " Não entram no ranking." : " Contadas em dobro."}
-              </p>
-            ))}
+            {problemasCarteira.map((p) => {
+              const varias = p.unidades.length > 1;
+              const nomes = p.unidades.map((u) => u.nome).join(", ");
+              return (
+                <p key={p.linha + p.tipo}>
+                  {p.tipo === "sem"
+                    ? `${nomes} ${varias ? "estão" : "está"} sem supervisora na linha ${p.linha} em ${rotuloMes(mesIsoRef)} e ${varias ? "ficam" : "fica"} fora do ranking.`
+                    : `${nomes} ${varias ? "têm" : "tem"} duas supervisoras na linha ${p.linha} em ${rotuloMes(mesIsoRef)} e ${varias ? "contam" : "conta"} duas vezes.`}
+                </p>
+              );
+            })}
           </div>
         </div>
       )}

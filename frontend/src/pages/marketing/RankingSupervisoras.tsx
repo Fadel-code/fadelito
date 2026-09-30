@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ChevronRight, RefreshCw, Settings2, Users } from "lucide-react";
+import { Info, ChevronRight, Eye, GraduationCap, RefreshCw, Settings2, TrendingUp, Users } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
 import ConfiguracaoRanking from "../../components/ranking/ConfiguracaoRanking";
 import SeletorMes from "../../components/ranking/SeletorMes";
 import ItemRanking, { colunasRanking } from "../../components/ranking/ItemRanking";
-import { pct } from "../../components/ranking/formato";
+import { pct, plural } from "../../components/ranking/formato";
 import { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 import {
   MESES,
@@ -165,6 +165,9 @@ export default function RankingSupervisoras() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, supervisoras, atribuicoes, dados, meses, unidades]);
 
+  // Unidades que ficam fora do ranking (sem supervisora numa das linhas) — o card de supervisoras avisa.
+  const foraDoRanking = useMemo(() => new Set(avisosCarteira.filter((g) => g.tipo === "sem").flatMap((g) => g.nomes)).size, [avisosCarteira]);
+
   const semAtribuicao = !loading && atribuicoes.length === 0;
   const fimMes = `${fim.slice(0, 7)}-01`;
   const mesRefConfig = mesConfig ?? (fimMes > `${mesCorrente}-01` ? `${mesCorrente}-01` : fimMes);
@@ -182,7 +185,7 @@ export default function RankingSupervisoras() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ranking de Supervisoras</h1>
-          <p className="mt-1 text-sm text-gray-600">Quem converte mais visitas em matrículas, e quanto cada carteira perde de alunos.</p>
+          <p className="mt-1 text-sm text-gray-600">Quem transforma mais visitas em matrículas e quanto cada carteira perde de alunos.</p>
         </div>
         <div className="flex items-center gap-2">
           <div role="tablist" aria-label="Seções do ranking" className="inline-flex rounded-lg bg-gray-100 p-0.5 text-sm">
@@ -212,6 +215,29 @@ export default function RankingSupervisoras() {
         <ConfiguracaoRanking key={`${inicio}|${fim}|${mesConfig}`} ranking={ranking} mesInicial={mesRefConfig} />
       ) : (
         <div className="space-y-4">
+          <section aria-label="Resumo do período" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[
+              { Icone: TrendingUp, rotulo: "Média da rede", valor: loading ? "—" : pct(rede.aproveitamento), sub: metodo === "ponderado" ? "Aproveitamento ponderado" : "Aproveitamento, média simples" },
+              { Icone: Eye, rotulo: "Visitas", valor: loading ? "—" : num(rede.visitas), sub: rotuloPeriodo },
+              { Icone: GraduationCap, rotulo: "Matrículas", valor: loading ? "—" : num(rede.matriculas), sub: rotuloPeriodo },
+              {
+                Icone: Users,
+                rotulo: "Supervisoras",
+                valor: loading ? "—" : String(linhas.length),
+                sub: loading ? "" : foraDoRanking > 0 ? `${plural(foraDoRanking, "unidade fica", "unidades ficam")} fora do ranking` : "Todas as unidades com supervisora",
+              },
+            ].map(({ Icone, rotulo, valor, sub }) => (
+              <div key={rotulo} className="card p-4">
+                <p className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-50 text-primary-700"><Icone className="h-3.5 w-3.5" aria-hidden /></span>
+                  {rotulo}
+                </p>
+                <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{valor}</p>
+                <p className="mt-0.5 text-xs text-gray-600">{sub}</p>
+              </div>
+            ))}
+          </section>
+
           <section aria-label="Filtros" className="card p-4">
             <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
               <div>
@@ -244,9 +270,9 @@ export default function RankingSupervisoras() {
             <div className="mt-3 max-w-3xl text-xs leading-relaxed text-gray-600">
               <p>
                 {metodo === "ponderado" ? (
-                  <><strong className="font-semibold text-gray-900">Ponderado:</strong> soma todas as matrículas e todas as visitas das unidades da supervisora e divide (matrículas ÷ visitas). Unidade com mais visitas pesa mais.</>
+                  <><strong className="font-semibold text-gray-900">Ponderado:</strong> soma todas as matrículas, soma todas as visitas e divide. Unidade com mais visitas pesa mais.</>
                 ) : (
-                  <><strong className="font-semibold text-gray-900">Média simples:</strong> calcula a % de cada unidade e tira a média, como na planilha. Toda unidade pesa igual, tenha 5 ou 100 visitas.</>
+                  <><strong className="font-semibold text-gray-900">Média simples:</strong> tira a média da % de cada unidade, como na planilha. Toda unidade pesa igual, tenha 5 ou 100 visitas.</>
                 )}
               </p>
               <details className="group mt-2">
@@ -260,8 +286,8 @@ export default function RankingSupervisoras() {
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
-                      { valor: "ponderado" as Metodo, titulo: "Ponderado", conta: "(2 + 6) ÷ (4 + 60) = 8 ÷ 64", resultado: "12,5%", leitura: "A unidade B fez quase todas as visitas, então o resultado fica perto dela. Mostra o desempenho real do volume atendido. Use para comparar supervisoras com carteiras de tamanhos diferentes." },
-                      { valor: "simples" as Metodo, titulo: "Média simples", conta: "(50% + 10%) ÷ 2", resultado: "30%", leitura: "A e B valem o mesmo, mesmo com B fazendo 15 vezes mais visitas. É o cálculo da planilha: use quando precisar bater com ela." },
+                      { valor: "ponderado" as Metodo, titulo: "Ponderado", conta: "(2 + 6) ÷ (4 + 60) = 8 ÷ 64", resultado: "12,5%", leitura: "A B fez quase todas as visitas, então o resultado fica perto dela. Bom para comparar carteiras de tamanhos diferentes." },
+                      { valor: "simples" as Metodo, titulo: "Média simples", conta: "(50% + 10%) ÷ 2", resultado: "30%", leitura: "A e B valem igual, mesmo com B fazendo 15 vezes mais visitas. É o cálculo da planilha." },
                     ].map((c) => (
                       <div key={c.valor} className={`rounded-lg border bg-white p-3 ${metodo === c.valor ? "border-primary-300 ring-1 ring-primary-200" : "border-gray-200"}`}>
                         <p className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900">
@@ -279,44 +305,46 @@ export default function RankingSupervisoras() {
           </section>
 
           {planilhaIgnorada.length > 0 && (
-            <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Em {planilhaIgnorada.map(rotuloMes).join(", ")} o período corta o mês no meio. A planilha só tem o total do mês, então valem apenas os registros do Formulário Diário dos dias escolhidos.
+            <p role="status" className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" aria-hidden />
+              <span>Em {planilhaIgnorada.map(rotuloMes).join(", ")} você escolheu só parte do mês. A planilha tem apenas o total do mês, então esse mês usa só o Formulário Diário dos dias escolhidos.</span>
             </p>
           )}
 
           {avisosCarteira.length > 0 && (
-            <div role="status" className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+            <div role="status" className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" aria-hidden />
                 <div className="space-y-1">
                   {avisosCarteira.map((g) => {
-                    const quando = g.primeiro === g.ultimo ? rotuloMes(g.primeiro) : `${rotuloMes(g.primeiro)} a ${rotuloMes(g.ultimo)}`;
+                    const quando = g.primeiro === g.ultimo ? `em ${rotuloMes(g.primeiro)}` : `de ${rotuloMes(g.primeiro)} a ${rotuloMes(g.ultimo)}`;
+                    const varias = g.nomes.length > 1;
                     return (
                       <p key={`${g.tipo}${g.linha}${g.primeiro}${g.ultimo}`}>
-                        <strong className="font-semibold">
-                          {g.tipo === "sem" ? `Sem supervisora na linha ${g.linha}` : `Duas supervisoras na linha ${g.linha}`} ({quando}):
-                        </strong>{" "}
-                        {g.nomes.join(", ")}. {g.tipo === "sem" ? "Não entram no ranking." : "Contadas em dobro."}
+                        {g.tipo === "sem"
+                          ? `${g.nomes.join(", ")} ${varias ? "estão" : "está"} sem supervisora na linha ${g.linha} ${quando} e ${varias ? "ficam" : "fica"} fora do ranking.`
+                          : `${g.nomes.join(", ")} ${varias ? "têm" : "tem"} duas supervisoras na linha ${g.linha} ${quando} e ${varias ? "contam" : "conta"} duas vezes.`}
                       </p>
                     );
                   })}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => { setMesConfig(avisosCarteira[0].primeiro); setAba("config"); }} className="flex-shrink-0 bg-white">Ajustar carteira</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setMesConfig(avisosCarteira[0].primeiro); setAba("config"); }} className="flex-shrink-0 self-start text-gray-700 sm:self-center">Ajustar carteira</Button>
             </div>
           )}
 
           {!loading && linhas.length > 0 && mesesSemBase.length > 0 && (
-            <div role="status" className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+            <div role="status" className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
+                <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" aria-hidden />
                 <span>
-                  <strong className="font-semibold">Perda incompleta.</strong> Faltam os alunos ativos de{" "}
+                  Ainda falta informar os alunos ativos de{" "}
                   {mesesSemBase.slice(0, 3).map((m) => `${rotuloMes(m.mes)} (${m.n} ${m.n === 1 ? "unidade" : "unidades"})`).join(", ")}
-                  {mesesSemBase.length > 3 ? ` e mais ${mesesSemBase.length - 3} ${mesesSemBase.length - 3 === 1 ? "mês" : "meses"}` : ""}. O aproveitamento não é afetado.
+                  {mesesSemBase.length > 3 ? ` e mais ${mesesSemBase.length - 3} ${mesesSemBase.length - 3 === 1 ? "mês" : "meses"}` : ""}.
+                  {" "}A perda só conta as unidades que já têm esse número. O aproveitamento não muda.
                 </span>
               </p>
-              <Button variant="outline" size="sm" onClick={irParaAlunosAtivos} className="flex-shrink-0 bg-white">Preencher alunos ativos</Button>
+              <Button variant="ghost" size="sm" onClick={irParaAlunosAtivos} className="flex-shrink-0 self-start text-gray-700 sm:self-center">Informar alunos ativos</Button>
             </div>
           )}
 
@@ -329,7 +357,7 @@ export default function RankingSupervisoras() {
                 </h2>
                 {meses.length > 1 && (
                   <p className="mt-0.5 text-xs text-gray-700">
-                    Cada supervisora é medida só nos meses e nas unidades que estavam com ela. Abra uma linha para ver quais.
+                    Cada uma conta só as unidades e os meses em que esteve com ela. Abra a linha para ver quais.
                   </p>
                 )}
               </div>
@@ -337,7 +365,7 @@ export default function RankingSupervisoras() {
                 <p className="flex items-center gap-2 text-xs text-gray-700 tabular-nums">
                   <span className="inline-block h-3 w-0.5 rounded bg-ink/70" aria-hidden />
                   <span>
-                    Média da rede <strong className="font-semibold text-gray-900">{pct(rede.aproveitamento)}</strong> · {num(rede.visitas)} visitas · {num(rede.matriculas)} matrículas
+                    Média da rede <strong className="font-semibold text-gray-900">{pct(rede.aproveitamento)}</strong>
                   </span>
                 </p>
               )}
