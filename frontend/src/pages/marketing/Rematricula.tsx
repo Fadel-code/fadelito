@@ -53,12 +53,11 @@ const CHAVE_UNIDADE = "rematricula.previewUnidadeId";
 
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
-  const { alunos, loading, carregar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
-  // ponytail: semeia com dados reais da 1ª unidade cadastrada pra supervisão testar
-  // a tela de verdade antes de liberar pra unidades. Adicionar/atualizar/histórico
-  // ficam locais (a policy de update já bloqueia escrita de quem não é a própria
-  // unidade); remover é sobrescrito abaixo pra apagar de verdade no Supabase.
-  const preview = useRematriculaPreview(alunos.length ? alunos : undefined);
+  const { alunos, loading, carregar, adicionar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
+  // ponytail: a prévia espelha os dados reais pra supervisão testar a tela de verdade.
+  // Atualizar/histórico ficam locais (a policy de update já bloqueia escrita de quem
+  // não é a própria unidade); adicionar e remover gravam de verdade no Supabase.
+  const preview = useRematriculaPreview(alunos);
 
   async function remover(id: string) {
     const ok = await removerReal(id);
@@ -213,9 +212,8 @@ export default function RematriculaMarketing() {
         )}
       </div>
 
-      {/* Prévia — a tela que a unidade vai ver, semeada com dados reais só pra a
-          supervisão testar antes de liberar pra unidades. Adicionar/atualizar/histórico
-          continuam locais (não gravam); remover agora apaga de verdade no Supabase. */}
+      {/* Prévia — a tela que a unidade vê, com dados reais. Atualizar/histórico continuam
+          locais (não gravam); adicionar e remover gravam de verdade no Supabase. */}
       {(profile?.role === "supervisao" || profile?.role === "marketing") && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
           {unidadesPreview.length > 0 && (
@@ -233,6 +231,7 @@ export default function RematriculaMarketing() {
           <RematriculaPainel
             unidadeId={previewUnidadeId || "previa"}
             {...preview}
+            adicionar={adicionar}
             remover={remover}
             atualizar={atualizar}
             permiteRemover

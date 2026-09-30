@@ -1,43 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RematriculaAluno } from "../types";
 
-// Mesma interface de useRematricula, mas adicionar/atualizar/histórico ficam 100% em
-// memória — não tocam o Supabase (remover é sobrescrito por fora com o delete real).
-// Aceita uma carga inicial (ex: dados reais de uma unidade) só pra semear a lista.
-export function useRematriculaPreview(seed?: RematriculaAluno[]) {
-  const [alunos, setAlunos] = useState<RematriculaAluno[]>(seed ?? []);
+// Mesma interface de useRematricula, mas atualizar/histórico ficam 100% em memória —
+// não tocam o Supabase (remover é sobrescrito por fora com o delete real). Não há
+// `adicionar` aqui de propósito: incluir aluno precisa gravar de verdade, senão o
+// total sobe na tela e volta ao recarregar.
+// A lista acompanha `reais` pelo id: aluno incluído/removido no Supabase entra/sai, e
+// quem já foi mexido na prévia mantém a cópia local.
+export function useRematriculaPreview(reais: RematriculaAluno[]) {
+  const [alunos, setAlunos] = useState<RematriculaAluno[]>(reais);
   const [salvando, setSalvando] = useState<string | null>(null);
-  const jaSemeou = useRef(!!seed?.length);
 
   useEffect(() => {
-    if (!jaSemeou.current && seed?.length) {
-      setAlunos(seed);
-      jaSemeou.current = true;
-    }
-  }, [seed]);
-
-  const adicionar = useCallback(async (unidadeId: string, nome: string, turma: string) => {
-    setAlunos((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        unidade_id: unidadeId,
-        nome: nome.trim(),
-        turma: turma.trim() || null,
-        contrato_assinado: false,
-        motivo: null,
-        quem_contatou: null,
-        observacao: null,
-        negociando: false,
-        inadimplente: false,
-        aceite: false,
-        negociacao_historico: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ]);
-    return true;
-  }, []);
+    setAlunos((prev) => {
+      const locais = new Map(prev.map((a) => [a.id, a]));
+      return reais.map((r) => locais.get(r.id) ?? r);
+    });
+  }, [reais]);
 
   const atualizar = useCallback(
     async (
@@ -89,5 +68,5 @@ export function useRematriculaPreview(seed?: RematriculaAluno[]) {
     return true;
   }, []);
 
-  return { alunos, loading: false, salvando, adicionar, atualizar, remover, adicionarHistorico };
+  return { alunos, loading: false, salvando, atualizar, remover, adicionarHistorico };
 }
