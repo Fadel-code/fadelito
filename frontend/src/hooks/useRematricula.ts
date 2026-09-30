@@ -79,7 +79,7 @@ export function useRematricula() {
     ) => {
       setSalvando(id);
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("rematricula_alunos")
           .update({
             contrato_assinado: contratoAssinado,
@@ -90,8 +90,11 @@ export function useRematricula() {
             inadimplente,
             aceite,
           })
-          .eq("id", id);
+          .eq("id", id)
+          .select("id");
         if (error) throw error;
+        // RLS que bloqueia o UPDATE não dá erro, só afeta 0 linhas.
+        if (!data?.length) throw new Error("Nenhuma linha atualizada (permissão/RLS)");
         await carregar();
         return true;
       } catch (err) {
