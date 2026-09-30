@@ -216,7 +216,7 @@ export default function RematriculaMarketing() {
       {/* Prévia — a tela que a unidade vai ver, semeada com dados reais só pra a
           supervisão testar antes de liberar pra unidades. Adicionar/atualizar/histórico
           continuam locais (não gravam); remover agora apaga de verdade no Supabase. */}
-      {profile?.role === "supervisao" && (
+      {(profile?.role === "supervisao" || profile?.role === "marketing") && (
         <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
           {unidadesPreview.length > 0 && (
             <div className="mb-5 max-w-xs">
@@ -237,7 +237,7 @@ export default function RematriculaMarketing() {
             atualizar={atualizar}
             permiteRemover
             permiteAdicionar
-            permiteMarcarInadimplente
+            permiteMarcarInadimplente={profile?.role === "supervisao"}
           />
         </div>
       )}
