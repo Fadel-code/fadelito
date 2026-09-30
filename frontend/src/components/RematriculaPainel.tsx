@@ -113,6 +113,19 @@ function HistoricoLista({ historico, className = "" }: { historico: RematriculaH
 
 // Tela que a unidade usa pra acompanhar a rematrícula — reaproveitada como prévia
 // (mesmo componente, data source local) na tela da supervisão.
+function linhaInicial(a: RematriculaAluno): LinhaState {
+  return {
+    contratoAssinado: a.contrato_assinado,
+    motivo: a.motivo ?? "",
+    quemContatou: a.quem_contatou ?? "",
+    observacao: a.observacao ?? "",
+    negociando: a.negociando,
+    inadimplente: a.inadimplente,
+    aceite: a.aceite,
+    naoRematriculou: derivarStatusRematricula(a) === "nao_rematriculado",
+  };
+}
+
 export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
@@ -139,26 +152,19 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
 
   useEffect(() => {
     const init: Record<string, LinhaState> = {};
-    for (const a of meus) {
-      init[a.id] = {
-        contratoAssinado: a.contrato_assinado,
-        motivo: a.motivo ?? "",
-        quemContatou: a.quem_contatou ?? "",
-        observacao: a.observacao ?? "",
-        negociando: a.negociando,
-        inadimplente: a.inadimplente,
-        aceite: a.aceite,
-        naoRematriculou: derivarStatusRematricula(a) === "nao_rematriculado",
-      };
-    }
+    for (const a of meus) init[a.id] = linhaInicial(a);
     setEstado(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alunos]);
+  }, [alunos, unidadeId]);
 
   const kpis = calcularKpisRematricula(meus);
 
   function setLinha(id: string, patch: Partial<LinhaState>) {
-    setEstado((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+    const aluno = alunos.find((a) => a.id === id);
+    setEstado((prev) => {
+      const base = prev[id] ?? (aluno ? linhaInicial(aluno) : undefined);
+      return base ? { ...prev, [id]: { ...base, ...patch } } : prev;
+    });
   }
 
   async function handleAdicionar(e: FormEvent) {
@@ -305,16 +311,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {filtrados.map((a) => {
                 const statusInicial = derivarStatusRematricula(a);
-                const linha = estado[a.id] ?? {
-                  contratoAssinado: a.contrato_assinado,
-                  motivo: a.motivo ?? "",
-                  quemContatou: a.quem_contatou ?? "",
-                  observacao: a.observacao ?? "",
-                  negociando: a.negociando,
-                  inadimplente: a.inadimplente,
-                  aceite: a.aceite,
-                  naoRematriculou: statusInicial === "nao_rematriculado",
-                };
+                const linha = estado[a.id] ?? linhaInicial(a);
                 const isSalvando = salvando === a.id;
                 const alterado =
                   linha.contratoAssinado !== a.contrato_assinado ||

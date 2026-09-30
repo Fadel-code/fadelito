@@ -49,6 +49,8 @@ function agruparPorUnidade(alunos: RematriculaAluno[]): LinhaUnidade[] {
   });
 }
 
+const CHAVE_UNIDADE = "rematricula.previewUnidadeId";
+
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const { alunos, loading, carregar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
@@ -107,10 +109,15 @@ export default function RematriculaMarketing() {
     () => [...porUnidade].sort((a, b) => a.unidade_nome.localeCompare(b.unidade_nome, "pt-BR")),
     [porUnidade]
   );
-  const [previewUnidadeId, setPreviewUnidadeId] = useState("");
+  // sessionStorage: a unidade escolhida sobrevive à troca de tela (a página desmonta).
+  const [previewUnidadeId, setPreviewUnidadeIdState] = useState(() => sessionStorage.getItem(CHAVE_UNIDADE) ?? "");
+  function setPreviewUnidadeId(id: string) {
+    setPreviewUnidadeIdState(id);
+    sessionStorage.setItem(CHAVE_UNIDADE, id);
+  }
   useEffect(() => {
-    if (!previewUnidadeId && unidadesPreview.length) {
-      setPreviewUnidadeId(unidadesPreview[0].unidade_id);
+    if (unidadesPreview.length && !unidadesPreview.some((u) => u.unidade_id === previewUnidadeId)) {
+      setPreviewUnidadeIdState(unidadesPreview[0].unidade_id);
     }
   }, [unidadesPreview, previewUnidadeId]);
 
