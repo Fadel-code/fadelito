@@ -89,7 +89,11 @@ export default function RematriculaMarketing() {
   // ranking) pra não derrubar a média geral. Reverter quando a unidade sinalizar.
   const alunosRede = alunos.filter((a) => a.profiles?.unidade_nome !== "Vila Leopoldina");
 
-  const kpisRede = calcularKpisRematricula(alunosRede);
+  // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
+  const FORA_DA_META = ["Brooklin", "Klabin", "Real Parque", "Perdizes"];
+  const kpisRede = calcularKpisRematricula(
+    alunosRede.filter((a) => !FORA_DA_META.includes(a.profiles?.unidade_nome ?? ""))
+  );
   const porUnidade = agruparPorUnidade(alunosRede).sort((a, b) => a.pct - b.pct);
 
   async function exportar(formato: "xlsx" | "csv") {
