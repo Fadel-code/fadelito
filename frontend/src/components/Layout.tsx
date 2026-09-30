@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Table2,
   ThumbsUp,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -100,6 +101,7 @@ const NAV_MARKETING: NavEntry[] = [
       { to: "/marketing/rematricula", label: "Painel", icon: Repeat },
     ],
   },
+  { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy, marketingOnly: true },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
 ];

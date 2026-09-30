@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   lazy,
   Suspense,
   type ReactNode,
@@ -27,6 +28,7 @@ const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketi
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 const Agenda = lazy(() => import("./pages/Agenda"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
+const RankingSupervisoras = lazy(() => import("./pages/marketing/RankingSupervisoras"));
 const ContaMfa = lazy(() => import("./pages/ContaMfa"));
 
 function PageLoader() {
@@ -60,6 +62,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const usuarioAtual = useRef<string | null>(null);
 
   async function loadProfile(userId: string) {
     const { data } = await supabase
@@ -72,6 +75,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      usuarioAtual.current = session?.user?.id ?? null;
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id).finally(() => setLoading(false));
       else setLoading(false);
@@ -79,6 +83,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        // Renovação de token e SIGNED_IN ao voltar pra aba chegam com o mesmo usuário:
+        // não recarrega o perfil nem mostra o spinner, senão a página desmonta e perde filtros/rascunhos.
+        if (session?.user && session.user.id === usuarioAtual.current) return;
+        usuarioAtual.current = session?.user?.id ?? null;
         setUser(session?.user ?? null);
         if (session?.user) {
           setLoading(true);
@@ -126,6 +134,12 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "unidade"
   }
 
   return <>{children}</>;
+}
+
+// Só o login Marketing — supervisão passa por RequireAuth role="marketing", mas não vê o ranking.
+function RequireMarketing({ children }: { children: ReactNode }) {
+  const { profile } = useAuth();
+  return profile?.role === "marketing" ? <>{children}</> : <Navigate to="/marketing/dashboard" replace />;
 }
 
 function RedirectByRole() {
@@ -180,6 +194,7 @@ export default function App() {
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
+          <Route path="ranking-supervisoras" element={<RequireMarketing><RankingSupervisoras /></RequireMarketing>} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
           <Route path="mfa" element={<ContaMfa />} />
           <Route index element={<Navigate to="dashboard" replace />} />
