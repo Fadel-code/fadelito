@@ -8,10 +8,10 @@ import {
   ClipboardCheck,
   CheckCircle2,
   AlertCircle,
+  Table2,
   GraduationCap,
   TrendingUp,
   UserMinus,
-  Table2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useConsolidado } from "../../hooks/useConsolidado";
@@ -23,6 +23,11 @@ import { detalhePorUnidade, resumoPorTurma, somarTurmas } from "../../lib/turmas
 import ModalEdicaoUnidade from "../../components/ModalEdicaoUnidade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
+import Segmentado from "../../components/ui/segmentado";
+import SeletorMes from "../../components/ranking/SeletorMes";
+import KpiCard, { KpiGrid } from "../../components/KpiCard";
+import MenuExportar from "../../components/ui/menu-exportar";
+import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 import { atualizarOuRecarregar } from "../../lib/versao";
@@ -85,216 +90,154 @@ export default function Dashboard() {
   const visitasTotaisRede = dados.reduce((a, d) => a + d.visitas_totais, 0);
   const matriculasTotaisRede = dados.reduce((a, d) => a + d.matriculas_totais, 0);
   const conversaoTotal =
-    visitasTotaisRede > 0 ? `${((matriculasTotaisRede / visitasTotaisRede) * 100).toFixed(1)}%` : "—";
+    visitasTotaisRede > 0 ? `${((matriculasTotaisRede / visitasTotaisRede) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "—";
   const desligamentosTotal = dados.reduce((a, d) => a + d.desligamentos, 0);
+
+  const faltando = totalUnidades - preencheramNoDia;
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  async function exportar(tipo: "excel" | "csv" | "pdf") {
+    if (tipo === "pdf") {
+      const { exportarPdf } = await import("../../lib/exportPdf");
+      return exportarPdf(dados, mes, ANO);
+    }
+    const { exportarExcel, exportarTurmasCsv } = await import("../../lib/exportExcel");
+    if (tipo === "excel") exportarExcel(dados, mes, ANO, turmasDetalhe);
+    else exportarTurmasCsv(turmasDetalhe, redeInteira ? "Rede" : unidadeTurma, mes, ANO, redeInteira);
+  }
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Consolidado</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Visão geral da rede — atualização em tempo real
-          </p>
+          <p className="mt-1 text-sm text-gray-600">Visão geral da rede, atualizada em tempo real.</p>
         </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Seletor de mês */}
-          <Select value={String(mes)} onValueChange={handleChangeMes}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MESES.map((nome, i) => {
-                const num = i + 1;
-                return (
-                  <SelectItem key={num} value={String(num)}>
-                    {nome} {ANO}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-
-          {/* Seletor de dia */}
-          <Select value={dia} onValueChange={setDia}>
-            <SelectTrigger className="w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TODOS_OS_DIAS}>Todos os dias</SelectItem>
-              {diasUteis.map((d) => {
-                const iso = dateToIso(d);
-                return (
-                  <SelectItem key={iso} value={iso}>
-                    {format(d, "EEE, dd/MM", { locale: ptBR })}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(recarregar)} title="Atualizar" aria-label="Atualizar">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
           </Button>
-
-          <Button
-            onClick={() => navigate("/marketing/desfechos")}
-            className="gap-2"
-          >
-            <ClipboardCheck className="h-4 w-4" />
+          <MenuExportar
+            opcoes={[
+              { chave: "excel", Icone: FileSpreadsheet, titulo: "Excel", descricao: "Planilha com abas por turma", onSelecionar: () => exportar("excel") },
+              { chave: "csv", Icone: Table2, titulo: "Google Sheets (CSV)", descricao: "Por unidade e turma, importa direto", onSelecionar: () => exportar("csv") },
+              { chave: "pdf", Icone: FileText, titulo: "PDF", descricao: "Resumo para imprimir ou enviar", onSelecionar: () => exportar("pdf") },
+            ]}
+          />
+          <Button onClick={() => navigate("/marketing/desfechos")} className="gap-2">
+            <ClipboardCheck className="h-4 w-4" aria-hidden />
             Desfechos de Matrículas
           </Button>
-
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const { exportarExcel } = await import("../../lib/exportExcel");
-              exportarExcel(dados, mes, ANO, turmasDetalhe);
-            }}
-            className="gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Exportar Excel
-          </Button>
-
-          <Button
-            variant="outline"
-            title="CSV UTF-8 por unidade e turma — importa direto no Google Sheets"
-            onClick={async () => {
-              const { exportarTurmasCsv } = await import("../../lib/exportExcel");
-              exportarTurmasCsv(turmasDetalhe, redeInteira ? "Rede" : unidadeTurma, mes, ANO, redeInteira);
-            }}
-            className="gap-2"
-          >
-            <Table2 className="h-4 w-4" />
-            Exportar Sheets (CSV)
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const { exportarPdf } = await import("../../lib/exportPdf");
-              exportarPdf(dados, mes, ANO);
-            }}
-            className="gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            Exportar PDF
-          </Button>
         </div>
       </div>
 
-      {/* Indicadores rápidos */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-              Preenchidas {labelStatus}
-            </p>
-            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-green-600 mt-2">{preencheramNoDia}</p>
-        </div>
-        <div className={`card p-5 ${totalUnidades - preencheramNoDia > 0 ? "ring-2 ring-red-200" : ""}`}>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-              Faltando {labelStatus}
-            </p>
-            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
-              <AlertCircle className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-red-500 mt-2">
-            {totalUnidades - preencheramNoDia}
-          </p>
-        </div>
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total matrículas</p>
-            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
-              <GraduationCap className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-primary-500 mt-2">
-            {dados.reduce((a, d) => a + d.matriculas_totais, 0)}
-          </p>
-        </div>
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Conversão total</p>
-            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-primary-500 mt-2">{conversaoTotal}</p>
-        </div>
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Desligamentos</p>
-            <span className="flex-shrink-0 h-8 w-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
-              <UserMinus className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-red-500 mt-2">{desligamentosTotal}</p>
-        </div>
-      </div>
-
-      {/* Tabela */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h2 className="font-semibold text-gray-900">
-            {visao === "unidades"
-              ? "Resultados por unidade"
-              : `Resultados por turma — ${redeInteira ? "toda a rede" : unidadeTurma}`}
-          </h2>
-          <div className="flex items-center gap-3 flex-wrap">
-            {visao === "turmas" && (
-              <Select value={unidadeTurma} onValueChange={setUnidadeTurma}>
-                <SelectTrigger className="w-52">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODAS_AS_UNIDADES}>Todas as unidades</SelectItem>
-                  {dados.map((u) => (
-                    <SelectItem key={u.unidade_id} value={u.unidade_nome}>
-                      {u.unidade_nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-              {(["unidades", "turmas"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setVisao(v)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    visao === v ? "bg-primary-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {v === "unidades" ? "Por unidade" : "Por turma"}
-                </button>
-              ))}
+      <div className="space-y-4">
+        <section aria-label="Filtros" className="card p-4 sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+              <div>
+                <span className={ROTULO}>Mês</span>
+                <SeletorMes
+                  valor={`${ANO}-${pad(mes)}`}
+                  min={`${ANO}-01`}
+                  max={`${ANO}-${pad(mesCorrido)}`}
+                  onChange={(ym) => handleChangeMes(String(Number(ym.slice(5, 7))))}
+                />
+              </div>
+              <div>
+                <span id="dash-dia" className={ROTULO}>Dia</span>
+                <Select value={dia} onValueChange={setDia}>
+                  <SelectTrigger className="w-48" aria-labelledby="dash-dia">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TODOS_OS_DIAS}>Todos os dias</SelectItem>
+                    {diasUteis.map((d) => {
+                      const iso = dateToIso(d);
+                      return (
+                        <SelectItem key={iso} value={iso}>
+                          {format(d, "EEE, dd/MM", { locale: ptBR })}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+              {visao === "turmas" && (
+                <div>
+                  <span id="dash-unidade" className={ROTULO}>Unidade</span>
+                  <Select value={unidadeTurma} onValueChange={setUnidadeTurma}>
+                    <SelectTrigger className="w-52" aria-labelledby="dash-unidade">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS_AS_UNIDADES}>Todas as unidades</SelectItem>
+                      {dados.map((u) => (
+                        <SelectItem key={u.unidade_id} value={u.unidade_nome}>
+                          {u.unidade_nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div>
+                <span className={ROTULO}>Ver resultados</span>
+                <Segmentado
+                  rotulo="Ver resultados"
+                  valor={visao}
+                  opcoes={[{ valor: "unidades", rotulo: "Por unidade" }, { valor: "turmas", rotulo: "Por turma" }]}
+                  onChange={setVisao}
+                />
+              </div>
             </div>
           </div>
+        </section>
+
+        <KpiGrid rotulo="Indicadores" colunas={5}>
+          <KpiCard
+            rotulo={`Preenchidas ${labelStatus}`} valor={preencheramNoDia} Icone={CheckCircle2} tom="green" carregando={loading}
+            sub={`de ${totalUnidades} unidades`} progresso={totalUnidades ? preencheramNoDia / totalUnidades : 0}
+          />
+          <KpiCard
+            rotulo={`Faltando ${labelStatus}`} valor={faltando} Icone={AlertCircle} tom={faltando > 0 ? "red" : "green"} carregando={loading}
+            sub={faltando > 0 ? "unidades sem formulário" : "todas preencheram"} alerta={faltando > 0}
+          />
+          <KpiCard rotulo="Total matrículas" valor={matriculasTotaisRede.toLocaleString("pt-BR")} Icone={GraduationCap} tom="primary" carregando={loading} sub={`${visitasTotaisRede.toLocaleString("pt-BR")} visitas`} />
+          <KpiCard rotulo="Conversão total" valor={conversaoTotal} Icone={TrendingUp} tom="primary" carregando={loading} sub="matrículas ÷ visitas" />
+          <KpiCard rotulo="Desligamentos" valor={desligamentosTotal} Icone={UserMinus} tom={desligamentosTotal > 0 ? "red" : "primary"} carregando={loading} sub={`em ${MESES[mes - 1].toLowerCase()}`} />
+        </KpiGrid>
+
+      <section aria-labelledby="dash-titulo" className={`${CARD_DESTAQUE} p-0`}>
+        <div className="flex flex-col gap-4 border-b border-gray-100 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <h2 id="dash-titulo" className="text-xl font-bold tracking-tight text-gray-900">
+              {visao === "unidades" ? "Resultados por unidade" : "Resultados por turma"}
+            </h2>
+            <p className="mt-1 text-sm text-gray-700">
+              {MESES[mes - 1]} de {ANO}
+              {filtrouDia && ` · ${format(new Date(dia + "T12:00:00"), "EEEE, dd/MM", { locale: ptBR })}`}
+              {visao === "turmas" && ` · ${redeInteira ? "toda a rede" : unidadeTurma}`}
+            </p>
+          </div>
         </div>
+        <div className="p-4 sm:p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-48 text-gray-400">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+          <div className="flex h-48 items-center justify-center text-gray-600">
+            <RefreshCw className="mr-2 h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden />
             Carregando dados...
           </div>
         ) : dados.length === 0 ? (
-          <div className="text-center h-32 flex items-center justify-center text-gray-400">
+          <div className="flex h-32 items-center justify-center text-center text-gray-600">
             Nenhum dado para {MESES[mes - 1]} {ANO}
             {filtrouDia && ` — ${format(new Date(dia + "T12:00:00"), "dd/MM", { locale: ptBR })}`}
           </div>
         ) : visao === "turmas" ? (
           <>
             <TabelaTurmas linhas={turmasResumo} total={turmasTotal} />
-            <p className="text-sm text-gray-500 mt-3">
+            <p className="mt-3 text-sm text-gray-600">
               As exportações seguem este filtro e trazem também o detalhe unidade × turma
               {redeInteira ? "" : ` de ${unidadeTurma}`}. Para ver esse detalhe na tela,{" "}
               <button
@@ -313,6 +256,8 @@ export default function Dashboard() {
             onEditar={handleEditar}
           />
         )}
+        </div>
+      </section>
       </div>
 
       <ModalEdicaoUnidade

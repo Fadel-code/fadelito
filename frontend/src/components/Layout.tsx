@@ -277,12 +277,12 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
             <button
               onClick={() => setMobileNavAberto(false)}
               aria-label="Fechar menu"
-              className="lg:hidden p-1 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              className="lg:hidden p-1 rounded text-white/65 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-          <p className="text-white/50 text-xs mt-1">
+          <p className="text-white/65 text-xs mt-1">
             {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
           </p>
           <NavLink
@@ -300,7 +300,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               <BookOpen className="h-4 w-4" />
             </span>
             <span className="flex-1 leading-tight">Assistente Fadelito</span>
-            <span className="text-[9px] font-bold uppercase tracking-wide bg-ink text-sun-soft rounded-full px-1.5 py-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wide bg-ink text-sun-soft rounded-full px-1.5 py-0.5">
               Novo
             </span>
           </NavLink>
@@ -322,14 +322,15 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                 <div key={entry.label}>
                   <button
                     type="button"
+                    aria-expanded={isOpen}
                     onClick={() => toggleGroup(entry.label)}
                     className={cn(
-                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors",
+                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-soft",
                       hasActiveChild && !isOpen
                         ? "text-white font-medium"
                         : entry.emphasize
                           ? "border border-sun/25 bg-sun/10 text-sun-soft font-semibold hover:bg-sun/20 hover:text-sun"
-                          : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                          : "text-white/65 font-medium hover:bg-white/10 hover:text-white"
                     )}
                   >
                     <entry.icon className="h-4 w-4 flex-shrink-0" />
@@ -338,7 +339,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                       <span
                         title="% de contratos assinados — abaixo da meta de 90%"
                         className={cn(
-                          "text-[10px] font-bold rounded-full h-[18px] flex items-center justify-center px-1.5",
+                          "text-[11px] font-bold rounded-full h-[18px] flex items-center justify-center px-1.5",
                           rematriculaPct! < REMATRICULA_META * 0.7 ? "bg-red-500 text-white" : "bg-sun-soft text-[#001233]"
                         )}
                       >
@@ -346,7 +347,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                       </span>
                     )}
                     {showDesfechosBadge && (
-                      <span className="bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="bg-sun-soft text-[#001233] text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                         {pendingCount}
                       </span>
                     )}
@@ -367,14 +368,14 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
                                 isActive
                                   ? "bg-primary-500 text-white font-medium"
-                                  : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                                  : "text-white/65 font-medium hover:bg-white/10 hover:text-white"
                               )
                             }
                           >
                             <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="flex-1">{item.label}</span>
                             {showItemPendingBadge && (
-                              <span className="bg-sun-soft text-[#001233] text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                              <span className="bg-sun-soft text-[#001233] text-[11px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                                 {pendingCount}
                               </span>
                             )}
@@ -399,7 +400,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                       ? "bg-primary-500 text-white font-medium"
                       : entry.emphasize
                         ? "border border-sun/25 bg-sun/10 text-sun-soft font-semibold hover:bg-sun/20 hover:text-sun"
-                        : "text-white/50 font-medium hover:bg-white/10 hover:text-white"
+                        : "text-white/65 font-medium hover:bg-white/10 hover:text-white"
                   )
                 }
               >
@@ -413,11 +414,11 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         {/* Footer */}
         <div className="px-3 py-4 border-t border-white/10">
           <div className="px-3 py-2 mb-2">
-            <p className="text-white/50 text-xs truncate">{profile?.email}</p>
+            <p className="text-white/65 text-xs truncate">{profile?.email}</p>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/65 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-soft"
           >
             <LogOut className="h-4 w-4" />
             Sair
@@ -435,7 +436,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
               <button
                 onClick={() => setMobileNavAberto(true)}
                 aria-label="Abrir menu"
-                className="lg:hidden -ml-1 p-2 rounded-md text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+                className="lg:hidden -ml-1 p-2 rounded-md text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -445,7 +446,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
                     {saudacao()}
                     {role === "unidade" && profile?.unidade_nome ? `, ${profile.unidade_nome}` : ""}
                   </p>
-                  <p className="text-xs text-gray-400 truncate hidden sm:block">
+                  <p className="text-xs text-gray-600 truncate hidden sm:block">
                     {capitalizar(
                       new Date().toLocaleDateString("pt-BR", {
                         weekday: "long",
@@ -491,7 +492,7 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
 
         {/* Page content */}
         <div className={cn("flex-1", fullBleed ? "min-h-0" : "p-4 sm:p-8")}>
-          <Outlet />
+          {fullBleed ? <Outlet /> : <div className="mx-auto w-full max-w-7xl"><Outlet /></div>}
         </div>
       </main>
     </div>

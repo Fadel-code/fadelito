@@ -8,10 +8,13 @@ import { Label } from "../components/ui/label";
 import toast from "react-hot-toast";
 
 const inputClass =
-  "h-10 rounded-[9px] border-white/[0.12] bg-white/[0.07] px-3.5 text-white placeholder:text-white/30 " +
+  "h-10 rounded-[9px] border-white/[0.12] bg-white/[0.07] px-3.5 text-white placeholder:text-white/50 " +
   "focus:border-transparent focus:ring-2 focus:ring-sun-soft focus:ring-offset-0";
 
-const labelClass = "text-[11px] font-semibold uppercase tracking-wide text-white/60";
+const labelClass = "text-sm font-semibold text-white/85";
+
+const linkClass =
+  "mt-4 w-full rounded text-center text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-soft";
 
 const ctaClass =
   "h-11 w-full rounded-[9px] bg-sun-soft font-extrabold text-[#001233] shadow-none " +
@@ -152,7 +155,7 @@ export default function Login() {
           {mfaFactorId ? (
             <>
               <h1 className="text-lg font-extrabold text-white">Verificação em duas etapas</h1>
-              <p className="mt-1.5 text-sm text-white/50">
+              <p className="mt-1.5 text-sm text-white/70">
                 Digite o código do seu app autenticador.
               </p>
               <form onSubmit={handleMfaVerify} className="mt-6 space-y-4">
@@ -164,6 +167,7 @@ export default function Login() {
                     id="mfaCode"
                     type="text"
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="000000"
                     value={mfaCode}
@@ -178,7 +182,7 @@ export default function Login() {
               </form>
               <button
                 onClick={() => { setMfaFactorId(null); setMfaCode(""); }}
-                className="mt-4 w-full text-center text-sm text-white/50 transition-colors hover:text-white"
+                className={`${linkClass} text-white/65 hover:text-white`}
               >
                 ← Voltar ao login
               </button>
@@ -186,7 +190,7 @@ export default function Login() {
           ) : !mostrarReset ? (
             <>
               <h1 className="text-lg font-extrabold text-white">Bem-vindo de volta</h1>
-              <p className="mt-1.5 text-sm text-white/50">
+              <p className="mt-1.5 text-sm text-white/70">
                 Entre com seus dados para acessar o painel.
               </p>
               <form onSubmit={handleLogin} className="mt-6 space-y-4">
@@ -224,7 +228,7 @@ export default function Login() {
                       type="button"
                       onClick={() => setMostrarSenha((v) => !v)}
                       aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-                      className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center text-white/40 transition-colors hover:text-white"
+                      className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center text-white/60 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sun-soft"
                     >
                       {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -236,7 +240,7 @@ export default function Login() {
               </form>
               <button
                 onClick={() => setMostrarReset(true)}
-                className="mt-4 w-full text-center text-sm font-bold text-sun-soft transition-colors hover:brightness-110"
+                className={`${linkClass} font-bold text-sun-soft hover:brightness-110`}
               >
                 Esqueci minha senha
               </button>
@@ -244,7 +248,7 @@ export default function Login() {
           ) : (
             <>
               <h1 className="text-lg font-extrabold text-white">Redefinir senha</h1>
-              <p className="mt-1.5 text-sm text-white/50">
+              <p className="mt-1.5 text-sm text-white/70">
                 Informe seu e-mail para receber o link de redefinição.
               </p>
               <form onSubmit={handleReset} className="mt-6 space-y-4">
@@ -268,7 +272,7 @@ export default function Login() {
               </form>
               <button
                 onClick={() => setMostrarReset(false)}
-                className="mt-4 w-full text-center text-sm text-white/50 transition-colors hover:text-white"
+                className={`${linkClass} text-white/65 hover:text-white`}
               >
                 ← Voltar ao login
               </button>
@@ -278,7 +282,7 @@ export default function Login() {
 
         <div className="mt-5 flex w-full max-w-[380px] items-start gap-2.5 rounded-[14px] border border-white/[0.10] bg-white/[0.04] px-4 py-3">
           <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-sun-soft" />
-          <p className="text-xs leading-relaxed text-white/55">
+          <p className="text-xs leading-relaxed text-white/70">
             <span className="font-bold text-white/80">Assistente Fadelito:</span> depois de entrar, consulte em segundos
             os protocolos oficiais da rede para dúvidas do dia a dia da unidade (mordida, desfralde, emergências e mais).
           </p>
@@ -287,7 +291,7 @@ export default function Login() {
 
       <div className="relative z-10 mt-8 flex flex-col items-center gap-1 text-center">
         <span className="text-sm font-bold text-white">Fadelito</span>
-        <p className="text-xs font-medium tracking-wide text-white/35">
+        <p className="text-xs font-medium tracking-wide text-white/55">
           Sistema de Gestão de Visitas e Matrículas
         </p>
       </div>

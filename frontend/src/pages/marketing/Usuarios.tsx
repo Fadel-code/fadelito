@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
-import { UserPlus, RefreshCw, KeyRound, Eye, EyeOff, Lock } from "lucide-react";
+import { UserPlus, RefreshCw, KeyRound, Eye, EyeOff, Lock, Search, X } from "lucide-react";
 import { useAuth } from "../../App";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../types";
 import { UNIDADES } from "../../types";
 import { formatarData } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
+import Segmentado from "../../components/ui/segmentado";
+import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
@@ -35,11 +37,84 @@ async function adminUpdatePassword(userId: string, password: string) {
   if (!res.ok) throw new Error(await res.text());
 }
 
+const COLUNAS = "lg:grid-cols-[11rem_minmax(0,1fr)_9.5rem_5.5rem_6.5rem_auto]";
+const ACAO_PERIGO = "border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800";
+
+interface LinhaProps {
+  u: Profile;
+  gestor?: boolean;
+  senhaVisivel: boolean;
+  onSenha: () => void;
+  onRedefinir: () => void;
+  onEmail: () => void;
+  onAtivo: () => void;
+}
+
+function LinhaUsuario({ u, gestor, senhaVisivel, onSenha, onRedefinir, onEmail, onAtivo }: LinhaProps) {
+  const nome = gestor ? ROLE_LABEL[u.role] ?? u.role : u.unidade_nome;
+  return (
+    <li className={`grid gap-x-4 gap-y-2 px-4 py-3.5 hover:bg-gray-50/70 sm:px-6 lg:items-center ${COLUNAS}`}>
+      <div className="flex items-center justify-between gap-3 lg:contents">
+        <span className="font-semibold text-gray-900 lg:col-start-1 lg:row-start-1 lg:font-medium">{nome}</span>
+        <Badge variant={u.ativo ? "success" : "destructive"} className="lg:col-start-4 lg:row-start-1 lg:justify-self-start">
+          {u.ativo ? "Ativo" : "Inativo"}
+        </Badge>
+      </div>
+      <p className="truncate text-sm text-gray-700 lg:col-start-2 lg:row-start-1">{u.email}</p>
+      <div className="flex items-center gap-1.5 lg:col-start-3 lg:row-start-1">
+        {u.senha_temp ? (
+          <>
+            <span className="font-mono text-xs text-gray-800">{senhaVisivel ? u.senha_temp : "••••••••"}</span>
+            <button
+              type="button"
+              onClick={onSenha}
+              aria-label={senhaVisivel ? "Ocultar senha" : "Revelar senha"}
+              className="flex h-7 w-7 items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+              {senhaVisivel ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+            </button>
+          </>
+        ) : (
+          <span className="text-xs text-gray-600">Sem senha salva</span>
+        )}
+      </div>
+      <span className="text-xs text-gray-600 lg:col-start-5 lg:row-start-1">
+        <span className="lg:hidden">Criado em </span>
+        {formatarData(u.created_at.slice(0, 10))}
+      </span>
+      <div className="flex flex-wrap gap-2 lg:col-start-6 lg:row-start-1 lg:justify-end">
+        <Button variant="outline" size="sm" onClick={onRedefinir}>
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          Redefinir
+        </Button>
+        <Button variant="outline" size="sm" onClick={onEmail} title="Enviar e-mail de redefinição">
+          <KeyRound className="h-3.5 w-3.5" aria-hidden />
+          E-mail
+        </Button>
+        <Button variant="outline" size="sm" className={u.ativo ? ACAO_PERIGO : ""} onClick={onAtivo}>
+          {u.ativo ? "Desativar" : "Reativar"}
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+function CabecalhoLista({ primeira }: { primeira: string }) {
+  return (
+    <div className={`hidden items-center gap-x-4 border-y border-gray-100 bg-gray-50 px-6 py-2 text-xs font-semibold text-gray-700 lg:grid ${COLUNAS}`} aria-hidden>
+      <span>{primeira}</span><span>E-mail</span><span>Senha</span><span>Status</span><span>Criado em</span><span className="text-right">Ações</span>
+    </div>
+  );
+}
+
 export default function Usuarios() {
   const { profile } = useAuth();
   const [usuarios, setUsuarios] = useState<Profile[]>([]);
   const [gestores, setGestores] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [busca, setBusca] = useState("");
+  const [status, setStatus] = useState<"todos" | "ativos" | "inativos">("todos");
 
   // Visibilidade de senhas (por ID de usuário)
   const [senhasVisiveis, setSenhasVisiveis] = useState<Set<string>>(new Set());
@@ -146,29 +221,26 @@ export default function Usuarios() {
     }
   }
 
-  function CelulasSenha({ u }: { u: Profile }) {
-    const visivel = senhasVisiveis.has(u.id);
-    return (
-      <td className="px-4 py-3 text-center">
-        {u.senha_temp ? (
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="font-mono text-xs text-gray-700">
-              {visivel ? u.senha_temp : "••••••••"}
-            </span>
-            <button
-              onClick={() => toggleSenha(u.id)}
-              className="text-gray-400 hover:text-gray-700 transition-colors"
-              title={visivel ? "Ocultar senha" : "Revelar senha"}
-            >
-              {visivel ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">—</span>
-        )}
-      </td>
-    );
-  }
+  const termo = busca.trim().toLowerCase();
+  const passa = (u: Profile) =>
+    (status === "todos" || (status === "ativos") === u.ativo) &&
+    (!termo || `${u.unidade_nome ?? ""} ${u.email ?? ""} ${ROLE_LABEL[u.role] ?? ""}`.toLowerCase().includes(termo));
+  const unidadesVisiveis = useMemo(() => usuarios.filter(passa), [usuarios, termo, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  const gestoresVisiveis = useMemo(() => gestores.filter(passa), [gestores, termo, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nAtivas = usuarios.filter((u) => u.ativo).length;
+
+  const linha = (u: Profile, gestor = false) => (
+    <LinhaUsuario
+      key={u.id}
+      u={u}
+      gestor={gestor}
+      senhaVisivel={senhasVisiveis.has(u.id)}
+      onSenha={() => toggleSenha(u.id)}
+      onRedefinir={() => { setModalSenha(u); setNovaSenhaAdmin(""); }}
+      onEmail={() => resetarSenhaEmail(u.email!)}
+      onAtivo={() => toggleAtivo(u)}
+    />
+  );
 
   // Supervisão tem a mesma hierarquia de leitura da unidade — gestão de usuários e
   // senhas fica restrita a marketing, mesmo que a rota seja acessada direto pela URL.
@@ -178,122 +250,89 @@ export default function Usuarios() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Usuários</h1>
-          <p className="text-gray-500 text-sm mt-1">35 unidades da rede</p>
+          <p className="mt-1 text-sm text-gray-600">
+            {loading ? "Carregando…" : `${usuarios.length} unidades na rede · ${nAtivas} ativas`}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={carregarUsuarios}>
-            <RefreshCw className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={carregarUsuarios} title="Atualizar" aria-label="Atualizar">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
           </Button>
           <Button onClick={() => setModalCriar(true)}>
-            <UserPlus className="h-4 w-4" />
-            Nova Unidade
+            <UserPlus className="h-4 w-4" aria-hidden />
+            Nova unidade
           </Button>
         </div>
       </div>
 
-      {/* Acessos de Gestão */}
-      {gestores.length > 0 && (
-        <div className="card overflow-hidden mb-6">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Acessos de Gestão</h2>
+      <div className="space-y-4">
+        <section aria-label="Filtros" className="card p-4 sm:p-5">
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-4">
+            <div className="w-full sm:w-72">
+              <label htmlFor="us-busca" className={ROTULO}>Buscar</label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden />
+                <Input id="us-busca" type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Unidade ou e-mail" className="pl-8 pr-8 [&::-webkit-search-cancel-button]:hidden" />
+                {busca && (
+                  <button type="button" onClick={() => setBusca("")} aria-label="Limpar busca" className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <span className={ROTULO}>Status</span>
+              <Segmentado
+                rotulo="Status"
+                valor={status}
+                opcoes={[
+                  { valor: "todos", rotulo: "Todos", extra: loading ? undefined : String(usuarios.length) },
+                  { valor: "ativos", rotulo: "Ativos", extra: loading ? undefined : String(nAtivas) },
+                  { valor: "inativos", rotulo: "Inativos", extra: loading ? undefined : String(usuarios.length - nAtivas) },
+                ]}
+                onChange={setStatus}
+              />
+            </div>
           </div>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">E-mail</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Perfil</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Senha</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Status</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gestores.map((u, i) => (
-                <tr key={u.id} className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} border-b border-gray-100`}>
-                  <td className="px-4 py-3 text-gray-800">{u.email}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant="secondary">{ROLE_LABEL[u.role] ?? u.role}</Badge>
-                  </td>
-                  <CelulasSenha u={u} />
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant={u.ativo ? "success" : "destructive"}>
-                      {u.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setModalSenha(u); setNovaSenhaAdmin(""); }}>
-                        <Lock className="h-3.5 w-3.5" />
-                        Redefinir
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => resetarSenhaEmail(u.email!)} title="Enviar e-mail de redefinição">
-                        <KeyRound className="h-3.5 w-3.5" />
-                        E-mail
-                      </Button>
-                      <Button variant={u.ativo ? "destructive" : "secondary"} size="sm" onClick={() => toggleAtivo(u)}>
-                        {u.ativo ? "Desativar" : "Reativar"}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        </section>
 
-      {/* Unidades */}
-      <div className="card overflow-hidden">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center text-gray-400">Carregando...</div>
-        ) : (
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">Unidade</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">E-mail</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Senha</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Status</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Criado em</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-700">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u, i) => (
-                <tr key={u.id} className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} border-b border-gray-100`}>
-                  <td className="px-4 py-3 font-medium text-gray-800">{u.unidade_nome}</td>
-                  <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                  <CelulasSenha u={u} />
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant={u.ativo ? "success" : "destructive"}>
-                      {u.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-500 text-xs">
-                    {formatarData(u.created_at.slice(0, 10))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setModalSenha(u); setNovaSenhaAdmin(""); }}>
-                        <Lock className="h-3.5 w-3.5" />
-                        Redefinir
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => resetarSenhaEmail(u.email!)} title="Enviar e-mail de redefinição">
-                        <KeyRound className="h-3.5 w-3.5" />
-                        E-mail
-                      </Button>
-                      <Button variant={u.ativo ? "destructive" : "secondary"} size="sm" onClick={() => toggleAtivo(u)}>
-                        {u.ativo ? "Desativar" : "Reativar"}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section aria-labelledby="us-unidades" className={CARD_DESTAQUE}>
+          <div className="px-4 py-5 sm:px-6">
+            <h2 id="us-unidades" className="text-xl font-bold tracking-tight text-gray-900">Unidades</h2>
+            <p className="mt-1 text-sm text-gray-700">
+              {loading ? "" : unidadesVisiveis.length === usuarios.length ? "Todas as unidades da rede." : `${unidadesVisiveis.length} de ${usuarios.length} unidades.`}
+            </p>
+          </div>
+          {loading ? (
+            <div className="flex h-40 items-center justify-center border-t border-gray-100 text-gray-600">
+              <RefreshCw className="mr-2 h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden />
+              Carregando…
+            </div>
+          ) : unidadesVisiveis.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 border-t border-gray-100 px-6 py-12 text-center">
+              <p className="text-sm text-gray-700">Nenhuma unidade encontrada com esses filtros.</p>
+              <Button variant="outline" size="sm" onClick={() => { setBusca(""); setStatus("todos"); }}>Limpar filtros</Button>
+            </div>
+          ) : (
+            <>
+              <CabecalhoLista primeira="Unidade" />
+              <ul className="divide-y divide-gray-100 border-t border-gray-100 lg:border-t-0">{unidadesVisiveis.map((u) => linha(u))}</ul>
+            </>
+          )}
+        </section>
+
+        {gestoresVisiveis.length > 0 && (
+          <section aria-labelledby="us-gestao" className="card overflow-hidden">
+            <div className="px-4 py-4 sm:px-6">
+              <h2 id="us-gestao" className="text-base font-semibold text-gray-900">Acessos de gestão</h2>
+              <p className="mt-0.5 text-sm text-gray-600">Marketing e Supervisão.</p>
+            </div>
+            <CabecalhoLista primeira="Perfil" />
+            <ul className="divide-y divide-gray-100 border-t border-gray-100 lg:border-t-0">{gestoresVisiveis.map((u) => linha(u, true))}</ul>
+          </section>
         )}
       </div>
 

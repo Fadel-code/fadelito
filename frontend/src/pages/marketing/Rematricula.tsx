@@ -10,6 +10,8 @@ import MetaGauge from "../../components/MetaGauge";
 import RematriculaPainel from "../../components/RematriculaPainel";
 import StatTile from "../../components/StatTile";
 import { Button } from "../../components/ui/button";
+import MenuExportar from "../../components/ui/menu-exportar";
+import { CARD_DESTAQUE } from "../../components/ui/estilos";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { atualizarOuRecarregar } from "../../lib/versao";
 
@@ -61,10 +63,20 @@ function BarraPct({ pct, atingiu }: { pct: number; atingiu: boolean }) {
   );
 }
 
+/** Ponto de status: o mesmo verde/vermelho da legenda, sem faixa colorida na lateral da linha. */
+function Ponto({ atingiu }: { atingiu: boolean }) {
+  return (
+    <>
+      <span aria-hidden className={`mr-2 inline-block h-2 w-2 flex-shrink-0 rounded-full ${atingiu ? "bg-green-500" : "bg-red-400"}`} />
+      <span className="sr-only">{atingiu ? "Meta atingida: " : "Abaixo da meta: "}</span>
+    </>
+  );
+}
+
 function Numero({ label, valor, cor = "text-gray-800" }: { label: string; valor: number; cor?: string }) {
   return (
     <div>
-      <dt className="text-gray-400">{label}</dt>
+      <dt className="text-gray-600">{label}</dt>
       <dd className={`font-semibold tabular-nums ${cor}`}>{valor}</dd>
     </div>
   );
@@ -170,35 +182,26 @@ export default function RematriculaMarketing() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
-          <p className="text-gray-500 text-sm mt-1">Acompanhamento da rematrícula em toda a rede</p>
+          <p className="mt-1 text-sm text-gray-600">Acompanhamento da rematrícula em toda a rede.</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(carregar)} title="Atualizar" aria-label="Atualizar">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
           </Button>
-
-          <Button variant="outline" onClick={() => exportar("xlsx")} className="gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
-            Exportar Excel
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => exportar("csv")}
-            className="gap-2"
-            title="CSV UTF-8 — importa direto no Google Sheets e no Excel"
-          >
-            <Table2 className="h-4 w-4" />
-            Exportar Sheets (CSV)
-          </Button>
+          <MenuExportar
+            opcoes={[
+              { chave: "xlsx", Icone: FileSpreadsheet, titulo: "Excel", descricao: "Resumo por unidade", onSelecionar: () => exportar("xlsx") },
+              { chave: "csv", Icone: Table2, titulo: "Google Sheets (CSV)", descricao: "Importa direto no Sheets e no Excel", onSelecionar: () => exportar("csv") },
+            ]}
+          />
         </div>
       </div>
 
       {/* Hero: meta da rede + indicadores */}
-      <div className="card p-6 flex flex-col sm:flex-row items-center gap-6 mb-6">
+      <div className="card mb-4 flex flex-col items-center gap-6 p-5 sm:flex-row sm:p-6">
         <MetaGauge pct={kpisRede.pct} label="Meta 90%" />
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 flex-1 w-full">
           <StatTile icon={Users} label="A rematricular" value={kpisRede.total} />
@@ -212,23 +215,26 @@ export default function RematriculaMarketing() {
       </div>
 
       {/* Ranking por unidade */}
-      <div className="card overflow-hidden">
+      <section aria-labelledby="rm-titulo" className={CARD_DESTAQUE}>
         {loading ? (
-          <div className="h-48 flex items-center justify-center text-gray-400">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-            Carregando...
+          <div className="flex h-48 items-center justify-center text-gray-600">
+            <RefreshCw className="mr-2 h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden />
+            Carregando…
           </div>
         ) : porUnidade.length === 0 ? (
-          <div className="h-32 flex items-center justify-center text-gray-400">
+          <div className="flex h-32 items-center justify-center px-6 text-center text-sm text-gray-700">
             Nenhuma unidade cadastrou alunos ainda — os dados aparecem aqui assim que as unidades começarem a preencher.
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ranking por unidade <span className="normal-case font-normal">— da menor para a maior %</span></p>
-              <p className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" />Meta atingida (90%)</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-400" />Abaixo da meta</span>
+            <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-5 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h2 id="rm-titulo" className="text-xl font-bold tracking-tight text-gray-900">Ranking por unidade</h2>
+                <p className="mt-1 text-sm text-gray-700">Da menor para a maior porcentagem de rematrícula.</p>
+              </div>
+              <p className="flex items-center gap-4 text-sm text-gray-700">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" aria-hidden />Meta atingida ({Math.round(REMATRICULA_META * 100)}%)</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-400" aria-hidden />Abaixo da meta</span>
               </p>
             </div>
 
@@ -237,9 +243,10 @@ export default function RematriculaMarketing() {
               {porUnidade.map((u) => {
                 const atingiu = u.pct >= REMATRICULA_META;
                 return (
-                  <li key={u.unidade_id} className={`border-l-4 border-b border-b-gray-100 px-4 py-3 ${atingiu ? "border-l-green-400" : "border-l-red-400"}`}>
+                  <li key={u.unidade_id} className="border-b border-gray-100 px-4 py-3">
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className="font-medium text-gray-800">
+                      <p className="flex items-center font-medium text-gray-900">
+                        <Ponto atingiu={atingiu} />
                         {u.unidade_nome}
                       </p>
                       <p className={`font-bold tabular-nums ${atingiu ? "text-green-600" : "text-amber-600"}`}>
@@ -263,7 +270,7 @@ export default function RematriculaMarketing() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm border-collapse tabular-nums">
                 <thead>
-                  <tr className="bg-primary-500 text-white text-xs">
+                  <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-700">
                     <th className="px-3 py-3 text-left font-semibold">Unidade</th>
                     <th className="px-3 py-3 text-right font-semibold">A rematricular</th>
                     <th className="px-3 py-3 text-right font-semibold">Rematriculados</th>
@@ -280,20 +287,18 @@ export default function RematriculaMarketing() {
                     return (
                       <tr
                         key={u.unidade_id}
-                        className={`border-l-4 ${atingiu ? "border-l-green-400" : "border-l-red-400"} ${
-                          i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        } hover:bg-primary-50/50`}
+                        className={`border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/60"} hover:bg-primary-50/50`}
                       >
-                        <td className="px-3 py-2.5 font-medium text-gray-800 whitespace-nowrap">{u.unidade_nome}</td>
+                        <td className="whitespace-nowrap px-3 py-2.5 font-medium text-gray-900"><span className="flex items-center"><Ponto atingiu={atingiu} />{u.unidade_nome}</span></td>
                         <td className="px-3 py-2.5 text-right text-gray-700">{u.total}</td>
                         <td className="px-3 py-2.5 text-right font-semibold text-green-700">{u.rematriculados}</td>
-                        <td className="px-3 py-2.5 text-right text-blue-600">{u.negociando}</td>
-                        <td className="px-3 py-2.5 text-right text-cyan-600">{u.aguardandoContrato}</td>
+                        <td className="px-3 py-2.5 text-right text-blue-700">{u.negociando}</td>
+                        <td className="px-3 py-2.5 text-right text-cyan-700">{u.aguardandoContrato}</td>
                         <td className="px-3 py-2.5 text-right font-semibold text-red-600">{u.naoRematriculados}</td>
-                        <td className="px-3 py-2.5 text-right text-amber-600">{u.pendentes}</td>
+                        <td className="px-3 py-2.5 text-right text-amber-700">{u.pendentes}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
-                            <span className={`w-12 text-right font-bold ${atingiu ? "text-green-600" : "text-amber-600"}`}>
+                            <span className={`w-12 text-right font-bold ${atingiu ? "text-green-700" : "text-amber-700"}`}>
                               {(u.pct * 100).toFixed(1)}%
                             </span>
                             <div className="flex-1"><BarraPct pct={u.pct} atingiu={atingiu} /></div>
@@ -307,18 +312,19 @@ export default function RematriculaMarketing() {
             </div>
           </>
         )}
-      </div>
+      </section>
 
       {profile?.role === "supervisao" && unidadesRelatorio.length > 0 && (
-        <div className="card mt-6 p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Relatório de alunos</p>
-          <p className="text-sm text-gray-500 mb-4">
+        <section aria-labelledby="rm-alunos" className="card mt-4 p-4 sm:p-5">
+          <h2 id="rm-alunos" className="text-base font-semibold text-gray-900">Relatório de alunos</h2>
+          <p className="mt-1 text-sm text-gray-600">
             Turma, status, opções marcadas, quem fez contato, observações e histórico de cada aluno.
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="sm:w-64">
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="w-full sm:w-64">
+              <span id="rm-unidade-rel" className="mb-1.5 block text-sm font-semibold text-gray-800">Unidade</span>
               <Select value={relatorioUnidadeId} onValueChange={setRelatorioUnidadeId}>
-                <SelectTrigger aria-label="Unidade do relatório"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-labelledby="rm-unidade-rel"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={TODAS}>Todas as unidades</SelectItem>
                   {unidadesRelatorio.map((u) => (
@@ -327,31 +333,29 @@ export default function RematriculaMarketing() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" onClick={() => exportarAlunos("xlsx")} className="gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              Exportar Excel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => exportarAlunos("csv")}
-              className="gap-2"
-              title="CSV UTF-8 — importa direto no Google Sheets e no Excel"
-            >
-              <Table2 className="h-4 w-4" />
-              Exportar Sheets (CSV)
-            </Button>
+            <MenuExportar
+              opcoes={[
+                { chave: "xlsx", Icone: FileSpreadsheet, titulo: "Excel", descricao: "Um aluno por linha, com histórico", onSelecionar: () => exportarAlunos("xlsx") },
+                { chave: "csv", Icone: Table2, titulo: "Google Sheets (CSV)", descricao: "Importa direto no Sheets e no Excel", onSelecionar: () => exportarAlunos("csv") },
+              ]}
+            />
           </div>
-        </div>
+        </section>
       )}
 
       {/* Prévia — a tela que a unidade vê, com dados reais. Atualizar/histórico continuam
           locais (não gravam); adicionar e remover gravam de verdade no Supabase. */}
       {(profile?.role === "supervisao" || profile?.role === "marketing") && (
-        <div className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-5">
+        <section aria-labelledby="rm-previa" className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-4 sm:p-5">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h2 id="rm-previa" className="text-base font-semibold text-gray-900">Prévia da tela da unidade</h2>
+              <p className="mt-1 text-sm text-gray-700">Os mesmos dados que a unidade vê. Adicionar e remover gravam de verdade.</p>
+            </div>
           {unidadesPreview.length > 0 && (
-            <div className="mb-5 max-w-xs">
+            <div className="w-full sm:w-64">
               <Select value={previewUnidadeId} onValueChange={setPreviewUnidadeId}>
-                <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+                <SelectTrigger aria-label="Unidade da prévia"><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
                 <SelectContent>
                   {unidadesPreview.map((u) => (
                     <SelectItem key={u.unidade_id} value={u.unidade_id}>{u.unidade_nome}</SelectItem>
@@ -360,6 +364,7 @@ export default function RematriculaMarketing() {
               </Select>
             </div>
           )}
+          </div>
           <RematriculaPainel
             unidadeId={previewUnidadeId || "previa"}
             {...preview}
@@ -370,7 +375,7 @@ export default function RematriculaMarketing() {
             permiteAdicionar
             permiteMarcarInadimplente={profile?.role === "supervisao"}
           />
-        </div>
+        </section>
       )}
     </div>
   );

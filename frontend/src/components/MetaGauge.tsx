@@ -46,7 +46,7 @@ export default function MetaGauge({ pct, meta = REMATRICULA_META, size = 116, la
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>
           {(clamped * 100).toFixed(1)}%
         </span>
-        {label && <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-0.5">{label}</span>}
+        {label && <span className="mt-0.5 text-[11px] font-medium text-gray-600">{label}</span>}
       </div>
     </div>
   );

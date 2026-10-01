@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { CalendarDays, Info, ChevronRight, RefreshCw, Settings2, Users } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
+import Segmentado from "../../components/ui/segmentado";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
 import ConfiguracaoRanking from "../../components/ranking/ConfiguracaoRanking";
 import SeletorMes from "../../components/ranking/SeletorMes";
@@ -40,36 +42,7 @@ const METODOS: { valor: Metodo; rotulo: string; curto?: string }[] = [
 
 const rotuloMes = (iso: string) => `${MESES[Number(iso.slice(5, 7)) - 1]}/${iso.slice(0, 4)}`;
 const CAMPO = "h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
-const ROTULO = "mb-1.5 block text-sm font-semibold text-gray-800";
 const num = (x: number) => x.toLocaleString("pt-BR");
-
-function Segmentado<T extends string>({ rotulo, valor, opcoes, onChange }: { rotulo: string; valor: T; opcoes: { valor: T; rotulo: string; curto?: string; extra?: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div role="group" aria-label={rotulo} className="inline-flex max-w-full rounded-lg bg-gray-100 p-0.5 text-sm ring-1 ring-inset ring-gray-200">
-      {opcoes.map((o) => (
-        <button
-          key={o.valor}
-          type="button"
-          aria-pressed={valor === o.valor}
-          onClick={() => onChange(o.valor)}
-          className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
-            valor === o.valor ? "bg-primary-600 text-white shadow-sm" : "text-gray-700 hover:bg-white hover:text-gray-900"
-          }`}
-        >
-          {o.curto ? (
-            <>
-              <span className="sm:hidden">{o.curto}</span>
-              <span className="hidden sm:inline">{o.rotulo}</span>
-            </>
-          ) : (
-            o.rotulo
-          )}
-          {o.extra && <span className={`tabular-nums ${valor === o.valor ? "font-semibold text-white/85" : "text-gray-500"}`}>{o.extra}</span>}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function Campo({ id, rotulo, children }: { id: string; rotulo: string; children: React.ReactNode }) {
   return (
@@ -193,7 +166,7 @@ export default function RankingSupervisoras() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ranking de Supervisoras</h1>
@@ -356,7 +329,7 @@ export default function RankingSupervisoras() {
             </div>
           )}
 
-          <section aria-labelledby="rk-titulo" className="card overflow-hidden shadow-md ring-1 ring-primary-100">
+          <section aria-labelledby="rk-titulo" className={CARD_DESTAQUE}>
             <div className="flex flex-col gap-4 border-b border-gray-100 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
                 <h2 id="rk-titulo" className="text-xl font-bold tracking-tight text-gray-900">Ranking</h2>

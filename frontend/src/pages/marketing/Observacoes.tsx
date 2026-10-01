@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "../../lib/supabase";
@@ -7,14 +7,20 @@ import { UNIDADES, MESES, DESFECHOS } from "../../types";
 import type { DesfechoTipo } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { Search, Trash2 } from "lucide-react";
+import Segmentado from "../../components/ui/segmentado";
+import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
+import SeletorMes from "../../components/ranking/SeletorMes";
+import SeletorDatas from "../../components/ranking/SeletorDatas";
+import { MessageSquareText, RefreshCw, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
+const ANO_INICIAL = 2026;
+const pad = (n: number | string) => String(n).padStart(2, "0");
+const semAcento = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 interface ObsRow {
   unidade_id: string;
@@ -34,23 +40,47 @@ interface DesfechoRow {
 }
 
 const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
-  visita_realizada: "bg-blue-100 text-blue-700",
-  em_negociacao:   "bg-yellow-100 text-yellow-700",
-  matricula:       "bg-green-100 text-green-700",
-  nao_fechou:      "bg-red-100 text-red-700",
-  removido:        "bg-gray-200 text-gray-600",
+  visita_realizada: "bg-blue-100 text-blue-800",
+  em_negociacao:   "bg-yellow-100 text-yellow-800",
+  matricula:       "bg-green-100 text-green-800",
+  nao_fechou:      "bg-red-100 text-red-800",
+  removido:        "bg-gray-200 text-gray-700",
 };
 
 function desfechoLabel(tipo: DesfechoTipo) {
-  if (tipo === "removido") return "Removido (não é desta unidade)";
+  if (tipo === "removido") return "Removido";
   return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
 }
 
 const FILTRO_KEY = "fadelito_filtro_observacoes";
 
 function filtroSalvo(): Partial<{ unidade: string; mes: string; dia: string; dataInicio: string; dataFim: string }> {
-  const salvo = localStorage.getItem(FILTRO_KEY);
-  return salvo ? JSON.parse(salvo) : {};
+  try {
+    const salvo = localStorage.getItem(FILTRO_KEY);
+    return salvo ? JSON.parse(salvo) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** "qui, 02/10" — o ano só aparece quando não é o corrente. */
+function rotuloData(iso: string) {
+  const d = new Date(`${iso}T12:00:00`);
+  return format(d, d.getFullYear() === ANO ? "EEE, dd/MM" : "EEE, dd/MM/yyyy", { locale: ptBR });
+}
+
+function Esqueleto() {
+  return (
+    <ul className="divide-y divide-gray-100" aria-busy="true" aria-label="Carregando registros">
+      {Array.from({ length: 5 }, (_, i) => (
+        <li key={i} className="flex animate-pulse items-start gap-4 px-4 py-4 motion-reduce:animate-none sm:px-6">
+          <span className="h-4 w-20 rounded bg-gray-100" />
+          <span className="h-4 w-32 rounded bg-gray-100" />
+          <span className="h-4 flex-1 rounded bg-gray-100" />
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export default function Observacoes() {
@@ -64,22 +94,28 @@ export default function Observacoes() {
   const [removendo, setRemovendoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
-  const [unidade, setUnidade] = useState(() => filtroSalvo().unidade ?? "todas");
-  const [mes, setMes] = useState(() => filtroSalvo().mes ?? String(mesCorrido));
-  const [dia, setDia] = useState(() => filtroSalvo().dia ?? "todos");
-  const [dataInicio, setDataInicio] = useState(() => filtroSalvo().dataInicio ?? "");
-  const [dataFim, setDataFim] = useState(() => filtroSalvo().dataFim ?? "");
+  const inicial = useMemo(() => {
+    const f = filtroSalvo();
+    // "Todos os meses" deixou de existir: vira o ano até hoje, que mostra o mesmo.
+    if (f.mes === "todos" && !f.dataInicio && !f.dataFim) return { ...f, mes: String(mesCorrido), dataInicio: `${ANO}-01-01`, dataFim: dateToIso(new Date()) };
+    return f;
+  }, [mesCorrido]);
+  const [unidade, setUnidade] = useState(inicial.unidade ?? "todas");
+  const [mes, setMes] = useState(inicial.mes && inicial.mes !== "todos" ? inicial.mes : String(mesCorrido));
+  const [dia, setDia] = useState(inicial.dia ?? "todos");
+  const [dataInicio, setDataInicio] = useState(inicial.dataInicio ?? "");
+  const [dataFim, setDataFim] = useState(inicial.dataFim ?? "");
+  const [modo, setModo] = useState<"mes" | "datas">(inicial.dataInicio || inicial.dataFim ? "datas" : "mes");
+  const [busca, setBusca] = useState("");
 
   useEffect(() => {
     localStorage.setItem(FILTRO_KEY, JSON.stringify({ unidade, mes, dia, dataInicio, dataFim }));
   }, [unidade, mes, dia, dataInicio, dataFim]);
 
   const hojeIso = dateToIso(new Date());
-  const diasUteis = mes !== "todos"
-    ? diasUteisDoMes(ANO, Number(mes), FERIADOS_SET)
-        .filter((d) => dateToIso(d) <= hojeIso)
-        .reverse()
-    : [];
+  const diasUteis = diasUteisDoMes(ANO, Number(mes), FERIADOS_SET)
+    .filter((d) => dateToIso(d) <= hojeIso)
+    .reverse();
 
   useEffect(() => {
     supabase
@@ -96,14 +132,8 @@ export default function Observacoes() {
   function buildDateRange() {
     if (dia !== "todos") return { inicio: dia, fim: dia };
     if (dataInicio || dataFim) return { inicio: dataInicio || undefined, fim: dataFim || undefined };
-    if (mes !== "todos") {
-      const m = parseInt(mes);
-      const inicio = `${ANO}-${String(m).padStart(2, "0")}-01`;
-      const ultimoDia = new Date(ANO, m, 0).getDate();
-      const fim = `${ANO}-${String(m).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
-      return { inicio, fim };
-    }
-    return {};
+    const m = parseInt(mes);
+    return { inicio: `${ANO}-${pad(m)}-01`, fim: `${ANO}-${pad(m)}-${pad(new Date(ANO, m, 0).getDate())}` };
   }
 
   const buscar = useCallback(async () => {
@@ -157,206 +187,234 @@ export default function Observacoes() {
     }
   }
 
-  function formatarData(iso: string) {
-    const [y, m, d] = iso.split("-");
-    return `${d}/${m}/${y}`;
+  function trocarModo(novo: "mes" | "datas") {
+    setModo(novo);
+    setDia("todos");
+    if (novo === "mes") {
+      setDataInicio("");
+      setDataFim("");
+    } else if (!dataInicio && !dataFim) {
+      // Começa pelo mês que já estava na tela, até hoje se ele ainda está em curso.
+      const ultimo = `${ANO}-${pad(mes)}-${pad(new Date(ANO, Number(mes), 0).getDate())}`;
+      setDataInicio(`${ANO}-${pad(mes)}-01`);
+      setDataFim(ultimo < hojeIso ? ultimo : hojeIso);
+    }
   }
 
-  const activeRows = tab === "diario" ? obsRows : desfechoRows;
+  function limparFiltros() {
+    setUnidade("todas");
+    setModo("mes");
+    setMes(String(mesCorrido));
+    setDia("todos");
+    setDataInicio("");
+    setDataFim("");
+    setBusca("");
+  }
+
+  const termo = semAcento(busca.trim());
+  const obsVisiveis = useMemo(
+    () => (termo ? obsRows.filter((r) => semAcento(`${r.observacao} ${nomeMap[r.unidade_id] ?? ""}`).includes(termo)) : obsRows),
+    [obsRows, termo, nomeMap]
+  );
+  const desfechosVisiveis = useMemo(
+    () => (termo ? desfechoRows.filter((r) => semAcento(`${r.observacao ?? ""} ${r.nome ?? ""} ${nomeMap[r.unidade_id] ?? ""} ${desfechoLabel(r.tipo)}`).includes(termo)) : desfechoRows),
+    [desfechoRows, termo, nomeMap]
+  );
+  const total = tab === "diario" ? obsVisiveis.length : desfechosVisiveis.length;
+  const filtrando = unidade !== "todas" || termo !== "" || modo === "datas" || dia !== "todos" || mes !== String(mesCorrido);
+
+  const rotuloPeriodo =
+    dia !== "todos" ? rotuloData(dia)
+    : modo === "datas" ? [dataInicio && format(new Date(`${dataInicio}T12:00:00`), "dd/MM/yyyy"), dataFim && format(new Date(`${dataFim}T12:00:00`), "dd/MM/yyyy")].filter(Boolean).join(" a ")
+    : `${MESES[Number(mes) - 1]} de ${ANO}`;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Observações</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Registros das unidades — formulário diário e desfechos de visita
-        </p>
-      </div>
-
-      {/* Filtros */}
-      <div className="card p-5 mb-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <div className="space-y-1.5">
-            <Label>Unidade</Label>
-            <Select value={unidade} onValueChange={setUnidade}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as unidades</SelectItem>
-                {UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Mês</Label>
-            <Select value={mes} onValueChange={(v) => { setMes(v); setDia("todos"); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os meses</SelectItem>
-                {MESES.map((nome, i) => {
-                  const num = i + 1;
-                  return (
-                    <SelectItem key={num} value={String(num)}>
-                      {nome}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Dia</Label>
-            <Select value={dia} onValueChange={setDia} disabled={mes === "todos"}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os dias</SelectItem>
-                {diasUteis.map((d) => {
-                  const iso = dateToIso(d);
-                  return (
-                    <SelectItem key={iso} value={iso}>
-                      {format(d, "EEE, dd/MM", { locale: ptBR })}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Data início</Label>
-            <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Data fim</Label>
-            <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-          </div>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Observações</h1>
+          <p className="mt-1 text-sm text-gray-600">O que as unidades registraram: formulário diário e desfechos de visita.</p>
         </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={buscar} disabled={loading} size="sm">
-            <Search className="h-3.5 w-3.5" />
-            {loading ? "Buscando..." : "Buscar"}
-          </Button>
-        </div>
+        <Button variant="outline" size="icon" onClick={buscar} title="Atualizar" aria-label="Atualizar">
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
+        </Button>
       </div>
 
-      {/* Abas */}
-      <div className="flex border-b border-gray-200 mb-0">
-        {(["diario", "desfechos"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-primary-500 text-primary-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t === "diario" ? `Formulário Diário (${obsRows.length})` : `Desfechos de Visita (${desfechoRows.length})`}
-          </button>
-        ))}
-      </div>
-
-      {/* Tabela */}
-      <div className="bg-white rounded-b-xl rounded-tr-xl border border-t-0 border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="h-48 flex items-center justify-center text-gray-400">Carregando...</div>
-        ) : activeRows.length === 0 ? (
-          <div className="h-32 flex items-center justify-center text-gray-400">
-            Nenhum registro encontrado para os filtros selecionados
+      <div className="space-y-4">
+        <section aria-label="Filtros" className="card p-4 sm:p-5">
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-4">
+            <div>
+              <span className={ROTULO}>Período</span>
+              <Segmentado
+                rotulo="Tipo de período"
+                valor={modo}
+                opcoes={[{ valor: "mes", rotulo: "Mês" }, { valor: "datas", rotulo: "Datas personalizadas", curto: "Datas" }]}
+                onChange={trocarModo}
+              />
+            </div>
+            {modo === "mes" ? (
+              <div>
+                <span className={ROTULO}>Mês</span>
+                <SeletorMes
+                  valor={`${ANO}-${pad(mes)}`}
+                  min={`${ANO}-01`}
+                  max={`${ANO}-${pad(mesCorrido)}`}
+                  onChange={(ym) => { setMes(String(Number(ym.slice(5, 7)))); setDia("todos"); }}
+                />
+              </div>
+            ) : (
+              <SeletorDatas de={dataInicio} ate={dataFim} min={`${ANO_INICIAL}-01-01`} onChange={(d, a) => { setDataInicio(d); setDataFim(a); }} />
+            )}
+            <div className="grid w-full grid-cols-1 items-end gap-4 sm:contents">
+              {modo === "mes" && (
+                <div>
+                  <span id="obs-dia" className={ROTULO}>Dia</span>
+                  <Select value={dia} onValueChange={setDia}>
+                    <SelectTrigger className="sm:w-44" aria-labelledby="obs-dia"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os dias</SelectItem>
+                      {diasUteis.map((d) => {
+                        const iso = dateToIso(d);
+                        return <SelectItem key={iso} value={iso}>{format(d, "EEE, dd/MM", { locale: ptBR })}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="sm:ml-auto">
+                <span id="obs-unidade" className={ROTULO}>Unidade</span>
+                <Select value={unidade} onValueChange={setUnidade}>
+                  <SelectTrigger className="sm:w-52" aria-labelledby="obs-unidade"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as unidades</SelectItem>
+                    {UNIDADES.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
-        ) : tab === "diario" ? (
-          <>
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs text-gray-500">
-              {obsRows.length} observações encontradas
+        </section>
+
+        <section aria-labelledby="obs-titulo" className={CARD_DESTAQUE}>
+          <div className="flex flex-col gap-4 border-b border-gray-100 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h2 id="obs-titulo" className="text-xl font-bold tracking-tight text-gray-900">Registros</h2>
+              <p className="mt-1 text-sm text-gray-700">
+                {rotuloPeriodo}
+                {unidade !== "todas" && ` · ${unidade}`}
+              </p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-primary-500 text-white">
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-28">Data</th>
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-44">Unidade</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Observação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {obsRows.map((r, i) => (
-                    <tr key={`${r.unidade_id}-${r.data}`} className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} border-b border-gray-100`}>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatarData(r.data)}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{nomeMap[r.unidade_id] ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-pre-wrap">{r.observacao}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div role="tablist" aria-label="Tipo de registro" className="flex rounded-lg bg-gray-100 p-0.5 text-sm ring-1 ring-inset ring-gray-200 sm:inline-flex">
+                {([["diario", "Formulário diário", "Diário", obsVisiveis.length], ["desfechos", "Desfechos de visita", "Desfechos", desfechosVisiveis.length]] as const).map(([t, rotulo, curto, n]) => (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === t}
+                    onClick={() => setTab(t)}
+                    className={`inline-flex h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:flex-none ${
+                      tab === t ? "bg-primary-600 text-white shadow-sm" : "text-gray-700 hover:bg-white hover:text-gray-900"
+                    }`}
+                  >
+                    <span className="sm:hidden">{curto}</span>
+                    <span className="hidden sm:inline">{rotulo}</span>
+                    <span className={`tabular-nums ${tab === t ? "font-semibold text-white/85" : "text-gray-500"}`}>{loading ? "" : n}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="relative sm:w-64">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden />
+                <Input
+                  type="search"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar no texto"
+                  aria-label="Buscar nas observações"
+                  className="pl-8 pr-8 [&::-webkit-search-cancel-button]:hidden"
+                />
+                {busca && (
+                  <button type="button" onClick={() => setBusca("")} aria-label="Limpar busca" className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                )}
+              </div>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs text-gray-500">
-              {desfechoRows.length} desfechos encontrados
+          </div>
+
+          {loading ? (
+            <Esqueleto />
+          ) : total === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600"><MessageSquareText className="h-5 w-5" aria-hidden /></span>
+              <p className="max-w-sm text-sm text-gray-700">
+                {termo ? `Nada encontrado para “${busca.trim()}” neste período.` : tab === "diario" ? "Nenhuma observação neste período." : "Nenhum desfecho de visita neste período."}
+              </p>
+              {filtrando && <Button variant="outline" size="sm" onClick={limparFiltros}>Limpar filtros</Button>}
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-primary-500 text-white">
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-28">Data</th>
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-44">Unidade</th>
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-36">Lead</th>
-                    <th className="px-4 py-2.5 text-left font-semibold whitespace-nowrap w-36">Desfecho</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Observação</th>
-                    <th className="px-4 py-2.5 w-24" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {desfechoRows.map((r, i) => {
-                    const isConfirmando = confirmandoId === r.id;
-                    const isRemovendoThis = removendo === r.id;
-                    return (
-                    <tr key={r.id ?? i} className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} border-b border-gray-100`}>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatarData(r.data)}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{nomeMap[r.unidade_id] ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.nome ?? "—"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${DESFECHO_BADGE[r.tipo]}`}>
+          ) : tab === "diario" ? (
+            <>
+              <div className="hidden items-center gap-x-4 border-b border-gray-100 bg-gray-50 px-6 py-2 text-xs font-semibold text-gray-700 md:grid md:grid-cols-[6.5rem_9rem_minmax(0,1fr)]" aria-hidden>
+                <span>Data</span><span>Unidade</span><span>Observação</span>
+              </div>
+              <ul className="divide-y divide-gray-100">
+                {obsVisiveis.map((r) => (
+                  <li key={`${r.unidade_id}-${r.data}`} className="grid gap-x-4 gap-y-1 px-4 py-3.5 hover:bg-gray-50/70 sm:px-6 md:grid-cols-[6.5rem_9rem_minmax(0,1fr)]">
+                    <p className="flex items-baseline gap-2 md:contents">
+                      <span className="text-sm font-semibold text-gray-900 md:order-2 md:font-medium">{nomeMap[r.unidade_id] ?? "—"}</span>
+                      <span className="text-sm tabular-nums text-gray-600 md:order-1">{rotuloData(r.data)}</span>
+                    </p>
+                    <p className="max-w-[75ch] whitespace-pre-wrap text-sm leading-relaxed text-gray-800 md:order-3">{r.observacao}</p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <>
+              <div className="hidden items-center gap-x-4 border-b border-gray-100 bg-gray-50 px-6 py-2 text-xs font-semibold text-gray-700 xl:grid xl:grid-cols-[5.5rem_8.5rem_9rem_9rem_minmax(0,1fr)_4.5rem]" aria-hidden>
+                <span>Data</span><span>Unidade</span><span>Lead</span><span>Desfecho</span><span>Observação</span><span />
+              </div>
+              <ul className="divide-y divide-gray-100">
+                {desfechosVisiveis.map((r) => {
+                  const confirmando = confirmandoId === r.id;
+                  return (
+                    <li key={r.id} className="grid gap-x-4 gap-y-1 px-4 py-3.5 hover:bg-gray-50/70 sm:px-6 xl:grid-cols-[5.5rem_8.5rem_9rem_9rem_minmax(0,1fr)_4.5rem] xl:items-start">
+                      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 xl:contents">
+                        <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900 xl:col-start-3 xl:row-start-1 xl:font-medium">{r.nome ?? "—"}</span>
+                        <span title={r.tipo === "removido" ? "Removido (não é desta unidade)" : undefined} className={`inline-flex flex-shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium xl:col-start-4 xl:row-start-1 ${DESFECHO_BADGE[r.tipo]}`}>
                           {desfechoLabel(r.tipo)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-pre-wrap">{r.observacao ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        {isConfirmando ? (
-                          <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <span className="text-xs text-gray-500">Remover?</span>
-                            <button
-                              onClick={() => handleRemoverDesfecho(r)}
-                              disabled={isRemovendoThis}
-                              className="text-xs text-red-600 font-semibold hover:underline disabled:opacity-50"
-                            >
-                              {isRemovendoThis ? "..." : "Sim"}
+                        <div className="flex items-center justify-end xl:col-start-6 xl:row-start-1 xl:-mt-1">
+                          {confirmando ? (
+                            <div className="flex items-center gap-2 whitespace-nowrap text-sm">
+                              <span className="text-gray-700">Remover?</span>
+                              <button type="button" onClick={() => handleRemoverDesfecho(r)} disabled={removendo === r.id} className="rounded px-1.5 py-1 font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50">
+                                {removendo === r.id ? "…" : "Sim"}
+                              </button>
+                              <button type="button" onClick={() => setConfirmandoId(null)} className="rounded px-1.5 py-1 text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                                Não
+                              </button>
+                            </div>
+                          ) : (
+                            <button type="button" onClick={() => setConfirmandoId(r.id)} title="Remover desfecho" aria-label={`Remover desfecho de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             </button>
-                            <button
-                              onClick={() => setConfirmandoId(null)}
-                              className="text-xs text-gray-400 hover:underline"
-                            >
-                              Não
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmandoId(r.id)}
-                            className="text-gray-400 hover:text-red-500 transition-colors"
-                            title="Remover desfecho"
-                            aria-label="Remover desfecho"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                          )}
+                        </div>
+                      </div>
+                      <p className="flex items-baseline gap-2 text-sm text-gray-600 xl:contents">
+                        <span className="tabular-nums xl:col-start-1 xl:row-start-1">{rotuloData(r.data)}</span>
+                        <span aria-hidden className="xl:hidden">·</span>
+                        <span className="xl:col-start-2 xl:row-start-1 xl:font-medium xl:text-gray-800">{nomeMap[r.unidade_id] ?? "—"}</span>
+                      </p>
+                      <p className="max-w-[75ch] whitespace-pre-wrap text-sm leading-relaxed text-gray-800 xl:col-start-5 xl:row-start-1">{r.observacao ?? "—"}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

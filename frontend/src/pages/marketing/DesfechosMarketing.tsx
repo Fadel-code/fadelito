@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, ClipboardCheck, AlertOctagon } from "lucide-react";
+import { RefreshCw, AlertOctagon, CheckCircle2, Clock, GraduationCap, MessageCircle, XCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { fetchLeadsElegiveis } from "../../lib/crm";
 import { DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Button } from "../../components/ui/button";
+import SeletorMes from "../../components/ranking/SeletorMes";
+import KpiCard, { KpiGrid } from "../../components/KpiCard";
+import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 import { atualizarOuRecarregar } from "../../lib/versao";
@@ -33,7 +37,7 @@ const TIPO_STYLE: Record<DesfechoTipo, string> = {
   em_negociacao:   "bg-blue-100 text-blue-800",
   matricula:       "bg-green-100 text-green-800",
   nao_fechou:      "bg-red-100 text-red-800",
-  removido:        "bg-gray-200 text-gray-600",
+  removido:        "bg-gray-200 text-gray-700",
 };
 
 const FILTRO_KEY = "fadelito_filtro_desfechos_marketing";
@@ -164,181 +168,133 @@ export default function DesfechosMarketing() {
     { visita_realizada: 0, em_negociacao: 0, matricula: 0, nao_fechou: 0 }
   );
 
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const urgentes = rows.filter((r) => r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA).length;
+  const rotuloPeriodo = dia !== "todos"
+    ? format(new Date(`${dia}T12:00:00`), "EEEE, dd/MM", { locale: ptBR })
+    : `${MESES[mes - 1]} de ${ANO}`;
+  const traco = <span className="text-gray-400" aria-label="nenhum">—</span>;
+
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ClipboardCheck className="h-6 w-6 text-primary-500" />
-            Desfechos de Matrículas
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Resultado das visitas registradas pelas unidades
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Desfechos de Matrículas</h1>
+          <p className="mt-1 text-sm text-gray-600">O que aconteceu com as visitas registradas pelas unidades.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={String(mes)} onValueChange={(v) => { setMes(Number(v)); setDia("todos"); }}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MESES.map((nome, i) => {
-                const num = i + 1;
-                return (
-                  <SelectItem key={num} value={String(num)}>
-                    {nome} {ANO}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          <Select value={dia} onValueChange={setDia}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os dias</SelectItem>
-              {diasUteis.map((d) => {
-                const iso = dateToIso(d);
-                return (
-                  <SelectItem key={iso} value={iso}>
-                    {format(d, "EEE, dd/MM", { locale: ptBR })}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          <button
-            onClick={() => atualizarOuRecarregar(carregar)}
-            title="Atualizar"
-            aria-label="Atualizar"
-            className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-          >
-            <RefreshCw className={`h-4 w-4 text-gray-500 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
+        <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(carregar)} title="Atualizar" aria-label="Atualizar">
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
+        </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className={`bg-white rounded-xl border border-amber-200 p-5 ${totais.visita_realizada > 0 ? "ring-2 ring-amber-200" : ""}`}>
-          <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Pendentes</p>
-          <p className="text-3xl font-bold text-amber-600 mt-1">{totais.visita_realizada}</p>
-          <p className="text-xs text-gray-400 mt-1">Visitaram, aguardando desfecho</p>
-        </div>
-        <div className="bg-white rounded-xl border border-blue-200 p-5">
-          <p className="text-xs text-blue-700 font-medium uppercase tracking-wide">Em Negociação</p>
-          <p className="text-3xl font-bold text-blue-600 mt-1">{totais.em_negociacao}</p>
-          <p className="text-xs text-gray-400 mt-1">Leads em andamento</p>
-        </div>
-        <div className="bg-white rounded-xl border border-green-200 p-5">
-          <p className="text-xs text-green-700 font-medium uppercase tracking-wide">Matrículas</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{totais.matricula}</p>
-          <p className="text-xs text-gray-400 mt-1">Leads convertidos</p>
-        </div>
-        <div className="bg-white rounded-xl border border-red-200 p-5">
-          <p className="text-xs text-red-700 font-medium uppercase tracking-wide">Não Fechou</p>
-          <p className="text-3xl font-bold text-red-500 mt-1">{totais.nao_fechou}</p>
-          <p className="text-xs text-gray-400 mt-1">Não convertidos</p>
-        </div>
-      </div>
-
-      {/* Tabela por unidade */}
-      <div className="card">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Resultado por Unidade</h2>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center h-48 text-gray-400">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-            Carregando...
+      <div className="space-y-4">
+        <section aria-label="Filtros" className="card p-4 sm:p-5">
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-4">
+            <div>
+              <span className={ROTULO}>Mês</span>
+              <SeletorMes
+                valor={`${ANO}-${pad(mes)}`}
+                min={`${ANO}-01`}
+                max={`${ANO}-${pad(mesCorrido)}`}
+                onChange={(ym) => { setMes(Number(ym.slice(5, 7))); setDia("todos"); }}
+              />
+            </div>
+            <div>
+              <span id="df-dia" className={ROTULO}>Dia</span>
+              <Select value={dia} onValueChange={setDia}>
+                <SelectTrigger className="w-48" aria-labelledby="df-dia"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os dias</SelectItem>
+                  {diasUteis.map((d) => {
+                    const iso = dateToIso(d);
+                    return <SelectItem key={iso} value={iso}>{format(d, "EEE, dd/MM", { locale: ptBR })}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-6 py-3 text-left font-semibold text-gray-600">Unidade</th>
-                  <th className="px-4 py-3 text-left font-semibold text-red-600">Urgência</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Visitas no período (CRM)</th>
-                  <th className="px-4 py-3 text-center font-semibold text-amber-600">Pendentes</th>
-                  <th className="px-4 py-3 text-center font-semibold text-blue-600">Em Negociação</th>
-                  <th className="px-4 py-3 text-center font-semibold text-green-600">Matrículas</th>
-                  <th className="px-4 py-3 text-center font-semibold text-red-500">Não Fechou</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-600">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {rows.map((r) => {
-                  const urgente = r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA;
-                  return (
-                  <tr
-                    key={r.unidade_id}
-                    className={urgente ? "bg-red-50/60" : r.visita_realizada > 0 ? "bg-amber-50/40" : ""}
-                  >
-                    <td className="px-6 py-3 font-medium text-gray-900">
-                      {r.unidade_nome}
-                      {!urgente && r.visita_realizada > 0 && (
-                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
-                          pendente
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.nuncaPreencheu ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
-                          <AlertOctagon className="h-3 w-3" />
-                          Nunca preencheu
-                        </span>
-                      ) : (r.diasPendente ?? 0) >= DIAS_URGENCIA ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
-                          <AlertOctagon className="h-3 w-3" />
-                          Pendente há {r.diasPendente}d
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs whitespace-nowrap">
-                      {r.visitasNoPeriodo === 0 ? (
-                        <span className="text-gray-300">—</span>
-                      ) : (
-                        <span className={r.visitasSemDesfecho > 0 ? "text-red-600 font-semibold" : "text-gray-500"}>
-                          {r.visitasNoPeriodo} visita{r.visitasNoPeriodo === 1 ? "" : "s"} realizada{r.visitasNoPeriodo === 1 ? "" : "s"},{" "}
-                          {r.visitasSemDesfecho} sem desfecho
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {r.visita_realizada > 0
-                        ? <span className="font-semibold text-amber-600">{r.visita_realizada}</span>
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {r.em_negociacao > 0
-                        ? <span className="font-semibold text-blue-600">{r.em_negociacao}</span>
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {r.matricula > 0
-                        ? <span className="font-semibold text-green-600">{r.matricula}</span>
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {r.nao_fechou > 0
-                        ? <span className="font-semibold text-red-500">{r.nao_fechou}</span>
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-500">
-                      {r.total > 0 ? r.total : <span className="text-gray-300">—</span>}
-                    </td>
+        </section>
+
+        <KpiGrid rotulo="Resumo dos desfechos" colunas={4}>
+          <KpiCard rotulo="Pendentes" valor={totais.visita_realizada} Icone={Clock} tom="amber" carregando={loading} sub="Visitaram, aguardando desfecho" />
+          <KpiCard rotulo="Em negociação" valor={totais.em_negociacao} Icone={MessageCircle} tom="blue" carregando={loading} sub="Leads em andamento" />
+          <KpiCard rotulo="Matrículas" valor={totais.matricula} Icone={GraduationCap} tom="green" carregando={loading} sub="Leads convertidos" />
+          <KpiCard rotulo="Não fechou" valor={totais.nao_fechou} Icone={XCircle} tom="red" carregando={loading} sub="Não convertidos" />
+        </KpiGrid>
+
+        <section aria-labelledby="df-titulo" className={CARD_DESTAQUE}>
+          <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-5 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 id="df-titulo" className="text-xl font-bold tracking-tight text-gray-900">Resultado por unidade</h2>
+              <p className="mt-1 text-sm text-gray-700">{rotuloPeriodo}</p>
+            </div>
+            {!loading && (
+              <p className={`inline-flex items-center gap-2 self-start rounded-full px-3 py-1 text-sm font-medium ${urgentes > 0 ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800"}`}>
+                {urgentes > 0 ? <AlertOctagon className="h-4 w-4" aria-hidden /> : <CheckCircle2 className="h-4 w-4" aria-hidden />}
+                {urgentes > 0 ? `${urgentes} ${urgentes === 1 ? "unidade em urgência" : "unidades em urgência"}` : "Nenhuma unidade em urgência"}
+              </p>
+            )}
+          </div>
+          {loading ? (
+            <div className="flex h-48 items-center justify-center text-gray-600">
+              <RefreshCw className="mr-2 h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden />
+              Carregando…
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[56rem] text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50 text-xs">
+                    <th className="px-6 py-3 text-left font-semibold text-gray-700">Unidade</th>
+                    <th className="px-4 py-3 text-left font-semibold text-red-700">Urgência</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Visitas no período (CRM)</th>
+                    <th className="px-4 py-3 text-center font-semibold text-amber-800">Pendentes</th>
+                    <th className="px-4 py-3 text-center font-semibold text-blue-800">Em negociação</th>
+                    <th className="px-4 py-3 text-center font-semibold text-green-800">Matrículas</th>
+                    <th className="px-4 py-3 text-center font-semibold text-red-700">Não fechou</th>
+                    <th className="px-4 py-3 text-center font-semibold text-gray-700">Total</th>
                   </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {rows.map((r) => {
+                    const urgente = r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA;
+                    return (
+                      <tr key={r.unidade_id} className={urgente ? "bg-red-50/60" : r.visita_realizada > 0 ? "bg-amber-50/40" : ""}>
+                        <td className="px-6 py-3 font-medium text-gray-900">
+                          {r.unidade_nome}
+                          {!urgente && r.visita_realizada > 0 && (
+                            <span className="ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800">pendente</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {urgente ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                              <AlertOctagon className="h-3 w-3" aria-hidden />
+                              {r.nuncaPreencheu ? "Nunca preencheu" : `Pendente há ${r.diasPendente}d`}
+                            </span>
+                          ) : traco}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs">
+                          {r.visitasNoPeriodo === 0 ? traco : (
+                            <span className={r.visitasSemDesfecho > 0 ? "font-semibold text-red-700" : "text-gray-700"}>
+                              {r.visitasNoPeriodo} visita{r.visitasNoPeriodo === 1 ? "" : "s"} realizada{r.visitasNoPeriodo === 1 ? "" : "s"},{" "}
+                              {r.visitasSemDesfecho} sem desfecho
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center tabular-nums">{r.visita_realizada > 0 ? <span className="font-semibold text-amber-700">{r.visita_realizada}</span> : traco}</td>
+                        <td className="px-4 py-3 text-center tabular-nums">{r.em_negociacao > 0 ? <span className="font-semibold text-blue-700">{r.em_negociacao}</span> : traco}</td>
+                        <td className="px-4 py-3 text-center tabular-nums">{r.matricula > 0 ? <span className="font-semibold text-green-700">{r.matricula}</span> : traco}</td>
+                        <td className="px-4 py-3 text-center tabular-nums">{r.nao_fechou > 0 ? <span className="font-semibold text-red-700">{r.nao_fechou}</span> : traco}</td>
+                        <td className="px-4 py-3 text-center tabular-nums text-gray-700">{r.total > 0 ? r.total : traco}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
