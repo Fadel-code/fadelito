@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
-import type { ConsolidadoUnidade, LinhaTurma } from "../types";
-import { MESES, TURMAS } from "../types";
+import type { ConsolidadoUnidade, LinhaTurma, RematriculaAluno } from "../types";
+import { MESES, TURMAS, derivarStatusRematricula } from "../types";
 
 function calcAproveitamento(vt: number, mt: number): string {
   return vt > 0 ? `${((mt / vt) * 100).toFixed(1)}%` : "—";
@@ -224,6 +224,100 @@ export function exportarRematriculaCsv(
   const a = document.createElement("a");
   a.href = url;
   a.download = "Rematrícula 2027.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const STATUS_ALUNO_LABEL = {
+  pendente: "Pendente",
+  negociando: "Em conversa",
+  rematriculado: "Rematriculado",
+  nao_rematriculado: "Não rematriculou",
+} as const;
+
+const simNao = (v: boolean) => (v ? "Sim" : "");
+
+// Uma linha por aluno, com tudo que a unidade vê no painel. A coluna Unidade fica
+// sempre — no relatório "todas" é o que separa as escolas sem quebrar a tabela.
+function linhaAlunoParaPlanilha(a: RematriculaAluno) {
+  return {
+    "Unidade": a.profiles?.unidade_nome ?? "—",
+    "Aluno": a.nome,
+    "Turma": a.turma ?? "",
+    "Status": STATUS_ALUNO_LABEL[derivarStatusRematricula(a)],
+    "Contrato assinado": simNao(a.contrato_assinado),
+    "Em conversa com a família": simNao(a.negociando),
+    "Aguardando contrato assinado": simNao(a.aceite),
+    "Não rematriculou": simNao(derivarStatusRematricula(a) === "nao_rematriculado"),
+    "Inadimplente": simNao(a.inadimplente),
+    "Quem fez contato": a.quem_contatou ?? "",
+    "Observação": a.observacao ?? "",
+    "Motivo (não rematriculou)": a.motivo ?? "",
+    "Histórico de negociação": (a.negociacao_historico ?? [])
+      .map((h) => `${new Date(h.data).toLocaleDateString("pt-BR")}: ${h.texto}`)
+      .join("\n"),
+  };
+}
+
+const COLS_ALUNOS = [
+  { wch: 20 }, { wch: 36 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 14 },
+  { wch: 12 }, { wch: 12 }, { wch: 24 }, { wch: 40 }, { wch: 30 }, { wch: 60 },
+];
+
+function ordenarAlunos(alunos: RematriculaAluno[]) {
+  return [...alunos].sort(
+    (a, b) =>
+      (a.profiles?.unidade_nome ?? "").localeCompare(b.profiles?.unidade_nome ?? "", "pt-BR") ||
+      (a.turma ?? "").localeCompare(b.turma ?? "", "pt-BR") ||
+      a.nome.localeCompare(b.nome, "pt-BR")
+  );
+}
+
+function folhaAlunos(alunos: RematriculaAluno[]) {
+  const ws = XLSX.utils.json_to_sheet(ordenarAlunos(alunos).map(linhaAlunoParaPlanilha));
+  ws["!cols"] = COLS_ALUNOS;
+  ws["!autofilter"] = { ref: ws["!ref"] ?? "A1" };
+  return ws;
+}
+
+/** escopo = nome da unidade ou "Todas as unidades" (vai no nome do arquivo). */
+export function exportarAlunosRematriculaExcel(alunos: RematriculaAluno[], escopo: string, todas: boolean) {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, folhaAlunos(alunos), todas ? "Todas" : "Alunos");
+  if (todas) {
+    // Além da aba única (filtrável), uma aba por unidade. Nome de aba: máx. 31 chars, sem []:*?/\
+    const porUnidade = new Map<string, RematriculaAluno[]>();
+    for (const a of alunos) {
+      const nome = a.profiles?.unidade_nome ?? "—";
+      porUnidade.set(nome, [...(porUnidade.get(nome) ?? []), a]);
+    }
+    const usados = new Set(["Todas"]);
+    for (const nome of [...porUnidade.keys()].sort((x, y) => x.localeCompare(y, "pt-BR"))) {
+      let aba = nome.replace(/[[\]:*?/\\]/g, " ").slice(0, 31).trim() || "Unidade";
+      for (let i = 2; usados.has(aba); i++) aba = `${aba.slice(0, 28)} ${i}`;
+      usados.add(aba);
+      XLSX.utils.book_append_sheet(wb, folhaAlunos(porUnidade.get(nome)!), aba);
+    }
+  }
+  XLSX.writeFile(wb, `Rematrícula 2027 - Alunos - ${escopo}.xlsx`);
+}
+
+/** CSV UTF-8 com BOM — uma tabela só (coluna Unidade separa as escolas), importa direto no Sheets. */
+export function exportarAlunosRematriculaCsv(alunos: RematriculaAluno[], escopo: string) {
+  // Quebra de linha dentro da célula (histórico, observação) parte o CSV em linhas
+  // soltas ao importar no Sheets — no CSV vira " | ", uma linha por aluno.
+  const linhas = ordenarAlunos(alunos).map((a) =>
+    Object.fromEntries(
+      Object.entries(linhaAlunoParaPlanilha(a)).map(([k, v]) => [k, v.replace(/\s*[\r\n]+\s*/g, " | ")])
+    )
+  );
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  const csv = XLSX.utils.sheet_to_csv(ws, { FS: ",", RS: "\r\n" });
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Rematrícula 2027 - Alunos - ${escopo}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
