@@ -1,6 +1,7 @@
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import RematriculaPainel from "../../components/RematriculaPainel";
+import { REMATRICULA_FORA_DA_META } from "../../types";
 
 export default function Rematricula() {
   const { profile } = useAuth();
@@ -15,7 +16,7 @@ export default function Rematricula() {
         </p>
       </div>
 
-      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} somenteLeitura />
+      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} somenteLeitura={!REMATRICULA_FORA_DA_META.includes(profile?.unidade_nome ?? "")} />
     </div>
   );
 }
