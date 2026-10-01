@@ -15,7 +15,7 @@ export default function Rematricula() {
         </p>
       </div>
 
-      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} />
+      <RematriculaPainel unidadeId={profile?.id ?? ""} {...rematricula} somenteLeitura />
     </div>
   );
 }

@@ -70,6 +70,8 @@ interface RematriculaPainelProps {
     aceite: boolean
   ) => Promise<boolean>;
   remover: (id: string) => Promise<boolean>;
+  /** Unidade só consulta: todos os campos do aluno ficam travados. */
+  somenteLeitura?: boolean;
   adicionarHistorico: (id: string, texto: string) => Promise<boolean>;
   /** Mostra o botão Remover — só supervisão tem essa permissão (RLS restringe DELETE a role='supervisao'). */
   permiteRemover?: boolean;
@@ -127,7 +129,7 @@ function linhaInicial(a: RematriculaAluno): LinhaState {
   };
 }
 
-export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteAdicionar = false, permiteMarcarInadimplente = false }: RematriculaPainelProps) {
+export default function RematriculaPainel({ unidadeId, alunos, loading, salvando, adicionar, atualizar, remover, adicionarHistorico, permiteRemover = false, permiteAdicionar = false, permiteMarcarInadimplente = false, somenteLeitura = false }: RematriculaPainelProps) {
   const [nome, setNome] = useState("");
   const [turma, setTurma] = useState("");
   const [adicionando, setAdicionando] = useState(false);
@@ -320,7 +322,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                 const historico = a.negociacao_historico ?? [];
                 return (
                   <div key={a.id} className="card p-5">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <fieldset disabled={somenteLeitura} className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="min-w-[180px]">
                         <p className={`font-semibold ${a.inadimplente ? "text-red-600" : "text-gray-900"}`}>{a.nome}</p>
                         {a.turma && <p className="text-xs text-gray-500 mt-0.5">{a.turma}</p>}
@@ -456,6 +458,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                         </div>
                       </div>
 
+                      {!somenteLeitura && (
                       <div className="flex flex-col items-stretch gap-1.5">
                         <Button onClick={() => handleSalvar(a)} disabled={!alterado || isSalvando} size="sm">
                           {isSalvando ? "Salvando..." : "Salvar"}
@@ -467,7 +470,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                           </Button>
                         )}
                       </div>
-                    </div>
+                      )}
+                    </fieldset>
                   </div>
                 );
               })}
