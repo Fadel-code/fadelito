@@ -10,6 +10,7 @@ import { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 import {
   MESES,
   calcularRanking,
+  porPessoa,
   calcularRede,
   faixasDeMeses,
   conferirCarteira,
@@ -130,6 +131,8 @@ export default function RankingSupervisoras() {
     () => calcularRanking({ supervisoras: ativas, atribuicoes, dados, meses, metodo, mesAgora }),
     [ativas, atribuicoes, dados, meses, metodo, mesAgora]
   );
+  // Detalhe da supervisora (mês a mês) usa a carteira já agrupada por pessoa, igual ao ranking.
+  const atribuicoesPessoa = useMemo(() => porPessoa(ativas, atribuicoes).atribuicoes, [ativas, atribuicoes]);
   const outroMetodo: Metodo = metodo === "ponderado" ? "simples" : "ponderado";
   const aproveitamentoOutro = useMemo(
     () => new Map(calcularRanking({ supervisoras: ativas, atribuicoes, dados, meses, metodo: outroMetodo, mesAgora }).map((l) => [l.supervisora.id, l.aproveitamento])),
@@ -431,7 +434,7 @@ export default function RankingSupervisoras() {
                       expandida={aberta === l.supervisora.id}
                       onAlternar={() => setAberta(aberta === l.supervisora.id ? null : l.supervisora.id)}
                       nomeUnidade={nomeUnidade}
-                      atribuicoes={atribuicoes}
+                      atribuicoes={atribuicoesPessoa}
                       dados={dados}
                       meses={meses}
                       metodo={metodo}

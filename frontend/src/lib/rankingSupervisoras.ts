@@ -165,6 +165,25 @@ export interface LinhaRanking {
   detalhe: DetalheUnidade[];
 }
 
+/**
+ * Uma pessoa pode ter um cadastro por linha (Lilian: P e, desde a 040, F na Vila Madalena).
+ * O ranking é por pessoa: junta os cadastros pelo nome, usando o id do primeiro como o da
+ * pessoa, e aponta a carteira de todos pra ele.
+ */
+export function porPessoa(supervisoras: Supervisora[], atribuicoes: Atribuicao[]) {
+  const idDoNome = new Map<string, string>();
+  const idCanonico = new Map<string, string>();
+  for (const s of supervisoras) {
+    const chave = s.nome.trim().toLowerCase();
+    if (!idDoNome.has(chave)) idDoNome.set(chave, s.id);
+    idCanonico.set(s.id, idDoNome.get(chave)!);
+  }
+  return {
+    pessoas: supervisoras.filter((s) => idCanonico.get(s.id) === s.id),
+    atribuicoes: atribuicoes.map((a) => ({ ...a, supervisoraId: idCanonico.get(a.supervisoraId) ?? a.supervisoraId })),
+  };
+}
+
 /** Um mês (`meses` com 1 item) ou o acumulado de vários, todas as supervisoras juntas. Ordenado do maior aproveitamento pro menor. */
 export function calcularRanking(args: {
   supervisoras: Supervisora[];
@@ -175,13 +194,14 @@ export function calcularRanking(args: {
   /** Mês da contagem "unidades agora" (padrão: o último do período). */
   mesAgora?: string;
 }): LinhaRanking[] {
-  const { supervisoras, atribuicoes, dados, meses, metodo } = args;
+  const { dados, meses, metodo } = args;
+  const { pessoas: supervisoras, atribuicoes } = porPessoa(args.supervisoras, args.atribuicoes);
   const ponderado = metodo === "ponderado";
 
+  // Set: a mesma unidade nas duas linhas da mesma pessoa conta uma vez só.
   const unidadesDoMes = (supervisoraId: string, mes: string) =>
-    atribuicoes
-      .filter((a) => a.supervisoraId === supervisoraId && atribuicaoAtiva(a, mes))
-      .map((a) => dados.get(`${a.unidadeId}|${mes}`))
+    [...new Set(atribuicoes.filter((a) => a.supervisoraId === supervisoraId && atribuicaoAtiva(a, mes)).map((a) => a.unidadeId))]
+      .map((unidadeId) => dados.get(`${unidadeId}|${mes}`))
       .filter((d): d is DadoUnidadeMes => !!d);
 
   const mesAgora = args.mesAgora ?? meses[meses.length - 1] ?? null;
@@ -309,12 +329,13 @@ export function serieMeses(args: {
   meses: string[];
   metodo: Metodo;
 }): { mes: string; valor: number | null; unidades: number }[] {
+  // `atribuicoes` precisa vir agrupada por pessoa (porPessoa), como no calcularRanking.
   const { supervisora, atribuicoes, dados, meses, metodo } = args;
   return meses.map((mes) => {
-    const carteira = atribuicoes.filter((a) => a.supervisoraId === supervisora.id && atribuicaoAtiva(a, mes));
-    const unidades = carteira.map((a) => dados.get(`${a.unidadeId}|${mes}`)).filter((d): d is DadoUnidadeMes => !!d);
+    const carteira = new Set(atribuicoes.filter((a) => a.supervisoraId === supervisora.id && atribuicaoAtiva(a, mes)).map((a) => a.unidadeId));
+    const unidades = [...carteira].map((u) => dados.get(`${u}|${mes}`)).filter((d): d is DadoUnidadeMes => !!d);
     const m = metricasMes(unidades);
-    return { mes, valor: metodo === "ponderado" ? m.aprovPond : m.aprovSimples, unidades: new Set(carteira.map((a) => a.unidadeId)).size };
+    return { mes, valor: metodo === "ponderado" ? m.aprovPond : m.aprovSimples, unidades: carteira.size };
   });
 }
 
