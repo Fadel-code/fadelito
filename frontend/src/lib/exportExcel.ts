@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import type { ConsolidadoUnidade, LinhaTurma, RematriculaAluno } from "../types";
-import { MESES, TURMAS, derivarStatusRematricula } from "../types";
+import { MESES, TURMAS, derivarStatusRematricula, REMATRICULA_FORA_DA_META } from "../types";
 
 function calcAproveitamento(vt: number, mt: number): string {
   return vt > 0 ? `${((mt / vt) * 100).toFixed(1)}%` : "—";
@@ -192,13 +192,18 @@ function linhaRematriculaParaPlanilha(u: LinhaRematriculaPlanilha) {
     "Inadimplentes": u.inadimplentes,
     "Aguardando contrato assinado": u.aguardandoContrato,
     "% Rematrícula": `${(u.pct * 100).toFixed(1)}%`,
+    "Meta da rede": REMATRICULA_FORA_DA_META.includes(u.unidade_nome) ? "Fora da meta" : "",
   };
 }
 
-const COLS_REMATRICULA = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 14 }];
+const COLS_REMATRICULA = [{ wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 14 }, { wch: 14 }];
 
 function linhasRematricula(porUnidade: LinhaRematriculaPlanilha[], kpisRede: Omit<LinhaRematriculaPlanilha, "unidade_nome">) {
-  return [...porUnidade, { unidade_nome: "Total da Rede", ...kpisRede }].map(linhaRematriculaParaPlanilha);
+  // O total da rede não soma as unidades fora da meta — o rótulo diz quais, senão a soma
+  // das linhas acima não bate com ele.
+  const fora = REMATRICULA_FORA_DA_META.join(", ").replace(/, ([^,]*)$/, " e $1");
+  const rotulo = `Total da Rede (meta — sem ${fora})`;
+  return [...porUnidade, { unidade_nome: rotulo, ...kpisRede }].map(linhaRematriculaParaPlanilha);
 }
 
 export function exportarRematriculaExcel(
