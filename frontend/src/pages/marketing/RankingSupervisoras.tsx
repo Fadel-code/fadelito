@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { Info, ChevronRight, Eye, GraduationCap, RefreshCw, Settings2, TrendingUp, Users } from "lucide-react";
+import { CalendarDays, Info, ChevronRight, RefreshCw, Settings2, Users } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
 import ConfiguracaoRanking from "../../components/ranking/ConfiguracaoRanking";
 import SeletorMes from "../../components/ranking/SeletorMes";
 import ItemRanking, { colunasRanking } from "../../components/ranking/ItemRanking";
-import { pct, plural } from "../../components/ranking/formato";
+import { pct } from "../../components/ranking/formato";
 import { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 import {
   MESES,
@@ -16,6 +16,8 @@ import {
   mesAnterior,
   mesesDoIntervalo,
   ultimoDiaDoMes,
+  GRUPO,
+  type Linha,
   type Metodo,
 } from "../../lib/rankingSupervisoras";
 import { anoMesAtual, dateToIso, formatarData } from "../../lib/utils";
@@ -37,19 +39,20 @@ const METODOS: { valor: Metodo; rotulo: string; curto?: string }[] = [
 
 const rotuloMes = (iso: string) => `${MESES[Number(iso.slice(5, 7)) - 1]}/${iso.slice(0, 4)}`;
 const CAMPO = "h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
+const ROTULO = "mb-1.5 block text-sm font-semibold text-gray-800";
 const num = (x: number) => x.toLocaleString("pt-BR");
 
-function Segmentado<T extends string>({ rotulo, valor, opcoes, onChange }: { rotulo: string; valor: T; opcoes: { valor: T; rotulo: string; curto?: string }[]; onChange: (v: T) => void }) {
+function Segmentado<T extends string>({ rotulo, valor, opcoes, onChange }: { rotulo: string; valor: T; opcoes: { valor: T; rotulo: string; curto?: string; extra?: string }[]; onChange: (v: T) => void }) {
   return (
-    <div role="group" aria-label={rotulo} className="inline-flex max-w-full rounded-lg bg-gray-100 p-0.5 text-sm">
+    <div role="group" aria-label={rotulo} className="inline-flex max-w-full rounded-lg bg-gray-100 p-0.5 text-sm ring-1 ring-inset ring-gray-200">
       {opcoes.map((o) => (
         <button
           key={o.valor}
           type="button"
           aria-pressed={valor === o.valor}
           onClick={() => onChange(o.valor)}
-          className={`h-8 rounded-md px-3 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
-            valor === o.valor ? "bg-white text-primary-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
+          className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+            valor === o.valor ? "bg-primary-600 text-white shadow-sm" : "text-gray-700 hover:bg-white hover:text-gray-900"
           }`}
         >
           {o.curto ? (
@@ -60,6 +63,7 @@ function Segmentado<T extends string>({ rotulo, valor, opcoes, onChange }: { rot
           ) : (
             o.rotulo
           )}
+          {o.extra && <span className={`tabular-nums ${valor === o.valor ? "font-semibold text-white/85" : "text-gray-500"}`}>{o.extra}</span>}
         </button>
       ))}
     </div>
@@ -69,7 +73,7 @@ function Segmentado<T extends string>({ rotulo, valor, opcoes, onChange }: { rot
 function Campo({ id, rotulo, children }: { id: string; rotulo: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs font-medium text-gray-600">{rotulo}</label>
+      <label htmlFor={id} className={ROTULO}>{rotulo}</label>
       {children}
     </div>
   );
@@ -132,6 +136,13 @@ export default function RankingSupervisoras() {
     [ativas, atribuicoes, dados, meses, outroMetodo, mesAgora]
   );
   const rede = useMemo(() => calcularRede(dados, meses, metodo), [dados, meses, metodo]);
+  const redeOutro = useMemo(() => calcularRede(dados, meses, outroMetodo), [dados, meses, outroMetodo]);
+  // Cada opção de cálculo mostra a média da rede que ela daria: a troca deixa de ser às cegas.
+  const metodosComValor = METODOS.map((m) => {
+    const v = (m.valor === metodo ? rede : redeOutro).aproveitamento;
+    return { ...m, extra: loading || v === null ? undefined : pct(v) };
+  });
+  const anos = Array.from({ length: anoAtual - ANO_INICIAL + 1 }, (_, i) => ANO_INICIAL + i);
 
   // Variação contra o mês anterior só faz sentido quando se olha um mês específico.
   const anterior = useMemo(() => {
@@ -154,7 +165,7 @@ export default function RankingSupervisoras() {
   // Unidades que ficam de fora do ranking (sem supervisora da linha) ou contam em dobro.
   const avisosCarteira = useMemo(() => {
     if (loading || atribuicoes.length === 0) return [];
-    const grupos = new Map<string, { tipo: "sem" | "duas"; linha: string; primeiro: string; ultimo: string; nomes: string[] }>();
+    const grupos = new Map<string, { tipo: "sem" | "duas"; linha: Linha; primeiro: string; ultimo: string; nomes: string[] }>();
     for (const p of conferirCarteira({ supervisoras, atribuicoes, dados, meses })) {
       const chave = `${p.tipo}|${p.linha}|${p.primeiroMes}|${p.ultimoMes}`;
       const g = grupos.get(chave) ?? { tipo: p.tipo, linha: p.linha, primeiro: p.primeiroMes, ultimo: p.ultimoMes, nomes: [] };
@@ -165,8 +176,6 @@ export default function RankingSupervisoras() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, supervisoras, atribuicoes, dados, meses, unidades]);
 
-  // Unidades que ficam fora do ranking (sem supervisora numa das linhas) — o card de supervisoras avisa.
-  const foraDoRanking = useMemo(() => new Set(avisosCarteira.filter((g) => g.tipo === "sem").flatMap((g) => g.nomes)).size, [avisosCarteira]);
 
   const semAtribuicao = !loading && atribuicoes.length === 0;
   const fimMes = `${fim.slice(0, 7)}-01`;
@@ -215,94 +224,90 @@ export default function RankingSupervisoras() {
         <ConfiguracaoRanking key={`${inicio}|${fim}|${mesConfig}`} ranking={ranking} mesInicial={mesRefConfig} />
       ) : (
         <div className="space-y-4">
-          <section aria-label="Resumo do período" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[
-              { Icone: TrendingUp, rotulo: "Média da rede", valor: loading ? "—" : pct(rede.aproveitamento), sub: metodo === "ponderado" ? "Aproveitamento ponderado" : "Aproveitamento, média simples" },
-              { Icone: Eye, rotulo: "Visitas", valor: loading ? "—" : num(rede.visitas), sub: rotuloPeriodo },
-              { Icone: GraduationCap, rotulo: "Matrículas", valor: loading ? "—" : num(rede.matriculas), sub: rotuloPeriodo },
-              {
-                Icone: Users,
-                rotulo: "Supervisoras",
-                valor: loading ? "—" : String(linhas.length),
-                sub: loading ? "" : foraDoRanking > 0 ? `${plural(foraDoRanking, "unidade fica", "unidades ficam")} fora do ranking` : "Todas as unidades com supervisora",
-              },
-            ].map(({ Icone, rotulo, valor, sub }) => (
-              <div key={rotulo} className="card p-4">
-                <p className="flex items-center gap-2 text-xs font-medium text-gray-600">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-50 text-primary-700"><Icone className="h-3.5 w-3.5" aria-hidden /></span>
-                  {rotulo}
-                </p>
-                <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{valor}</p>
-                <p className="mt-0.5 text-xs text-gray-600">{sub}</p>
+          <section aria-label="Filtros" className="card p-4 sm:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+                <div>
+                  <span className={ROTULO}>Período</span>
+                  <Segmentado rotulo="Tipo de período" valor={modo} opcoes={MODOS} onChange={(m) => { setModo(m); setAberta(null); }} />
+                </div>
+                {modo === "ano" && (anos.length > 1 ? (
+                  <Campo id="rk-ano" rotulo="Ano">
+                    <select id="rk-ano" className={CAMPO} value={ano} onChange={(e) => setAno(Number(e.target.value))}>
+                      {anos.map((a) => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </Campo>
+                ) : (
+                  // ponytail: um ano só não vira select de uma opção; volta sozinho quando houver 2027.
+                  <div>
+                    <span className={ROTULO}>Ano</span>
+                    <p className="flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-semibold tabular-nums text-gray-900">
+                      <CalendarDays className="h-4 w-4 text-gray-500" aria-hidden />
+                      {ano}
+                    </p>
+                  </div>
+                ))}
+                {modo === "mes" && (
+                  <div>
+                    <span className={ROTULO}>Mês</span>
+                    <SeletorMes valor={mesSel} min={`${ANO_INICIAL}-01`} max={mesCorrente} onChange={setMesSel} />
+                  </div>
+                )}
+                {modo === "datas" && (
+                  <SeletorDatas de={de} ate={ate} min={`${ANO_INICIAL}-01-01`} onChange={(d, a) => { setDe(d); setAte(a); }} />
+                )}
               </div>
-            ))}
+              <div>
+                <span className={ROTULO}>Cálculo do aproveitamento</span>
+                <Segmentado rotulo="Cálculo do aproveitamento" valor={metodo} opcoes={metodosComValor} onChange={setMetodo} />
+              </div>
+            </div>
+            <details className="group mt-4 border-t border-gray-100 pt-3 text-sm leading-relaxed text-gray-700">
+              <summary className="flex cursor-pointer list-none items-start gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-700 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+                <span>
+                  {metodo === "ponderado" ? (
+                    <><strong className="font-semibold text-gray-900">Ponderado:</strong> soma as matrículas, soma as visitas e divide. Unidade com mais visitas pesa mais.</>
+                  ) : (
+                    <><strong className="font-semibold text-gray-900">Média simples:</strong> média da % de cada unidade, como na planilha. Toda unidade pesa igual.</>
+                  )}{" "}
+                  <span className="font-medium text-primary-700 group-hover:underline">
+                    <span className="group-open:hidden">Ver a diferença com um exemplo</span>
+                    <span className="hidden group-open:inline">Fechar exemplo</span>
+                  </span>
+                </span>
+              </summary>
+              <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+                <p className="mb-3 text-gray-700">
+                  Uma supervisora com duas unidades: a <strong className="font-semibold">A</strong> teve 4 visitas e 2 matrículas (50%); a <strong className="font-semibold">B</strong> teve 60 visitas e 6 matrículas (10%). Clique num cálculo para usá-lo.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { valor: "ponderado" as Metodo, titulo: "Ponderado", conta: "(2 + 6) ÷ (4 + 60) = 8 ÷ 64", resultado: "12,5%", leitura: "A B fez quase todas as visitas, então o resultado fica perto dela. Bom para comparar carteiras de tamanhos diferentes." },
+                    { valor: "simples" as Metodo, titulo: "Média simples", conta: "(50% + 10%) ÷ 2", resultado: "30%", leitura: "A e B valem igual, mesmo com B fazendo 15 vezes mais visitas. É o cálculo da planilha." },
+                  ].map((c) => (
+                    <button
+                      key={c.valor}
+                      type="button"
+                      aria-pressed={metodo === c.valor}
+                      onClick={() => setMetodo(c.valor)}
+                      className={`rounded-lg border bg-white p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${metodo === c.valor ? "border-primary-300 ring-1 ring-primary-200" : "border-gray-200 hover:border-gray-300"}`}
+                    >
+                      <span className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900">
+                        {c.titulo}
+                        {metodo === c.valor
+                          ? <span className="rounded bg-primary-50 px-1.5 py-0.5 text-xs font-medium text-primary-700">em uso</span>
+                          : <span className="text-xs font-medium text-primary-700">Usar este</span>}
+                      </span>
+                      <span className="mt-1 block tabular-nums text-gray-700">{c.conta} = <strong className="text-base font-bold text-gray-900">{c.resultado}</strong></span>
+                      <span className="mt-2 block text-gray-600">{c.leitura}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </details>
           </section>
 
-          <section aria-label="Filtros" className="card p-4">
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-              <div>
-                <span className="mb-1 block text-xs font-medium text-gray-600">Período</span>
-                <Segmentado rotulo="Tipo de período" valor={modo} opcoes={MODOS} onChange={(m) => { setModo(m); setAberta(null); }} />
-              </div>
-              {modo === "ano" && (
-                <Campo id="rk-ano" rotulo="Ano">
-                  <select id="rk-ano" className={CAMPO} value={ano} onChange={(e) => setAno(Number(e.target.value))}>
-                    {Array.from({ length: anoAtual - ANO_INICIAL + 1 }, (_, i) => ANO_INICIAL + i).map((a) => <option key={a} value={a}>{a}</option>)}
-                  </select>
-                </Campo>
-              )}
-              {modo === "mes" && (
-                <div>
-                  <span className="mb-1 block text-xs font-medium text-gray-600">Mês</span>
-                  <SeletorMes valor={mesSel} min={`${ANO_INICIAL}-01`} max={mesCorrente} onChange={setMesSel} />
-                </div>
-              )}
-              <div>
-                <span className="mb-1 block text-xs font-medium text-gray-600">Cálculo do aproveitamento</span>
-                <Segmentado rotulo="Cálculo do aproveitamento" valor={metodo} opcoes={METODOS} onChange={setMetodo} />
-              </div>
-            </div>
-            {modo === "datas" && (
-              <div className="mt-4 border-t border-gray-100 pt-4">
-                <SeletorDatas de={de} ate={ate} min={`${ANO_INICIAL}-01-01`} onChange={(d, a) => { setDe(d); setAte(a); }} />
-              </div>
-            )}
-            <div className="mt-3 max-w-3xl text-xs leading-relaxed text-gray-600">
-              <p>
-                {metodo === "ponderado" ? (
-                  <><strong className="font-semibold text-gray-900">Ponderado:</strong> soma todas as matrículas, soma todas as visitas e divide. Unidade com mais visitas pesa mais.</>
-                ) : (
-                  <><strong className="font-semibold text-gray-900">Média simples:</strong> tira a média da % de cada unidade, como na planilha. Toda unidade pesa igual, tenha 5 ou 100 visitas.</>
-                )}
-              </p>
-              <details className="group mt-2">
-                <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded font-medium text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 [&::-webkit-details-marker]:hidden">
-                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" aria-hidden />
-                  Ver a diferença com um exemplo
-                </summary>
-                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
-                  <p className="mb-3 text-gray-700">
-                    Uma supervisora com duas unidades: a <strong className="font-semibold">A</strong> teve 4 visitas e 2 matrículas (50%); a <strong className="font-semibold">B</strong> teve 60 visitas e 6 matrículas (10%).
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {[
-                      { valor: "ponderado" as Metodo, titulo: "Ponderado", conta: "(2 + 6) ÷ (4 + 60) = 8 ÷ 64", resultado: "12,5%", leitura: "A B fez quase todas as visitas, então o resultado fica perto dela. Bom para comparar carteiras de tamanhos diferentes." },
-                      { valor: "simples" as Metodo, titulo: "Média simples", conta: "(50% + 10%) ÷ 2", resultado: "30%", leitura: "A e B valem igual, mesmo com B fazendo 15 vezes mais visitas. É o cálculo da planilha." },
-                    ].map((c) => (
-                      <div key={c.valor} className={`rounded-lg border bg-white p-3 ${metodo === c.valor ? "border-primary-300 ring-1 ring-primary-200" : "border-gray-200"}`}>
-                        <p className="flex items-center justify-between gap-2 text-sm font-semibold text-gray-900">
-                          {c.titulo}
-                          {metodo === c.valor && <span className="rounded bg-primary-50 px-1.5 py-0.5 text-xs font-medium text-primary-700">em uso</span>}
-                        </p>
-                        <p className="mt-1 tabular-nums text-gray-700">{c.conta} = <strong className="text-base font-bold text-gray-900">{c.resultado}</strong></p>
-                        <p className="mt-2 text-gray-600">{c.leitura}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </details>
-            </div>
-          </section>
 
           {planilhaIgnorada.length > 0 && (
             <p role="status" className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
@@ -322,8 +327,8 @@ export default function RankingSupervisoras() {
                     return (
                       <p key={`${g.tipo}${g.linha}${g.primeiro}${g.ultimo}`}>
                         {g.tipo === "sem"
-                          ? `${g.nomes.join(", ")} ${varias ? "estão" : "está"} sem supervisora na linha ${g.linha} ${quando} e ${varias ? "ficam" : "fica"} fora do ranking.`
-                          : `${g.nomes.join(", ")} ${varias ? "têm" : "tem"} duas supervisoras na linha ${g.linha} ${quando} e ${varias ? "contam" : "conta"} duas vezes.`}
+                          ? `${g.nomes.join(", ")} ${varias ? "estão" : "está"} sem supervisora do ${GRUPO[g.linha]} ${quando} e ${varias ? "ficam" : "fica"} fora do ranking.`
+                          : `${g.nomes.join(", ")} ${varias ? "têm" : "tem"} duas supervisoras do ${GRUPO[g.linha]} ${quando} e ${varias ? "contam" : "conta"} duas vezes.`}
                       </p>
                     );
                   })}
@@ -348,27 +353,38 @@ export default function RankingSupervisoras() {
             </div>
           )}
 
-          <section aria-label="Ranking" className="card overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-gray-100 px-4 py-3 sm:px-5">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">
+          <section aria-labelledby="rk-titulo" className="card overflow-hidden shadow-md ring-1 ring-primary-100">
+            <div className="flex flex-col gap-4 border-b border-gray-100 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <h2 id="rk-titulo" className="text-xl font-bold tracking-tight text-gray-900">Ranking</h2>
+                <p className="mt-1 text-sm text-gray-700">
                   {rotuloPeriodo}
-                  {!loading && <span className="ml-2 font-normal text-gray-700">· {linhas.length} {linhas.length === 1 ? "supervisora" : "supervisoras"}</span>}
-                </h2>
+                  {!loading && <> · {linhas.length} {linhas.length === 1 ? "supervisora" : "supervisoras"}</>}
+                </p>
                 {meses.length > 1 && (
-                  <p className="mt-0.5 text-xs text-gray-700">
+                  <p className="mt-1 max-w-prose text-xs text-gray-600">
                     Cada uma conta só as unidades e os meses em que esteve com ela. Abra a linha para ver quais.
                   </p>
                 )}
               </div>
-              {!loading && rede.aproveitamento !== null && (
-                <p className="flex items-center gap-2 text-xs text-gray-700 tabular-nums">
-                  <span className="inline-block h-3 w-0.5 rounded bg-ink/70" aria-hidden />
-                  <span>
-                    Média da rede <strong className="font-semibold text-gray-900">{pct(rede.aproveitamento)}</strong>
-                  </span>
-                </p>
-              )}
+              {/* Números da rede no período: o contexto contra o qual cada linha é lida. */}
+              <dl className="grid grid-cols-3 gap-x-4 sm:gap-x-10 lg:flex-shrink-0 lg:text-right">
+                {[
+                  { rotulo: "Visitas", valor: num(rede.visitas) },
+                  { rotulo: "Matrículas", valor: num(rede.matriculas) },
+                  { rotulo: "Média da rede", valor: pct(rede.aproveitamento), destaque: true },
+                ].map((k) => (
+                  <div key={k.rotulo} className="min-w-0">
+                    <dt className="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-gray-600 lg:justify-end">
+                      {k.destaque && <span className="inline-block h-3 w-0.5 rounded bg-ink/70" aria-hidden />}
+                      {k.rotulo}
+                    </dt>
+                    <dd className={`mt-0.5 tabular-nums tracking-tight text-gray-900 text-xl sm:text-2xl ${k.destaque ? "font-bold" : "font-semibold"}`}>
+                      {loading ? "—" : k.valor}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
 
             {loading ? (

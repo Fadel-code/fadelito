@@ -92,7 +92,7 @@ export default function SeletorDatas({ de, ate, min, onChange }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <div>
-        <label htmlFor={idGatilho} className="mb-1 block text-xs font-medium text-gray-600">Intervalo</label>
+        <label htmlFor={idGatilho} className="mb-1.5 block text-sm font-semibold text-gray-800">Intervalo</label>
         <Popover
           aberto={aberto}
           onFechar={fechar}

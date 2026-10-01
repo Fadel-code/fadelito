@@ -7,6 +7,7 @@
 export const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export type Linha = "F" | "P";
+export const GRUPO: Record<Linha, string> = { F: "Financeiro", P: "Pedagógico" };
 export type Metodo = "ponderado" | "simples";
 
 export interface Supervisora {

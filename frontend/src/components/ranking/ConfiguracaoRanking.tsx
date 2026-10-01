@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Info, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { MESES, mesAnterior, type Linha } from "../../lib/rankingSupervisoras";
+import SeletorMes from "./SeletorMes";
+import { GRUPO, MESES, mesAnterior, type Linha } from "../../lib/rankingSupervisoras";
 import type { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 
 type Ranking = ReturnType<typeof useRankingSupervisoras>;
@@ -17,10 +18,9 @@ function rotuloMes(iso: string) {
 function TagLinha({ linha }: { linha: Linha }) {
   return (
     <span
-      title={`Linha ${linha}: coluna SUPER ${linha}. da planilha`}
       className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-700"
     >
-      Linha {linha}
+      {GRUPO[linha]}
     </span>
   );
 }
@@ -38,13 +38,14 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
   // ---- Supervisoras ----
   const [novoNome, setNovoNome] = useState("");
   const [novaLinha, setNovaLinha] = useState<Linha>("F");
+  const [adicionando, setAdicionando] = useState(false);
   const [supId, setSupId] = useState("");
   const supSel = supervisoras.find((s) => s.id === supId) ?? supervisoras[0];
 
   async function handleNovaSupervisora(e: FormEvent) {
     e.preventDefault();
     if (!novoNome.trim()) return;
-    if (await adicionarSupervisora(novoNome, novaLinha)) setNovoNome("");
+    if (await adicionarSupervisora(novoNome, novaLinha)) { setNovoNome(""); setAdicionando(false); }
   }
 
   // ---- Carteira ----
@@ -114,8 +115,8 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
   return (
     <div className="space-y-6">
       <div className="card flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
-        <label htmlFor="mes-ref" className="text-sm font-medium text-gray-800">Mês de referência</label>
-        <input id="mes-ref" type="month" min={janela.min} max={janela.max} className={CAMPO} value={mesRef} onChange={(e) => e.target.value && setMesRef(e.target.value)} />
+        <span className="text-sm font-medium text-gray-800">Mês de referência</span>
+        <SeletorMes valor={mesRef} min={janela.min} max={janela.max} onChange={setMesRef} />
         <p className="text-xs text-gray-600">Vale para a carteira e para os alunos ativos. Para outros meses, mude o período na aba Ranking.</p>
       </div>
 
@@ -129,8 +130,8 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
               return (
                 <p key={p.linha + p.tipo}>
                   {p.tipo === "sem"
-                    ? `${nomes} ${varias ? "estão" : "está"} sem supervisora na linha ${p.linha} em ${rotuloMes(mesIsoRef)} e ${varias ? "ficam" : "fica"} fora do ranking.`
-                    : `${nomes} ${varias ? "têm" : "tem"} duas supervisoras na linha ${p.linha} em ${rotuloMes(mesIsoRef)} e ${varias ? "contam" : "conta"} duas vezes.`}
+                    ? `${nomes} ${varias ? "estão" : "está"} sem supervisora do ${GRUPO[p.linha]} em ${rotuloMes(mesIsoRef)} e ${varias ? "ficam" : "fica"} fora do ranking.`
+                    : `${nomes} ${varias ? "têm" : "tem"} duas supervisoras do ${GRUPO[p.linha]} em ${rotuloMes(mesIsoRef)} e ${varias ? "contam" : "conta"} duas vezes.`}
                 </p>
               );
             })}
@@ -143,19 +144,28 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
         <section aria-labelledby="cfg-sup" className="card h-fit p-4">
           <h2 id="cfg-sup" className="text-base font-semibold text-gray-900">Supervisoras</h2>
           <p className="mt-1 text-xs text-gray-700">
-            Cada unidade tem uma supervisora na linha F e outra na linha P. Contagem em {rotuloMes(mesIsoRef)}.
+            Cada unidade tem uma supervisora do Financeiro e uma do Pedagógico. Carteiras em {rotuloMes(mesIsoRef)}.
           </p>
           {(["F", "P"] as Linha[]).map((linha) => {
-            const daLinha = supervisoras.filter((s) => s.linha === linha);
-            if (!daLinha.length) return null;
-            const total = new Set(atribuicoes.filter((a) => daLinha.some((s) => s.id === a.supervisoraId) && ativaNoMes(a)).map((a) => a.unidadeId)).size;
+            // Ativas primeiro (A–Z), inativas no fim: quem não conta no ranking não disputa atenção.
+            const daLinha = supervisoras
+              .filter((s) => s.linha === linha)
+              .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR"));
+            const cobertas = new Set(atribuicoes.filter((a) => daLinha.some((s) => s.id === a.supervisoraId) && ativaNoMes(a)).map((a) => a.unidadeId)).size;
+            const totalUnidades = unidades.filter((u) => u.ativo).length;
+            const faltam = totalUnidades - cobertas;
+            const maior = Math.max(1, ...daLinha.map((s) => atribuicoes.filter((a) => a.supervisoraId === s.id && ativaNoMes(a)).length));
+            const idTitulo = `cfg-grupo-${linha}`;
             return (
-              <div key={linha} className="mt-4">
-                <p className="flex items-baseline justify-between px-3 text-xs font-semibold text-gray-700">
-                  <span>Linha {linha}</span>
-                  <span className="font-normal tabular-nums">{total} de {unidades.filter((u) => u.ativo).length} unidades</span>
-                </p>
-                <ul className="mt-1 space-y-0.5">
+              <div key={linha} role="group" aria-labelledby={idTitulo} className="mt-5">
+                <div className="flex items-baseline justify-between gap-2 px-3">
+                  <h3 id={idTitulo} className="text-xs font-semibold uppercase tracking-wide text-gray-700">{GRUPO[linha]}</h3>
+                  <span className={`text-xs tabular-nums ${faltam > 0 ? "font-medium text-amber-800" : "text-gray-600"}`}>
+                    {faltam > 0 ? `${faltam} ${faltam === 1 ? "unidade" : "unidades"} sem supervisora` : `${cobertas} de ${totalUnidades} unidades`}
+                  </span>
+                </div>
+                {daLinha.length === 0 && <p className="px-3 py-2 text-sm text-gray-600">Ninguém neste grupo ainda.</p>}
+                <ul className="mt-1.5 space-y-0.5">
                   {daLinha.map((s) => {
                     const n = atribuicoes.filter((a) => a.supervisoraId === s.id && ativaNoMes(a)).length;
                     const selecionada = s.id === supSel?.id;
@@ -165,33 +175,60 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
                           type="button"
                           aria-current={selecionada}
                           onClick={() => { setSupId(s.id); setConfirmando(null); }}
-                          className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
-                            selecionada ? "bg-primary-50 text-primary-800" : "text-gray-800 hover:bg-gray-50"
+                          className={`group/sup w-full rounded-lg px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                            selecionada ? "bg-primary-50" : "hover:bg-gray-50"
                           }`}
                         >
-                          <span className={`min-w-0 truncate text-sm font-medium ${s.ativo ? "" : "text-gray-600 line-through"}`}>{s.nome}</span>
-                          <span className="flex-shrink-0 text-xs text-gray-700 tabular-nums">
-                            {!s.ativo ? "inativa" : n === 0 ? "sem carteira" : `${n} ${n === 1 ? "unidade" : "unidades"}`}
+                          <span className="flex items-center justify-between gap-2">
+                            <span className={`min-w-0 truncate text-sm font-medium ${selecionada ? "text-primary-800" : s.ativo ? "text-gray-900" : "text-gray-500"}`}>{s.nome}</span>
+                            {s.ativo ? (
+                              <span className={`flex-shrink-0 text-xs tabular-nums ${n === 0 ? "text-amber-800" : "text-gray-700"}`}>
+                                {n === 0 ? "sem carteira" : `${n} ${n === 1 ? "unidade" : "unidades"}`}
+                              </span>
+                            ) : (
+                              <span className="flex-shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">inativa</span>
+                            )}
                           </span>
+                          {/* Tamanho da carteira em relação à maior do grupo: mostra quem está sobrecarregada. */}
+                          {s.ativo && n > 0 && (
+                            <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-gray-100" aria-hidden>
+                              <span
+                                className={`block h-full rounded-full ${selecionada ? "bg-primary-500" : "bg-primary-300 group-hover/sup:bg-primary-400"}`}
+                                style={{ width: `${(n / maior) * 100}%` }}
+                              />
+                            </span>
+                          )}
                         </button>
                       </li>
                     );
                   })}
                 </ul>
+                {novaLinha === linha && adicionando ? (
+                  <form onSubmit={handleNovaSupervisora} className="mt-1.5 flex gap-1.5 px-1">
+                    <input
+                      autoFocus
+                      aria-label={`Nome da nova supervisora do ${GRUPO[linha]}`}
+                      className={`${CAMPO} min-w-0 flex-1`}
+                      placeholder="Nome"
+                      value={novoNome}
+                      onChange={(e) => setNovoNome(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Escape") { setAdicionando(false); setNovoNome(""); } }}
+                    />
+                    <Button type="submit" size="sm" className="h-9" disabled={!novoNome.trim()}>Adicionar</Button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setNovaLinha(linha); setAdicionando(true); setNovoNome(""); }}
+                    className="mt-1 inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-primary-700 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    Adicionar ao {GRUPO[linha]}
+                  </button>
+                )}
               </div>
             );
           })}
-          <form onSubmit={handleNovaSupervisora} className="mt-4 space-y-2 border-t border-gray-100 pt-4">
-            <label htmlFor="nova-sup" className="block text-xs font-medium text-gray-700">Nova supervisora</label>
-            <input id="nova-sup" className={`${CAMPO} w-full`} placeholder="Nome" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} />
-            <div className="flex gap-2">
-              <select className={`${CAMPO} flex-1`} aria-label="Linha da nova supervisora" value={novaLinha} onChange={(e) => setNovaLinha(e.target.value as Linha)}>
-                <option value="F">Linha F</option>
-                <option value="P">Linha P</option>
-              </select>
-              <Button type="submit" size="sm" className="h-9 gap-1.5" disabled={!novoNome.trim()}><Plus className="h-4 w-4" aria-hidden />Adicionar</Button>
-            </div>
-          </form>
         </section>
 
         {/* Carteira da selecionada */}
@@ -210,7 +247,7 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
                 </Button>
               </div>
               <p className="mt-1 text-xs text-gray-600">
-                {supSel.ativo ? "Aparece no ranking com as unidades abaixo." : "Desativada: não aparece no ranking."} Na mesma linha, cada unidade tem uma supervisora por vez.
+                {supSel.ativo ? "Aparece no ranking com as unidades abaixo." : "Desativada: não aparece no ranking."} No mesmo grupo, cada unidade tem uma supervisora por vez.
               </p>
 
               {carteira.length === 0 ? (
@@ -267,7 +304,7 @@ export default function ConfiguracaoRanking({ ranking, mesInicial }: { ranking: 
                 </select>
                 <Button type="submit" className="h-9" disabled={!unidadeNova}>A partir de {rotuloMes(mesIsoRef)}</Button>
               </form>
-              <p className="mt-2 text-xs text-gray-600">Quem cuidava da unidade nessa linha é encerrada no mês anterior.</p>
+              <p className="mt-2 text-xs text-gray-600">Quem cuidava da unidade nesse grupo é encerrada no mês anterior.</p>
             </>
           )}
         </section>

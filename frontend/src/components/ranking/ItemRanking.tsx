@@ -12,8 +12,8 @@ import { num, pct, plural, rotuloMes } from "./formato";
 /** Mesmas colunas no cabeçalho e nas linhas — sem coluna de variação quando não há mês anterior. */
 export const colunasRanking = (comDelta: boolean) =>
   comDelta
-    ? "md:grid-cols-[2.25rem_minmax(10rem,1fr)_4.5rem_5.5rem_13rem_6.5rem_7rem_1rem]"
-    : "md:grid-cols-[2.25rem_minmax(10rem,1fr)_4.5rem_5.5rem_13rem_7rem_1rem]";
+    ? "md:grid-cols-[2.25rem_minmax(10rem,1fr)_4.5rem_5.5rem_minmax(12rem,1.1fr)_6.5rem_7rem_1rem]"
+    : "md:grid-cols-[2.25rem_minmax(10rem,1fr)_4.5rem_5.5rem_minmax(13rem,1.25fr)_7rem_1rem]";
 
 function Posicao({ n }: { n: number }) {
   const primeira = n === 1;
