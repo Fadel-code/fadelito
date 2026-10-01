@@ -343,6 +343,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
 
                       <div className="flex-1 min-w-[280px]">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                          {(!somenteLeitura || linha.contratoAssinado) && (
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input
                               type="checkbox"
@@ -353,6 +354,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                             <FileCheck className="h-3.5 w-3.5 text-gray-400" />
                             Contrato assinado
                           </label>
+                          )}
+                          {(!somenteLeitura || linha.negociando) && (
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input
                               type="checkbox"
@@ -362,6 +365,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                             />
                             Ainda em conversa com a família
                           </label>
+                          )}
+                          {(!somenteLeitura || linha.aceite) && (
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input
                               type="checkbox"
@@ -371,6 +376,8 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                             />
                             Aguardando contrato assinado
                           </label>
+                          )}
+                          {(!somenteLeitura || linha.naoRematriculou) && (
                           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                             <input
                               type="checkbox"
@@ -387,6 +394,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                             />
                             Não rematriculou
                           </label>
+                          )}
                           {permiteMarcarInadimplente ? (
                             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none w-fit">
                               <input
