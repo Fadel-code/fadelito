@@ -12,7 +12,7 @@ import Segmentado from "../../components/ui/segmentado";
 import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import SeletorMes from "../../components/ranking/SeletorMes";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
-import { MessageSquareText, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { Check, MessageSquareText, Pencil, RefreshCw, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
@@ -93,6 +93,7 @@ export default function Observacoes() {
   const [loading, setLoading] = useState(false);
   const [removendo, setRemovendoId] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [editandoNome, setEditandoNome] = useState<{ id: string; nome: string } | null>(null);
 
   const inicial = useMemo(() => {
     const f = filtroSalvo();
@@ -182,6 +183,22 @@ export default function Observacoes() {
       await buscar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover desfecho");
+    } finally {
+      setRemovendoId(null);
+    }
+  }
+
+  async function handleSalvarNome() {
+    if (!editandoNome?.nome.trim()) return;
+    setRemovendoId(editandoNome.id);
+    try {
+      const { error } = await supabase.from("eventos_lead").update({ nome: editandoNome.nome.trim() }).eq("id", editandoNome.id);
+      if (error) throw error;
+      toast.success("Nome atualizado.");
+      setEditandoNome(null);
+      await buscar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar nome");
     } finally {
       setRemovendoId(null);
     }
@@ -377,10 +394,33 @@ export default function Observacoes() {
               <ul className="divide-y divide-gray-100">
                 {desfechosVisiveis.map((r) => {
                   const confirmando = confirmandoId === r.id;
+                  const editando = editandoNome?.id === r.id;
                   return (
                     <li key={r.id} className="grid gap-x-4 gap-y-1 px-4 py-3.5 hover:bg-gray-50/70 sm:px-6 xl:grid-cols-[5.5rem_8.5rem_9rem_9rem_minmax(0,1fr)_4.5rem] xl:items-start">
                       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 xl:contents">
-                        <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900 xl:col-start-3 xl:row-start-1 xl:font-medium">{r.nome ?? "—"}</span>
+                        {editando ? (
+                          <form
+                            onSubmit={(e) => { e.preventDefault(); handleSalvarNome(); }}
+                            className="flex min-w-0 flex-1 items-center gap-1 xl:col-start-3 xl:row-start-1"
+                          >
+                            <Input
+                              autoFocus
+                              value={editandoNome.nome}
+                              onChange={(e) => setEditandoNome({ id: r.id, nome: e.target.value })}
+                              onKeyDown={(e) => { if (e.key === "Escape") setEditandoNome(null); }}
+                              aria-label="Nome da visita"
+                              className="h-8 min-w-0 text-sm"
+                            />
+                            <button type="submit" disabled={!editandoNome.nome.trim() || removendo === r.id} title="Salvar nome" aria-label="Salvar nome" className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-green-700 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50">
+                              <Check className="h-4 w-4" aria-hidden />
+                            </button>
+                            <button type="button" onClick={() => setEditandoNome(null)} title="Cancelar" aria-label="Cancelar edição do nome" className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                              <X className="h-4 w-4" aria-hidden />
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900 xl:col-start-3 xl:row-start-1 xl:font-medium">{r.nome ?? "—"}</span>
+                        )}
                         <span title={r.tipo === "removido" ? "Removido (não é desta unidade)" : undefined} className={`inline-flex flex-shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium xl:col-start-4 xl:row-start-1 ${DESFECHO_BADGE[r.tipo]}`}>
                           {desfechoLabel(r.tipo)}
                         </span>
@@ -395,10 +435,15 @@ export default function Observacoes() {
                                 Não
                               </button>
                             </div>
-                          ) : (
-                            <button type="button" onClick={() => setConfirmandoId(r.id)} title="Remover desfecho" aria-label={`Remover desfecho de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                          ) : editando ? null : (
+                            <>
+                            <button type="button" onClick={() => { setEditandoNome({ id: r.id, nome: r.nome ?? "" }); setConfirmandoId(null); }} title="Editar nome" aria-label={`Editar nome de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                              <Pencil className="h-4 w-4" aria-hidden />
+                            </button>
+                            <button type="button" onClick={() => { setConfirmandoId(r.id); setEditandoNome(null); }} title="Remover desfecho" aria-label={`Remover desfecho de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                               <Trash2 className="h-4 w-4" aria-hidden />
                             </button>
+                            </>
                           )}
                         </div>
                       </div>

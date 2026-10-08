@@ -76,13 +76,14 @@ export function useEventosLead({ unidadeId, unidadeNome }: UseEventosLeadOptions
   );
 
   const editarDesfecho = useCallback(
-    async (evento: EventoLead, novoTipo: DesfechoTipo, novaObs: string): Promise<boolean> => {
+    async (evento: EventoLead, novoTipo: DesfechoTipo, novaObs: string, novoNome: string): Promise<boolean> => {
       setSalvando(evento.crm_lead_id);
       try {
         await enviarDesfecho(evento.crm_lead_id, novoTipo, novaObs.trim() || null, unidadeNome);
         const { error } = await supabase
           .from("eventos_lead")
           .update({
+            nome: novoNome.trim() || evento.nome,
             tipo: novoTipo,
             observacao: novaObs.trim() || null,
             synced_at: new Date().toISOString(),

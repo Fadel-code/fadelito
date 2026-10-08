@@ -41,6 +41,10 @@ interface LinhaState {
   observacao: string;
 }
 
+interface EditState extends LinhaState {
+  nome: string;
+}
+
 export default function Desfechos() {
   const { profile } = useAuth();
   const { loading, salvando, carregar, registrarDesfecho, editarDesfecho, removerDesfecho, descartarLead } = useEventosLead({
@@ -57,7 +61,7 @@ export default function Desfechos() {
   const [estado, setEstado] = useState<Record<number, LinhaState>>({});
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [editEstado, setEditEstado] = useState<LinhaState>({ tipo: "", observacao: "" });
+  const [editEstado, setEditEstado] = useState<EditState>({ tipo: "", observacao: "", nome: "" });
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   // Modal "próximo passo" após registrar "Visitou"
@@ -116,7 +120,7 @@ export default function Desfechos() {
 
   async function handleEditar(evento: EventoLead) {
     if (!editEstado.tipo) return;
-    const ok = await editarDesfecho(evento, editEstado.tipo as DesfechoTipo, editEstado.observacao);
+    const ok = await editarDesfecho(evento, editEstado.tipo as DesfechoTipo, editEstado.observacao, editEstado.nome);
     if (ok) await recarregar();
   }
 
@@ -394,7 +398,15 @@ export default function Desfechos() {
                       {isEditando ? (
                         <td colSpan={5} className="px-4 py-4">
                           <div className="flex flex-col gap-3">
-                            <p className="font-medium text-gray-800">{ev.nome ?? "—"}</p>
+                            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                              Nome da visita
+                              <input
+                                className="w-full max-w-sm rounded-md border border-gray-300 p-2 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={editEstado.nome}
+                                onChange={(e) => setEditEstado((s) => ({ ...s, nome: e.target.value }))}
+                                placeholder="Nome completo"
+                              />
+                            </label>
                             <div className="flex flex-wrap gap-2">
                               {DESFECHOS.map((d) => (
                                 <button
@@ -422,7 +434,7 @@ export default function Desfechos() {
                               <Button
                                 size="sm"
                                 onClick={() => handleEditar(ev)}
-                                disabled={!editEstado.tipo || !editEstado.observacao.trim() || isSalvando}
+                                disabled={!editEstado.tipo || !editEstado.observacao.trim() || !editEstado.nome.trim() || isSalvando}
                               >
                                 <Check className="h-3.5 w-3.5" />
                                 {isSalvando ? "Salvando..." : "Salvar"}
@@ -469,7 +481,7 @@ export default function Desfechos() {
                                 <button
                                   onClick={() => {
                                     setEditandoId(ev.id);
-                                    setEditEstado({ tipo: ev.tipo, observacao: ev.observacao ?? "" });
+                                    setEditEstado({ tipo: ev.tipo, observacao: ev.observacao ?? "", nome: ev.nome ?? "" });
                                     setConfirmandoId(null);
                                   }}
                                   className="text-gray-400 hover:text-primary-500 transition-colors"
