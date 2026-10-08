@@ -419,7 +419,12 @@ export default function Observacoes() {
                             </button>
                           </form>
                         ) : (
-                          <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900 xl:col-start-3 xl:row-start-1 xl:font-medium">{r.nome ?? "—"}</span>
+                          <span className="flex min-w-0 flex-1 items-start gap-1 text-sm font-semibold text-gray-900 xl:col-start-3 xl:row-start-1 xl:font-medium">
+                            <span className="min-w-0">{r.nome ?? "—"}</span>
+                            <button type="button" onClick={() => { setEditandoNome({ id: r.id, nome: r.nome ?? "" }); setConfirmandoId(null); }} title="Editar nome" aria-label={`Editar nome de ${r.nome ?? "lead"}`} className="-my-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+                              <Pencil className="h-3.5 w-3.5" aria-hidden />
+                            </button>
+                          </span>
                         )}
                         <span title={r.tipo === "removido" ? "Removido (não é desta unidade)" : undefined} className={`inline-flex flex-shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium xl:col-start-4 xl:row-start-1 ${DESFECHO_BADGE[r.tipo]}`}>
                           {desfechoLabel(r.tipo)}
@@ -436,14 +441,9 @@ export default function Observacoes() {
                               </button>
                             </div>
                           ) : editando ? null : (
-                            <>
-                            <button type="button" onClick={() => { setEditandoNome({ id: r.id, nome: r.nome ?? "" }); setConfirmandoId(null); }} title="Editar nome" aria-label={`Editar nome de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-                              <Pencil className="h-4 w-4" aria-hidden />
-                            </button>
                             <button type="button" onClick={() => { setConfirmandoId(r.id); setEditandoNome(null); }} title="Remover desfecho" aria-label={`Remover desfecho de ${r.nome ?? "lead"}`} className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
                               <Trash2 className="h-4 w-4" aria-hidden />
                             </button>
-                            </>
                           )}
                         </div>
                       </div>

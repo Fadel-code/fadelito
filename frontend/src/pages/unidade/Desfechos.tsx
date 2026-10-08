@@ -448,7 +448,23 @@ export default function Desfechos() {
                         </td>
                       ) : (
                         <>
-                          <td className="px-4 py-3 font-medium text-gray-800">{ev.nome ?? "—"}</td>
+                          <td className="px-4 py-3 font-medium text-gray-800">
+                            <span className="inline-flex items-start gap-1">
+                              {ev.nome ?? "—"}
+                              <button
+                                onClick={() => {
+                                  setEditandoId(ev.id);
+                                  setEditEstado({ tipo: ev.tipo, observacao: ev.observacao ?? "", nome: ev.nome ?? "" });
+                                  setConfirmandoId(null);
+                                }}
+                                className="mt-0.5 text-gray-400 hover:text-primary-500 transition-colors"
+                                title="Editar nome"
+                                aria-label={`Editar nome de ${ev.nome ?? "lead"}`}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </span>
+                          </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>
                               {desfechoLabel(ev.tipo)}
