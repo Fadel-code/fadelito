@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, Phone, Baby, CalendarCheck, AlertTriangle, Pencil, Trash2, X, Check } from "lucide-react";
+import { RefreshCw, Phone, Baby, CalendarCheck, AlertTriangle, Pencil, Trash2, X, Check, Wallet, MapPin, Scale, Clock } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
 import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
@@ -36,6 +37,175 @@ function desfechoLabel(tipo: DesfechoTipo) {
   return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
 }
 
+// soNaoFechou: só aparecem quando o desfecho é "Não fechou"
+const MOTIVOS: { grupo: string; icon: LucideIcon; itens: string[]; soNaoFechou?: string[] }[] = [
+  { grupo: "Valor", icon: Wallet, itens: [
+    "Mensalidade acima do orçamento",
+    "Matrícula/taxa inicial acima do orçamento",
+    "Concorrente apresentou menor preço",
+    "Família solicitou desconto",
+    "Momento financeiro da família",
+  ], soNaoFechou: [
+    "Não percebeu valor compatível com o investimento",
+  ] },
+  { grupo: "Distância", icon: MapPin, itens: [
+    "Unidade distante da residência",
+    "Unidade distante do trabalho",
+    "Trânsito/tempo de deslocamento",
+    "Horário de funcionamento não atende",
+  ] },
+  { grupo: "Concorrência", icon: Scale, itens: [
+    "Ainda visitará outras escolas",
+    "Está comparando Fadelito com concorrentes",
+    "Preferiu outra escola",
+    "Já matriculou em outra escola",
+    "Outro responsável ainda precisa decidir",
+  ], soNaoFechou: [
+    "Permaneceu / renovou na escola atual",
+  ] },
+  { grupo: "Timing", icon: Clock, itens: [
+    "Matrícula não é prioridade neste momento",
+    "Pretende decidir em até 30 dias",
+    "Pretende decidir em 31–60 dias",
+    "Interesse apenas para próximo semestre/ano",
+    "Estava apenas pesquisando",
+  ] },
+];
+
+const TIPOS_COM_MOTIVO: (DesfechoTipo | "")[] = ["em_negociacao", "nao_fechou"];
+
+const prefixo = (motivo: string) => `• ${motivo}`;
+
+function gruposDoTipo(tipo: DesfechoTipo | "") {
+  if (!TIPOS_COM_MOTIVO.includes(tipo)) return [];
+  return MOTIVOS.map((g) => ({
+    ...g,
+    itens: tipo === "nao_fechou" ? [...g.itens, ...(g.soNaoFechou ?? [])] : g.itens,
+  }));
+}
+
+// Separa a observação em linhas de motivo (visíveis pra este tipo) e texto livre
+function separar(tipo: DesfechoTipo | "", observacao: string) {
+  const visiveis = new Set(gruposDoTipo(tipo).flatMap((g) => g.itens.map(prefixo)));
+  const linhas = observacao.split("\n");
+  return {
+    motivos: linhas.filter((l) => visiveis.has(l)),
+    texto: linhas.filter((l) => !visiveis.has(l)).join("\n"),
+  };
+}
+
+function juntar(motivos: string[], texto: string) {
+  return texto ? [...motivos, texto].join("\n") : motivos.join("\n");
+}
+
+// Texto livre da observação. Obrigatório só quando nenhum motivo foi marcado.
+function ObservacaoInput({ tipo, observacao, onChange, placeholder }: {
+  tipo: DesfechoTipo | "";
+  observacao: string;
+  onChange: (observacao: string) => void;
+  placeholder: string;
+}) {
+  const { motivos, texto } = separar(tipo, observacao);
+  const faltando = !!tipo && !observacao.trim();
+  return (
+    <textarea
+      className={`mt-2 w-full rounded-md border p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+        faltando ? "border-red-400" : "border-gray-300"
+      }`}
+      rows={3}
+      placeholder={
+        motivos.length > 0
+          ? "Observação (opcional) — detalhe se quiser"
+          : TIPOS_COM_MOTIVO.includes(tipo)
+          ? "Marque um motivo acima ou descreva aqui"
+          : placeholder
+      }
+      value={texto}
+      onChange={(e) => onChange(juntar(motivos, e.target.value))}
+    />
+  );
+}
+
+// ponytail: motivos viram linhas "• ..." dentro da observação — sem coluna nova, CRM recebe junto.
+// Se o marketing precisar de relatório por motivo, migrar pra coluna motivos text[].
+function MotivosChips({ tipo, observacao, onChange }: {
+  tipo: DesfechoTipo | "";
+  observacao: string;
+  onChange: (observacao: string) => void;
+}) {
+  const tituloId = useId();
+  if (!TIPOS_COM_MOTIVO.includes(tipo)) return null;
+  const grupos = gruposDoTipo(tipo);
+  const { motivos, texto } = separar(tipo, observacao);
+  const marcados = new Set(motivos);
+  const total = motivos.length;
+
+  function toggle(motivo: string) {
+    const linha = prefixo(motivo);
+    onChange(juntar(marcados.has(linha) ? motivos.filter((l) => l !== linha) : [...motivos, linha], texto));
+  }
+  function limpar() {
+    onChange(texto);
+  }
+
+  return (
+    <div role="group" aria-labelledby={tituloId} className="mt-3 rounded-xl border border-primary-100 bg-primary-50/60 p-3 sm:p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <span id={tituloId} className="text-sm font-semibold text-ink">
+          {tipo === "nao_fechou" ? "Por que não fechou?" : "O que está pesando na decisão?"}
+        </span>
+        <span className="text-xs text-gray-600">
+          {total > 0 ? (
+            <>
+              <strong className="font-semibold text-primary-700">{total} {total === 1 ? "marcado" : "marcados"}</strong>
+              {" · "}
+              <button type="button" onClick={limpar} className="underline underline-offset-2 hover:text-gray-900">
+                limpar
+              </button>
+            </>
+          ) : (
+            "Opcional · marque quantos quiser"
+          )}
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-x-5 gap-y-4 lg:grid-cols-2">
+        {grupos.map(({ grupo, icon: Icon, itens }) => (
+          <div key={grupo}>
+            <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary-700">
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {grupo}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {itens.map((m) => {
+                const ativo = marcados.has(prefixo(m));
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() => toggle(m)}
+                    className={
+                      "inline-flex min-h-[32px] items-center gap-1 rounded-full border px-3 py-1 text-[13px] leading-tight text-left transition-colors " +
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 " +
+                      (ativo
+                        ? "border-primary-500 bg-primary-500 font-medium text-white shadow-sm hover:bg-primary-600"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-primary-300 hover:bg-primary-50")
+                    }
+                  >
+                    {ativo && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface LinhaState {
   tipo: DesfechoTipo | "";
   observacao: string;
@@ -65,7 +235,7 @@ export default function Desfechos() {
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   // Modal "próximo passo" após registrar "Visitou"
-  const [modalVisita, setModalVisita] = useState<{ lead: LeadCRM; observacao: string } | null>(null);
+  const [modalVisita, setModalVisita] = useState<{ lead: LeadCRM; observacao: string; tipo?: DesfechoTipo } | null>(null);
 
   // Modal "remover lead" (motivo é só desta ação, independente da observação do desfecho)
   const [modalRemover, setModalRemover] = useState<{ lead: LeadCRM; motivo: string } | null>(null);
@@ -267,14 +437,16 @@ export default function Desfechos() {
                           </button>
                         ))}
                       </div>
-                      <textarea
-                        className={`mt-2 w-full rounded-md border p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          linha.tipo && !linha.observacao.trim() ? "border-red-400" : "border-gray-300"
-                        }`}
-                        rows={2}
+                      <MotivosChips
+                        tipo={linha.tipo}
+                        observacao={linha.observacao}
+                        onChange={(observacao) => setLinha(lead.id, { observacao })}
+                      />
+                      <ObservacaoInput
+                        tipo={linha.tipo}
+                        observacao={linha.observacao}
+                        onChange={(observacao) => setLinha(lead.id, { observacao })}
                         placeholder="Observação obrigatória — ex: matriculou turma Jardim, voltaria em agosto, achou caro..."
-                        value={linha.observacao}
-                        onChange={(e) => setLinha(lead.id, { observacao: e.target.value })}
                       />
                     </div>
 
@@ -305,7 +477,7 @@ export default function Desfechos() {
 
       {/* ── Modal: próximo passo após "Visitou" ── */}
       <Dialog open={!!modalVisita} onOpenChange={(open) => { if (!open) { setModalVisita(null); recarregar(); } }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className={modalVisita?.tipo ? "max-w-2xl max-h-[90vh] overflow-y-auto" : "max-w-sm"}>
           <DialogHeader>
             <DialogTitle>E agora, qual o próximo passo?</DialogTitle>
             <DialogDescription>
@@ -313,11 +485,42 @@ export default function Desfechos() {
               Se já souber o resultado, selecione abaixo — senão, feche e atualize depois.
             </DialogDescription>
           </DialogHeader>
+          {modalVisita?.tipo ? (
+            <div className="flex flex-col gap-2 mt-2">
+              <span className="text-sm font-semibold text-gray-700">{desfechoLabel(modalVisita.tipo)}</span>
+              <MotivosChips
+                tipo={modalVisita.tipo}
+                observacao={modalVisita.observacao}
+                onChange={(observacao) => setModalVisita((prev) => (prev ? { ...prev, observacao } : prev))}
+              />
+              <ObservacaoInput
+                tipo={modalVisita.tipo}
+                observacao={modalVisita.observacao}
+                onChange={(observacao) => setModalVisita((prev) => (prev ? { ...prev, observacao } : prev))}
+                placeholder="Observação obrigatória"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleDecisaoModal(modalVisita.tipo!)}
+                  disabled={!modalVisita.observacao.trim() || salvando !== null}
+                >
+                  {salvando !== null ? "Salvando..." : "Confirmar"}
+                </Button>
+                <Button variant="outline" onClick={() => setModalVisita((prev) => (prev ? { ...prev, tipo: undefined } : prev))}>
+                  Voltar
+                </Button>
+              </div>
+            </div>
+          ) : (
           <div className="flex flex-col gap-2 mt-2">
             {DESFECHOS.filter((d) => d.value !== "visita_realizada").map((d) => (
               <button
                 key={d.value}
-                onClick={() => handleDecisaoModal(d.value)}
+                onClick={() =>
+                  TIPOS_COM_MOTIVO.includes(d.value)
+                    ? setModalVisita((prev) => (prev ? { ...prev, tipo: d.value } : prev))
+                    : handleDecisaoModal(d.value)
+                }
                 disabled={salvando !== null}
                 className={`w-full px-4 py-3 rounded-lg text-sm font-semibold border-2 transition-colors disabled:opacity-50 ${
                   d.value === "matricula"
@@ -337,6 +540,7 @@ export default function Desfechos() {
               Deixar em aberto por enquanto
             </button>
           </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -424,11 +628,16 @@ export default function Desfechos() {
                                 </button>
                               ))}
                             </div>
-                            <textarea
-                              className="w-full rounded-md border border-gray-300 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              rows={2}
-                              value={editEstado.observacao}
-                              onChange={(e) => setEditEstado((s) => ({ ...s, observacao: e.target.value }))}
+                            <MotivosChips
+                              tipo={editEstado.tipo}
+                              observacao={editEstado.observacao}
+                              onChange={(observacao) => setEditEstado((s) => ({ ...s, observacao }))}
+                            />
+                            <ObservacaoInput
+                              tipo={editEstado.tipo}
+                              observacao={editEstado.observacao}
+                              onChange={(observacao) => setEditEstado((s) => ({ ...s, observacao }))}
+                              placeholder="Observação obrigatória"
                             />
                             <div className="flex gap-2">
                               <Button
