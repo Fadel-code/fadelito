@@ -15,6 +15,7 @@ import {
   Menu,
   BookOpen,
   Repeat,
+  CalendarPlus,
   ChevronDown,
   Table2,
   ThumbsUp,
@@ -80,6 +81,7 @@ const NAV_UNIDADE: NavEntry[] = [
     ],
   },
   { to: "/unidade/historico", label: "Histórico Mensal", icon: History },
+  { to: "/unidade/assistente", label: "Assistente Fadelito", icon: BookOpen },
 ];
 
 const NAV_MARKETING: NavEntry[] = [
@@ -96,11 +98,11 @@ const NAV_MARKETING: NavEntry[] = [
   {
     label: "Rematrícula 2027",
     icon: Repeat,
-    emphasize: true,
     items: [
       { to: "/marketing/rematricula", label: "Painel", icon: Repeat },
     ],
   },
+  { to: "/marketing/protocolos", label: "Assistente Fadelito", icon: BookOpen },
   { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy, marketingOnly: true },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
@@ -146,7 +148,6 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
           {
             label: "Rematrícula 2027",
             icon: Repeat,
-            emphasize: true,
             items: [
               { to: "/unidade/rematricula", label: "Painel", icon: Repeat },
             ],
@@ -155,16 +156,18 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
         ]
       : NAV_UNIDADE;
 
-  // Agenda embutida: mesma feature da unidade, mas só pra supervisão — marketing
-  // segue sem essa aba por enquanto (rota bloqueada em Agenda.tsx mesmo se acessada direto).
-  const navMarketing: NavEntry[] =
-    profile?.role === "supervisao"
-      ? NAV_MARKETING.map((entry) =>
-          isNavGroup(entry) && entry.label === "Visitas"
-            ? { ...entry, items: [entry.items[0], AGENDA_MARKETING_ITEM, ...entry.items.slice(1)] }
-            : entry
-        )
-      : NAV_MARKETING;
+  // Agenda: unidade e supervisão — marketing segue sem essa aba por enquanto
+  // (rota bloqueada em Agenda.tsx mesmo se acessada direto). Fica no grupo
+  // "Visitas" e também em destaque no topo da sidebar.
+  const isSupervisao = profile?.role === "supervisao";
+  const agendaTo = role === "unidade" ? "/unidade/agenda" : isSupervisao ? AGENDA_MARKETING_ITEM.to : null;
+  const navMarketing: NavEntry[] = isSupervisao
+    ? NAV_MARKETING.map((entry) =>
+        isNavGroup(entry) && entry.label === "Visitas"
+          ? { ...entry, items: [entry.items[0], AGENDA_MARKETING_ITEM, ...entry.items.slice(1)] }
+          : entry
+      )
+    : NAV_MARKETING;
 
   const navItems = (role === "unidade" ? navUnidade : navMarketing).filter(
     (entry) => !("marketingOnly" in entry && entry.marketingOnly && profile?.role === "supervisao")
@@ -285,25 +288,29 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
           <p className="text-white/65 text-xs mt-1">
             {role === "unidade" ? (profile?.unidade_nome ?? "Unidade") : profile?.role === "supervisao" ? "Supervisão" : "Marketing"}
           </p>
+          {agendaTo && (
           <NavLink
-            to={role === "marketing" ? "/marketing/protocolos" : "/unidade/assistente"}
+            to={agendaTo}
             onClick={() => setMobileNavAberto(false)}
             className={({ isActive }) =>
               cn(
-                "mt-3 flex items-center gap-2.5 w-full rounded-xl px-3 py-3 text-sm font-bold cursor-pointer",
-                "shadow-md shadow-sun/20 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sun/30",
-                isActive ? "bg-sun text-ink" : "bg-sun/90 text-ink hover:bg-sun"
+                "mt-4 flex items-center gap-3 w-full rounded-xl border p-2 pr-3 transition-colors duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-soft",
+                isActive
+                  ? "border-sun/45 bg-sun/[0.12]"
+                  : "border-sun/20 bg-white/[0.04] hover:border-sun/40 hover:bg-sun/[0.08]"
               )
             }
           >
-            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-ink/10">
-              <BookOpen className="h-4 w-4" />
+            <span aria-hidden className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-sun text-ink shadow-sm shadow-black/30">
+              <CalendarPlus className="h-[18px] w-[18px]" />
             </span>
-            <span className="flex-1 leading-tight">Assistente Fadelito</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide bg-ink text-sun-soft rounded-full px-1.5 py-0.5">
-              Novo
+            <span className="flex-1 min-w-0 leading-tight">
+              <span className="block text-sm font-semibold text-white">Agenda de visitas</span>
+              <span className="block text-xs text-white/60 truncate">Agendar visitas</span>
             </span>
           </NavLink>
+          )}
         </div>
 
         {/* Nav */}
