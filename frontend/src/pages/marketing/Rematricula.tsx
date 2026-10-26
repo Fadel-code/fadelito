@@ -3,7 +3,6 @@ import { RefreshCw, Users, CheckCircle2, XCircle, Clock, MessageCircle, AlertTri
 import toast from "react-hot-toast";
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
-import { useRematriculaPreview } from "../../hooks/useRematriculaPreview";
 import { calcularKpisRematricula, REMATRICULA_META, REMATRICULA_FORA_DA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
 import MetaGauge from "../../components/MetaGauge";
@@ -86,35 +85,8 @@ const CHAVE_UNIDADE = "rematricula.previewUnidadeId";
 
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
-  const { alunos, loading, carregar, adicionar, remover: removerReal, atualizar: atualizarReal } = useRematricula();
-  // ponytail: a prévia espelha os dados reais pra supervisão testar a tela de verdade.
-  // Atualizar/histórico ficam locais (a policy de update já bloqueia escrita de quem
-  // não é a própria unidade); adicionar e remover gravam de verdade no Supabase.
-  const preview = useRematriculaPreview(alunos);
-
-  async function remover(id: string) {
-    const ok = await removerReal(id);
-    if (ok) await preview.remover(id);
-    return ok;
-  }
-
-  // Grava de verdade no Supabase — a policy/trigger de rematricula_alunos garante
-  // que só o campo inadimplente é aplicado quando quem chama é supervisão; os
-  // demais campos continuam existindo só na prévia local.
-  async function atualizar(
-    id: string,
-    contratoAssinado: boolean,
-    motivo: string,
-    quemContatou: string,
-    observacao: string,
-    negociando: boolean,
-    inadimplente: boolean,
-    aceite: boolean
-  ) {
-    const ok = await atualizarReal(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente, aceite);
-    if (ok) await preview.atualizar(id, contratoAssinado, motivo, quemContatou, observacao, negociando, inadimplente, aceite);
-    return ok;
-  }
+  const rematricula = useRematricula();
+  const { alunos, loading, carregar } = rematricula;
 
   // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
   const kpisRede = calcularKpisRematricula(
@@ -338,14 +310,14 @@ export default function RematriculaMarketing() {
         </section>
       )}
 
-      {/* Prévia — a tela que a unidade vê, com dados reais. Atualizar/histórico continuam
-          locais (não gravam); adicionar e remover gravam de verdade no Supabase. */}
+      {/* A tela que a unidade vê, com dados reais. Tudo grava no Supabase; marketing só
+          consulta e adiciona (a policy de UPDATE é só unidade e supervisão). */}
       {(profile?.role === "supervisao" || profile?.role === "marketing") && (
         <section aria-labelledby="rm-previa" className="mt-10 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/40 p-4 sm:p-5">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="rm-previa" className="text-base font-semibold text-gray-900">Prévia da tela da unidade</h2>
-              <p className="mt-1 text-sm text-gray-700">Os mesmos dados que a unidade vê. Adicionar e remover gravam de verdade.</p>
+              <h2 id="rm-previa" className="text-base font-semibold text-gray-900">Alunos da unidade</h2>
+              <p className="mt-1 text-sm text-gray-700">Os mesmos dados que a unidade vê. As alterações gravam de verdade.</p>
             </div>
           {unidadesPreview.length > 0 && (
             <div className="w-full sm:w-64">
@@ -362,13 +334,11 @@ export default function RematriculaMarketing() {
           </div>
           <RematriculaPainel
             unidadeId={previewUnidadeId || "previa"}
-            {...preview}
-            adicionar={adicionar}
-            remover={remover}
-            atualizar={atualizar}
+            {...rematricula}
             permiteRemover
             permiteAdicionar
             permiteMarcarInadimplente={profile?.role === "supervisao"}
+            somenteLeitura={profile?.role !== "supervisao"}
           />
         </section>
       )}
