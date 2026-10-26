@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { REMATRICULA_FORA_DA_META } from "../types";
 
-// Vila Leopoldina: exclusão TEMP, espelha o filtro de pages/marketing/Rematricula.tsx.
-const FORA_DA_META = [...REMATRICULA_FORA_DA_META, "Vila Leopoldina"];
-const FILTRO_FORA = `(${FORA_DA_META.map((n) => `"${n}"`).join(",")})`;
+const FILTRO_FORA = `(${REMATRICULA_FORA_DA_META.map((n) => `"${n}"`).join(",")})`;
 
 // % de contratos assinados visível ao usuário logado (RLS: unidade vê só a sua,
 // marketing/supervisão veem a rede, sem as unidades fora da meta geral). null enquanto

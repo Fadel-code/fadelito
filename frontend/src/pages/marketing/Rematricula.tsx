@@ -116,16 +116,11 @@ export default function RematriculaMarketing() {
     return ok;
   }
 
-  // TEMP: lista da Vila Leopoldina subiu tardiamente e a unidade só vai começar a
-  // contabilizar depois do período — excluída do painel de marketing (meta da rede e
-  // ranking) pra não derrubar a média geral. Reverter quando a unidade sinalizar.
-  const alunosRede = alunos.filter((a) => a.profiles?.unidade_nome !== "Vila Leopoldina");
-
   // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
   const kpisRede = calcularKpisRematricula(
-    alunosRede.filter((a) => !REMATRICULA_FORA_DA_META.includes(a.profiles?.unidade_nome ?? ""))
+    alunos.filter((a) => !REMATRICULA_FORA_DA_META.includes(a.profiles?.unidade_nome ?? ""))
   );
-  const porUnidade = agruparPorUnidade(alunosRede).sort((a, b) => a.pct - b.pct);
+  const porUnidade = agruparPorUnidade(alunos).sort((a, b) => a.pct - b.pct);
 
   async function exportar(formato: "xlsx" | "csv") {
     if (porUnidade.length === 0) {
