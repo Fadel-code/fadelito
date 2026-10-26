@@ -1,10 +1,9 @@
 import { useAuth } from "../../App";
 import { useRematricula } from "../../hooks/useRematricula";
 import RematriculaPainel from "../../components/RematriculaPainel";
-import { REMATRICULA_FORA_DA_META } from "../../types";
 
 // Unidades que preenchem a própria rematrícula; as demais só consultam.
-const UNIDADES_EDITAM: readonly string[] = [...REMATRICULA_FORA_DA_META, "Vila Leopoldina"];
+const UNIDADES_EDITAM = ["Vila Leopoldina"];
 
 export default function Rematricula() {
   const { profile } = useAuth();
