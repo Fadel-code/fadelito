@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import {
-  MESES,
+  MESES_CURTOS,
   faixasDeMeses,
   serieMeses,
   type Atribuicao,
@@ -15,7 +15,7 @@ function FaixaMeses({ meses, ativos }: { meses: string[]; ativos: string[] }) {
   return (
     <span className="flex gap-0.5" aria-hidden>
       {meses.map((m) => (
-        <span key={m} title={`${MESES[Number(m.slice(5, 7)) - 1]}/${m.slice(0, 4)}`} className={`h-3 w-2.5 rounded-sm ${ativos.includes(m) ? "bg-primary-500" : "bg-gray-200"}`} />
+        <span key={m} title={`${MESES_CURTOS[Number(m.slice(5, 7)) - 1]}/${m.slice(0, 4)}`} className={`h-3 w-2.5 rounded-sm ${ativos.includes(m) ? "bg-primary-500" : "bg-gray-200"}`} />
       ))}
     </span>
   );
@@ -91,7 +91,7 @@ export default function DetalheSupervisora({ linha: l, outroCalculo, nomeUnidade
                 key={mes}
                 className={`rounded-md border px-2 py-1.5 text-center ${unidades === 0 ? "border-dashed border-gray-300" : "border-gray-200 bg-white"}`}
               >
-                <span className="block text-xs font-medium text-gray-700">{MESES[Number(mes.slice(5, 7)) - 1]}</span>
+                <span className="block text-xs font-medium text-gray-700">{MESES_CURTOS[Number(mes.slice(5, 7)) - 1]}</span>
                 {unidades === 0 ? (
                   <span className="block text-xs text-gray-600">sem carteira</span>
                 ) : (

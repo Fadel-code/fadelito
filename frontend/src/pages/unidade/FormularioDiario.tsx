@@ -49,7 +49,6 @@ export default function FormularioDiario() {
   const [modalRemocaoAberto, setModalRemocaoAberto] = useState(false);
   const [modalSemVisitaAberto, setModalSemVisitaAberto] = useState(false);
   const [observacao, setObservacao] = useState("");
-  const [obsExistente, setObsExistente] = useState("");
   const [conversaoMes, setConversaoMes] = useState<string | null>(null);
   const [avisoDesfecho, setAvisoDesfecho] = useState(false);
 
@@ -115,7 +114,6 @@ export default function FormularioDiario() {
     });
     carregarObservacao(iso).then((obs) => {
       if (!active) return;
-      setObsExistente(obs);
       setObservacao(obs);
     });
     return () => { active = false; };
@@ -137,7 +135,6 @@ export default function FormularioDiario() {
     if (!ok) return;
     const obsOk = await salvarObservacao(iso, observacao.trim());
     if (!obsOk) return;
-    setObsExistente(observacao.trim());
     setTemRegistros(true);
     setAvisoDesfecho(true);
     carregarConversaoMes();
@@ -152,7 +149,6 @@ export default function FormularioDiario() {
       const obsOk = await salvarObservacao(iso, OBS_SEM_VISITA);
       if (obsOk) {
         setLinhas(linhasZeradas);
-        setObsExistente(OBS_SEM_VISITA);
         setObservacao(OBS_SEM_VISITA);
         setTemRegistros(true);
         carregarConversaoMes();
@@ -168,7 +164,6 @@ export default function FormularioDiario() {
     if (ok) {
       setLinhas(inicializarLinhas());
       setTemRegistros(false);
-      setObsExistente("");
       setObservacao("");
       carregarConversaoMes();
     }

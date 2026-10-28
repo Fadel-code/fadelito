@@ -1,4 +1,5 @@
 import type { Protocolo } from "../types";
+import { semAcento } from "./utils";
 
 const STOP_WORDS = new Set([
   "a", "ao", "aos", "as", "com", "como", "da", "das", "de", "do", "dos",
@@ -6,19 +7,12 @@ const STOP_WORDS = new Set([
   "um", "uma",
 ]);
 
-export function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
 function rootWord(word: string): string {
   return word.length > 4 && word.endsWith("s") ? word.slice(0, -1) : word;
 }
 
-export function words(value: string): string[] {
-  const clean = normalize(value).replace(/[^a-z0-9]+/g, " ").trim();
+function words(value: string): string[] {
+  const clean = semAcento(value).replace(/[^a-z0-9]+/g, " ").trim();
   if (!clean) return [];
   const output: string[] = [];
   for (const word of clean.split(/\s+/)) {
@@ -50,10 +44,10 @@ function oneEditAway(a: string, b: string): boolean {
   return true;
 }
 
-export function score(p: Protocolo, query: string): number {
-  const cleanQuery = normalize(query).replace(/[^a-z0-9\s]+/g, " ").trim();
+function score(p: Protocolo, query: string): number {
+  const cleanQuery = semAcento(query).replace(/[^a-z0-9\s]+/g, " ").trim();
   const queryWords = words(cleanQuery);
-  const title = normalize(p.titulo);
+  const title = semAcento(p.titulo);
   const titleWords = words(p.titulo);
   const keywordWords = words(p.palavras_chave.join(" "));
   const allWords = words(searchableText(p));

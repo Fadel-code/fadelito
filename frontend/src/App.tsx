@@ -8,7 +8,7 @@ import {
   Suspense,
   type ReactNode,
 } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import type { Profile } from "./types";

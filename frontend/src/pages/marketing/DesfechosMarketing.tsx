@@ -32,14 +32,6 @@ interface UnidadeRow {
   visitasSemDesfecho: number;
 }
 
-const TIPO_STYLE: Record<DesfechoTipo, string> = {
-  visita_realizada: "bg-amber-100 text-amber-800",
-  em_negociacao:   "bg-blue-100 text-blue-800",
-  matricula:       "bg-green-100 text-green-800",
-  nao_fechou:      "bg-red-100 text-red-800",
-  removido:        "bg-gray-200 text-gray-700",
-};
-
 const FILTRO_KEY = "fadelito_filtro_desfechos_marketing";
 
 export default function DesfechosMarketing() {

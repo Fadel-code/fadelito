@@ -7,10 +7,9 @@ import SeletorDatas from "../../components/ranking/SeletorDatas";
 import ConfiguracaoRanking from "../../components/ranking/ConfiguracaoRanking";
 import SeletorMes from "../../components/ranking/SeletorMes";
 import ItemRanking, { colunasRanking } from "../../components/ranking/ItemRanking";
-import { pct } from "../../components/ranking/formato";
+import { pct, num, rotuloMes } from "../../components/ranking/formato";
 import { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 import {
-  MESES,
   calcularRanking,
   porPessoa,
   calcularRede,
@@ -40,9 +39,7 @@ const METODOS: { valor: Metodo; rotulo: string; curto?: string }[] = [
   { valor: "simples", rotulo: "Média simples", curto: "Simples" },
 ];
 
-const rotuloMes = (iso: string) => `${MESES[Number(iso.slice(5, 7)) - 1]}/${iso.slice(0, 4)}`;
 const CAMPO = "h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
-const num = (x: number) => x.toLocaleString("pt-BR");
 
 function Campo({ id, rotulo, children }: { id: string; rotulo: string; children: React.ReactNode }) {
   return (

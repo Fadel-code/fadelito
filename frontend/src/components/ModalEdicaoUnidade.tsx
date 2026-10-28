@@ -5,7 +5,7 @@ import { Trash2 } from "lucide-react";
 import { TURMAS, registroVazio } from "../types";
 import type { ConsolidadoUnidade, RegistroInput } from "../types";
 import { supabase } from "../lib/supabase";
-import { FERIADOS_SET, isDiaUtil } from "../lib/feriados";
+import { FERIADOS_SET } from "../lib/feriados";
 import { diasUteisDoMes, dateToIso } from "../lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";

@@ -143,8 +143,6 @@ export const UNIDADES = [
   "Vila Sônia",
 ] as const;
 
-export type UnidadeNome = (typeof UNIDADES)[number];
-
 export const CAMPOS_NUMERICOS: (keyof RegistroInput)[] = [
   "visitas",
   "visitas_curso_ferias",
@@ -211,6 +209,19 @@ export const DESFECHOS: { value: DesfechoTipo; label: string }[] = [
   { value: "matricula", label: "Matriculou" },
   { value: "nao_fechou", label: "Não fechou" },
 ];
+
+export const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
+  visita_realizada: "bg-blue-100 text-blue-800",
+  em_negociacao:   "bg-yellow-100 text-yellow-800",
+  matricula:       "bg-green-100 text-green-800",
+  nao_fechou:      "bg-red-100 text-red-800",
+  removido:        "bg-gray-200 text-gray-700",
+};
+
+export function desfechoLabel(tipo: DesfechoTipo) {
+  if (tipo === "removido") return "Removido (não é desta unidade)";
+  return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
+}
 
 // Lead vindo do CRM (apto a receber desfecho)
 export interface LeadCRM {
@@ -316,24 +327,9 @@ export function calcularKpisRematricula(
 // mesmo padrão do preenchimento diário de visitas em `registros`)
 // ============================================================
 
-export interface RematriculaAceiteDia {
-  id: string;
-  unidade_id: string;
-  data: string; // YYYY-MM-DD
-  turma: Turma;
-  quantidade: number;
-  created_at: string;
-  updated_at: string;
-  profiles?: { unidade_nome: string | null };
-}
-
 export interface RematriculaAceiteInput {
   turma: Turma;
   quantidade: number;
-}
-
-export function aceiteVazio(turma: Turma): RematriculaAceiteInput {
-  return { turma, quantidade: 0 };
 }
 
 // ============================================================

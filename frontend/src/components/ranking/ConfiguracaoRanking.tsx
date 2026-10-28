@@ -2,18 +2,14 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Info, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import SeletorMes from "./SeletorMes";
-import { GRUPO, MESES, mesAnterior, type Linha } from "../../lib/rankingSupervisoras";
+import { GRUPO, mesAnterior, type Linha } from "../../lib/rankingSupervisoras";
+import { rotuloMes } from "./formato";
 import type { useRankingSupervisoras } from "../../hooks/useRankingSupervisoras";
 
 type Ranking = ReturnType<typeof useRankingSupervisoras>;
 
 const CAMPO = "h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
 const SEM_SETAS = "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
-
-function rotuloMes(iso: string) {
-  const [a, m] = iso.split("-").map(Number);
-  return `${MESES[m - 1]}/${a}`;
-}
 
 function TagLinha({ linha }: { linha: Linha }) {
   return (

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import type { RematriculaAluno } from "../types";
+import { semAcento } from "../lib/utils";
 import toast from "react-hot-toast";
 
 // "José  Silva" e "JOSE SILVA" são o mesmo aluno: acento, caixa e espaço repetido não contam.
 const chaveNome = (nome: string) =>
-  nome.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  semAcento(nome).replace(/\s+/g, " ").trim();
 
 // Busca todos os alunos visíveis ao usuário logado (RLS filtra: unidade vê só os seus,
 // marketing/supervisão veem todos). Mesmo hook serve as duas telas.

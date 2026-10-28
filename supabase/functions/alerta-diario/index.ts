@@ -1,18 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Feriados nacionais 2026 (formato YYYY-MM-DD)
-const FERIADOS_2026 = new Set([
-  "2026-01-01", // Confraternização Universal
-  "2026-04-20", // Paixão de Cristo
-  "2026-04-21", // Tiradentes
-  "2026-05-01", // Dia do Trabalho
-  "2026-09-07", // Independência do Brasil
-  "2026-10-12", // Nossa Senhora Aparecida
-  "2026-11-02", // Finados
-  "2026-11-15", // Proclamação da República
-  "2026-12-25", // Natal
-]);
+// Feriados nacionais do ano (mesma regra de frontend/src/lib/feriados.ts — a
+// edge function roda em Deno e não importa do frontend).
+function feriadosNacionais(ano: number): Set<string> {
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31);
+  const dia = ((h + l - 7 * m + 114) % 31) + 1;
+  const sextaSanta = new Date(Date.UTC(ano, mes - 1, dia - 2)).toISOString().slice(0, 10);
+  return new Set([
+    `${ano}-01-01`, // Confraternização Universal
+    sextaSanta, // Paixão de Cristo (2 dias antes da Páscoa)
+    `${ano}-04-21`, // Tiradentes
+    `${ano}-05-01`, // Dia do Trabalho
+    `${ano}-09-07`, // Independência do Brasil
+    `${ano}-10-12`, // Nossa Senhora Aparecida
+    `${ano}-11-02`, // Finados
+    `${ano}-11-15`, // Proclamação da República
+    `${ano}-12-25`, // Natal
+  ]);
+}
 
 function formatarData(d: Date): string {
   const dd = String(d.getDate()).padStart(2, "0");
@@ -25,7 +38,7 @@ function isDiaUtil(d: Date): boolean {
   const diaSemana = d.getDay(); // 0=Dom, 6=Sab
   if (diaSemana === 0 || diaSemana === 6) return false;
   const iso = d.toISOString().slice(0, 10);
-  if (FERIADOS_2026.has(iso)) return false;
+  if (feriadosNacionais(d.getFullYear()).has(iso)) return false;
   return true;
 }
 

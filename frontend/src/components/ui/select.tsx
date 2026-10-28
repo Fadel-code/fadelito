@@ -3,7 +3,6 @@ import { Check, ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const Select = SelectPrimitive.Root;
-const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
 
 function SelectTrigger({
@@ -87,37 +86,10 @@ function SelectItem({
   );
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: SelectPrimitive.SelectLabelProps) {
-  return (
-    <SelectPrimitive.Label
-      className={cn("py-1.5 pl-8 pr-2 text-xs font-semibold text-gray-500", className)}
-      {...props}
-    />
-  );
-}
-
-function SelectSeparator({
-  className,
-  ...props
-}: SelectPrimitive.SelectSeparatorProps) {
-  return (
-    <SelectPrimitive.Separator
-      className={cn("-mx-1 my-1 h-px bg-gray-100", className)}
-      {...props}
-    />
-  );
-}
-
 export {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 };

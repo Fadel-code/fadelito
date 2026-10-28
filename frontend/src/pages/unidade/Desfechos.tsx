@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
 import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
-import { DESFECHOS } from "../../types";
+import { DESFECHOS, DESFECHO_BADGE, desfechoLabel } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
 import {
@@ -23,19 +23,6 @@ const STAGE_LABEL: Record<string, string> = {
   VISITA_REALIZADA: "Visitou",
   EM_NEGOCIACAO: "Em negociação",
 };
-
-const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
-  visita_realizada: "bg-blue-100 text-blue-700",
-  em_negociacao:   "bg-yellow-100 text-yellow-700",
-  matricula:       "bg-green-100 text-green-700",
-  nao_fechou:      "bg-red-100 text-red-700",
-  removido:        "bg-gray-200 text-gray-600",
-};
-
-function desfechoLabel(tipo: DesfechoTipo) {
-  if (tipo === "removido") return "Removido (não é desta unidade)";
-  return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
-}
 
 // soNaoFechou: só aparecem quando o desfecho é "Não fechou"
 const MOTIVOS: { grupo: string; icon: LucideIcon; itens: string[]; soNaoFechou?: string[] }[] = [

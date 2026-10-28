@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MESES } from "../../lib/rankingSupervisoras";
+import { MESES_CURTOS } from "../../lib/rankingSupervisoras";
 
 interface Props {
   ano: number;
@@ -33,7 +33,7 @@ export default function GradeMeses({ ano, onAno, valor, min, max, onEscolher }: 
         </button>
       </div>
       <div className="grid grid-cols-3 gap-1.5">
-        {MESES.map((nome, i) => {
+        {MESES_CURTOS.map((nome, i) => {
           const ym = `${ano}-${String(i + 1).padStart(2, "0")}`;
           const fora = ym < min || ym > max;
           const selecionado = ym === valor;

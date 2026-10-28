@@ -4,7 +4,7 @@
 // Dois métodos: "ponderado" soma antes de dividir (unidade grande pesa mais);
 // "simples" tira a média das % das unidades (é o que a planilha "Evolução Rede" faz).
 
-export const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+export const MESES_CURTOS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 export type Linha = "F" | "P";
 export const GRUPO: Record<Linha, string> = { F: "Financeiro", P: "Pedagógico" };
@@ -34,7 +34,7 @@ export interface DadoUnidadeMes {
   alunosBase: number | null;
 }
 
-export const mesIso = (ano: number, mes: number) => `${ano}-${String(mes).padStart(2, "0")}-01`;
+const mesIso = (ano: number, mes: number) => `${ano}-${String(mes).padStart(2, "0")}-01`;
 
 export function mesAnterior(iso: string): string {
   const [a, m] = iso.split("-").map(Number);
@@ -341,7 +341,7 @@ export function serieMeses(args: {
 
 // ---------------- Período ----------------
 
-const rotuloCurto = (iso: string) => MESES[Number(iso.slice(5, 7)) - 1];
+const rotuloCurto = (iso: string) => MESES_CURTOS[Number(iso.slice(5, 7)) - 1];
 
 /** ["2026-01-01","2026-02-01","2026-03-01","2026-05-01"] → "Jan–Mar, Mai". Ano só quando o período cruza anos. */
 export function faixasDeMeses(meses: string[]): string {

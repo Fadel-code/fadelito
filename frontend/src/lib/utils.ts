@@ -11,11 +11,8 @@ export function formatarData(dateStr: string): string {
   return `${d}/${m}/${y}`;
 }
 
-export function formatarDataObj(date: Date): string {
-  const d = String(date.getDate()).padStart(2, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
+export function semAcento(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 export function dateToIso(date: Date): string {

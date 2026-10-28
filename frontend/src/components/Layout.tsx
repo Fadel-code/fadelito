@@ -18,7 +18,6 @@ import {
   CalendarPlus,
   ChevronDown,
   Table2,
-  ThumbsUp,
   Trophy,
 } from "lucide-react";
 import { useAuth } from "../App";

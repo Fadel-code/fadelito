@@ -9,7 +9,6 @@ import type { Turma } from "../../types";
 import { FERIADOS_SET } from "../../lib/feriados";
 import { diasUteisDoMes, dateToIso, podeEditarMesAnterior } from "../../lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
 import { Edit2 } from "lucide-react";
 
 const ANO = new Date().getFullYear();

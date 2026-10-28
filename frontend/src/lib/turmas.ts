@@ -31,7 +31,7 @@ export function somarTurmas(linhas: LinhaTurma[], unidade: string, turma: string
   return acc;
 }
 
-export function temDadosTurma(l: LinhaTurma): boolean {
+function temDadosTurma(l: LinhaTurma): boolean {
   return CAMPOS_TURMA.some((c) => l[c] > 0);
 }
 

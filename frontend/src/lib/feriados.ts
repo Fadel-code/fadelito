@@ -29,7 +29,7 @@ function toIso(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function getFeriadosNacionais(ano: number): string[] {
+function getFeriadosNacionais(ano: number): string[] {
   const pascoa = calcularPascoa(ano);
   const sextaFeiraSanta = addDias(pascoa, -2);
   return [
@@ -45,13 +45,13 @@ export function getFeriadosNacionais(ano: number): string[] {
   ];
 }
 
-export function getFeriadosSet(ano: number): Set<string> {
+function getFeriadosSet(ano: number): Set<string> {
   return new Set(getFeriadosNacionais(ano));
 }
 
 export const FERIADOS_SET = getFeriadosSet(new Date().getFullYear());
 
-export function isFeriado(date: Date): boolean {
+function isFeriado(date: Date): boolean {
   const iso = date.toISOString().slice(0, 10);
   return FERIADOS_SET.has(iso);
 }

@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "../../lib/supabase";
 import { reverterDesfecho } from "../../lib/crm";
-import { UNIDADES, MESES, DESFECHOS } from "../../types";
+import { UNIDADES, MESES, DESFECHO_BADGE, desfechoLabel } from "../../types";
 import type { DesfechoTipo } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
@@ -14,13 +14,12 @@ import SeletorMes from "../../components/ranking/SeletorMes";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
 import { Check, MessageSquareText, Pencil, RefreshCw, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { diasUteisDoMes, dateToIso } from "../../lib/utils";
+import { diasUteisDoMes, dateToIso, semAcento } from "../../lib/utils";
 import { FERIADOS_SET } from "../../lib/feriados";
 
 const ANO = new Date().getFullYear();
 const ANO_INICIAL = 2026;
 const pad = (n: number | string) => String(n).padStart(2, "0");
-const semAcento = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 interface ObsRow {
   unidade_id: string;
@@ -37,19 +36,6 @@ interface DesfechoRow {
   tipo: DesfechoTipo;
   observacao: string | null;
   synced_at: string | null;
-}
-
-const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
-  visita_realizada: "bg-blue-100 text-blue-800",
-  em_negociacao:   "bg-yellow-100 text-yellow-800",
-  matricula:       "bg-green-100 text-green-800",
-  nao_fechou:      "bg-red-100 text-red-800",
-  removido:        "bg-gray-200 text-gray-700",
-};
-
-function desfechoLabel(tipo: DesfechoTipo) {
-  if (tipo === "removido") return "Removido";
-  return DESFECHOS.find((d) => d.value === tipo)?.label ?? tipo;
 }
 
 const FILTRO_KEY = "fadelito_filtro_observacoes";
@@ -426,8 +412,8 @@ export default function Observacoes() {
                             </button>
                           </span>
                         )}
-                        <span title={r.tipo === "removido" ? "Removido (não é desta unidade)" : undefined} className={`inline-flex flex-shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium xl:col-start-4 xl:row-start-1 ${DESFECHO_BADGE[r.tipo]}`}>
-                          {desfechoLabel(r.tipo)}
+                        <span title={r.tipo === "removido" ? desfechoLabel(r.tipo) : undefined} className={`inline-flex flex-shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium xl:col-start-4 xl:row-start-1 ${DESFECHO_BADGE[r.tipo]}`}>
+                          {r.tipo === "removido" ? "Removido" : desfechoLabel(r.tipo)}
                         </span>
                         <div className="flex items-center justify-end xl:col-start-6 xl:row-start-1 xl:-mt-1">
                           {confirmando ? (

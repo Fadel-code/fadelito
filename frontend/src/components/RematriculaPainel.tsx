@@ -3,6 +3,7 @@ import { RefreshCw, UserPlus, Trash2, Users, CheckCircle2, XCircle, Clock, FileC
 import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAluno, type RematriculaHistoricoEntry } from "../types";
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
+import { semAcento } from "../lib/utils";
 
 const STATUS_PILL: Record<string, string> = {
   pendente: "bg-amber-100 text-amber-700",
@@ -37,10 +38,6 @@ const STATUS_FILTRO_COR: Record<StatusFiltro, { ativo: string; inativo: string }
   nao_rematriculado: { ativo: "bg-red-500 text-white", inativo: "bg-red-50 text-red-700 hover:bg-red-100" },
   inadimplente: { ativo: "bg-orange-500 text-white", inativo: "bg-orange-50 text-orange-700 hover:bg-orange-100" },
 };
-
-function normalizar(texto: string): string {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
 
 interface LinhaState {
   contratoAssinado: boolean;
@@ -95,7 +92,7 @@ function Campo({ label, children, agrupado }: { label: string; children: React.R
   );
 }
 
-function formatarData(iso: string): string {
+function formatarDataIso(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
@@ -107,7 +104,7 @@ function HistoricoLista({ historico, className = "" }: { historico: RematriculaH
     <ul className={`max-h-24 space-y-0.5 overflow-y-auto text-xs text-gray-500 ${className}`}>
       {historico.map((h, i) => (
         <li key={i}>
-          <span className="text-gray-400">{formatarData(h.data)}:</span> {h.texto}
+          <span className="text-gray-400">{formatarDataIso(h.data)}:</span> {h.texto}
         </li>
       ))}
     </ul>
@@ -144,12 +141,12 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
   const meus = alunos.filter((a) => a.unidade_id === unidadeId);
 
   const filtrados = useMemo(() => {
-    const termo = normalizar(busca.trim());
+    const termo = semAcento(busca.trim());
     return meus.filter((a) => {
       if (statusFiltro === "inadimplente" && !a.inadimplente) return false;
       else if (statusFiltro !== "todos" && statusFiltro !== "inadimplente" && derivarStatusRematricula(a) !== statusFiltro) return false;
       else if (statusFiltro === "pendente" && a.aceite) return false;
-      if (termo && !normalizar(a.nome).includes(termo)) return false;
+      if (termo && !semAcento(a.nome).includes(termo)) return false;
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,7 +304,6 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
           ) : (
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {filtrados.map((a) => {
-                const statusInicial = derivarStatusRematricula(a);
                 const linha = linhaDe(a);
                 const isSalvando = salvando === a.id;
                 const alterado =
