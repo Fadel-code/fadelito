@@ -10,10 +10,8 @@ Sistema web para gerenciamento de visitas e matrículas de uma rede de 35 escola
 |---|---|
 | Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Banco / Auth / Realtime | Supabase (PostgreSQL + RLS) |
-| Gráficos | Recharts |
 | Export Excel | SheetJS (xlsx) |
 | Export PDF | jsPDF + jspdf-autotable |
-| E-mail | Resend |
 | Deploy | Vercel (frontend) + Supabase (backend) |
 
 ---
@@ -22,7 +20,6 @@ Sistema web para gerenciamento de visitas e matrículas de uma rede de 35 escola
 
 - Node.js 18+
 - Conta no [Supabase](https://supabase.com) (gratuita)
-- Conta no [Resend](https://resend.com) (gratuita)
 - Conta no [Vercel](https://vercel.com) (gratuita)
 - Supabase CLI instalado: `npm install -g supabase`
 
@@ -40,7 +37,7 @@ npm install
 # 3. Copie o arquivo de variáveis de ambiente
 cp ../.env.example .env
 
-# 4. Edite .env com suas credenciais Supabase e Resend
+# 4. Edite .env com suas credenciais Supabase
 # (veja seção "Configuração Supabase" abaixo)
 
 # 5. Rode o servidor de desenvolvimento
@@ -95,32 +92,6 @@ Isso cria:
 
 No painel Supabase → **Database → Replication**, ative a tabela `registros` para Realtime.
 
-### 6. Deploy da Edge Function (Alertas)
-
-```bash
-# Configure as variáveis de ambiente da função
-supabase secrets set RESEND_API_KEY=re_...
-supabase secrets set MARKETING_EMAIL=marketing@fadelito.com.br
-supabase secrets set FRONTEND_URL=https://fadelito.vercel.app
-
-# Deploy da função
-supabase functions deploy alerta-diario
-
-# Configurar cron (no painel Supabase → Edge Functions → Schedules)
-# Cron: 0 21 * * 1-5   (18h horário de Brasília = 21h UTC)
-```
-
----
-
-## Configuração Resend
-
-1. Crie uma conta em [resend.com](https://resend.com)
-2. Em **Domains**, adicione e verifique seu domínio (ex: `fadelito.com.br`)
-3. Em **API Keys**, crie uma nova chave → `RESEND_API_KEY`
-4. A função de alerta enviará e-mails de `noreply@fadelito.com.br`
-
----
-
 ## Deploy no Vercel
 
 ### 1. Importar projeto
@@ -145,7 +116,6 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 Clique em **Deploy**. O Vercel gera a URL de produção automaticamente.
 
-> Atualize `FRONTEND_URL` nos secrets da Edge Function com a URL gerada.
 
 ---
 
@@ -165,8 +135,6 @@ Clique em **Deploy**. O Vercel gera a URL de produção automaticamente.
 - **Dashboard em tempo real**: tabela consolidada com Supabase Realtime
 - **Exportação Excel**: uma aba por mês, `Resultados_Fadelito_2026.xlsx`
 - **Exportação PDF**: A4 paisagem com tabela consolidada
-- **Gráficos**: ranking por matrículas, evolução anual, aproveitamento por unidade
-- **Alerta diário**: e-mail automático às 18h com unidades que não preencheram
 - **Audit log**: histórico completo de todas as alterações
 
 ---
@@ -184,7 +152,6 @@ fadelito/
 │       └── types/         TypeScript types
 ├── supabase/
 │   ├── migrations/        001_schema_inicial.sql
-│   ├── functions/         alerta-diario (Edge Function)
 │   └── seed-users.js      Script para criar os 36 usuários
 ├── .env.example
 └── README.md
@@ -194,12 +161,12 @@ fadelito/
 
 ## Feriados Nacionais 2026
 
-O sistema bloqueia automaticamente as seguintes datas no date picker e na Edge Function:
+O sistema bloqueia automaticamente as seguintes datas no date picker:
 
 | Data | Feriado |
 |---|---|
 | 01/01 | Confraternização Universal |
-| 20/04 | Paixão de Cristo |
+| Sexta-feira Santa (calculada a partir da Páscoa; 03/04 em 2026) | Paixão de Cristo |
 | 21/04 | Tiradentes |
 | 01/05 | Dia do Trabalho |
 | 07/09 | Independência do Brasil |
