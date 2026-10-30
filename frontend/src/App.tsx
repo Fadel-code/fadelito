@@ -28,6 +28,7 @@ const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketi
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 const Agenda = lazy(() => import("./pages/Agenda"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
+const Metricas = lazy(() => import("./pages/marketing/Metricas"));
 const RankingSupervisoras = lazy(() => import("./pages/marketing/RankingSupervisoras"));
 const ContaMfa = lazy(() => import("./pages/ContaMfa"));
 
@@ -194,6 +195,7 @@ export default function App() {
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
+          <Route path="metricas" element={<RequireMarketing><Metricas /></RequireMarketing>} />
           <Route path="ranking-supervisoras" element={<RequireMarketing><RankingSupervisoras /></RequireMarketing>} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
           <Route path="mfa" element={<ContaMfa />} />

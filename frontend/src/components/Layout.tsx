@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Table2,
   Trophy,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../App";
 import { usePendingDesfechos } from "../hooks/usePendingDesfechos";
@@ -61,6 +62,7 @@ interface NavGroup {
   icon: React.ComponentType<{ className?: string }>;
   items: NavItem[];
   emphasize?: boolean;
+  marketingOnly?: boolean;
 }
 
 type NavEntry = NavItem | NavGroup;
@@ -102,7 +104,16 @@ const NAV_MARKETING: NavEntry[] = [
     ],
   },
   { to: "/marketing/protocolos", label: "Assistente Fadelito", icon: BookOpen },
-  { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy, marketingOnly: true },
+  // marketingOnly: o grupo inteiro some para a supervisão (Métricas e Ranking são só do login Marketing).
+  {
+    label: "Desempenho",
+    icon: BarChart3,
+    marketingOnly: true,
+    items: [
+      { to: "/marketing/metricas", label: "Métricas", icon: BarChart3 },
+      { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy },
+    ],
+  },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
   { to: "/marketing/usuarios", label: "Usuários", icon: Users, marketingOnly: true },
 ];
