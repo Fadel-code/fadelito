@@ -21,21 +21,27 @@ interface Props {
   /** 0–1: barra de progresso sob o número. */
   progresso?: number;
   carregando?: boolean;
+  /** Cor da barra de progresso (padrão: verde). */
+  corProgresso?: "green" | "primary";
+  /** Versão menor, para telas com muitos KPIs. */
+  compacto?: boolean;
 }
 
-export default function KpiCard({ rotulo, valor, sub, Icone, tom, alerta, progresso, carregando }: Props) {
+const BARRA = { green: "bg-green-500", primary: "bg-primary-500" };
+
+export default function KpiCard({ rotulo, valor, sub, Icone, tom, alerta, progresso, carregando, corProgresso = "green", compacto }: Props) {
   return (
-    <div className={`card flex flex-col p-4 sm:p-5 ${alerta ? "ring-2 ring-red-200" : ""}`}>
+    <div className={`card flex flex-col ${compacto ? "px-3.5 py-3" : "p-4 sm:p-5"} ${alerta ? "ring-2 ring-red-200" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-gray-700">{rotulo}</p>
-        <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${TOM[tom].chip}`}>
-          <Icone className="h-4 w-4" aria-hidden />
+        <p className={`${compacto ? "text-xs" : "text-sm"} font-medium text-gray-700`}>{rotulo}</p>
+        <span className={`flex flex-shrink-0 items-center justify-center rounded-lg ${compacto ? "h-6 w-6" : "h-8 w-8"} ${TOM[tom].chip}`}>
+          <Icone className={compacto ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
         </span>
       </div>
-      <p className={`mt-1 text-3xl font-bold tabular-nums tracking-tight ${TOM[tom].valor}`}>{carregando ? "—" : valor}</p>
+      <p className={`mt-1 ${compacto ? "text-xl" : "text-3xl"} font-bold tabular-nums tracking-tight ${TOM[tom].valor}`}>{carregando ? "—" : valor}</p>
       {progresso !== undefined && (
-        <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-gray-100" aria-hidden>
-          <span className="block h-full rounded-full bg-green-500" style={{ width: `${Math.min(progresso, 1) * 100}%` }} />
+        <span className={`${compacto ? "mt-1 h-1" : "mt-1.5 h-1.5"} block overflow-hidden rounded-full bg-gray-100`} aria-hidden>
+          <span className={`block h-full rounded-full ${BARRA[corProgresso]}`} style={{ width: `${Math.min(progresso, 1) * 100}%` }} />
         </span>
       )}
       {sub && <p className="mt-auto pt-1.5 text-xs text-gray-600">{sub}</p>}
@@ -43,12 +49,13 @@ export default function KpiCard({ rotulo, valor, sub, Icone, tom, alerta, progre
   );
 }
 
-/** Grade de KPIs: 2 colunas no celular (o último ímpar ocupa a linha), 4 ou 5 no desktop. */
-export function KpiGrid({ rotulo, colunas, children }: { rotulo: string; colunas: 4 | 5; children: ReactNode }) {
+/** Grade de KPIs: 2 colunas no celular (o último ímpar ocupa a linha), 4 ou 5 no desktop; 8 é a grade compacta (4 por linha, 8 em telas largas). */
+export function KpiGrid({ rotulo, colunas, children }: { rotulo: string; colunas: 4 | 5 | 8; children: ReactNode }) {
+  const grade = { 4: "lg:grid-cols-4", 5: "md:grid-cols-3 lg:grid-cols-5", 8: "sm:grid-cols-4 2xl:grid-cols-8" }[colunas];
   return (
     <section
       aria-label={rotulo}
-      className={`grid grid-cols-2 gap-3 lg:gap-4 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${colunas === 5 ? "md:grid-cols-3 lg:grid-cols-5" : "lg:grid-cols-4"}`}
+      className={`grid grid-cols-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${colunas === 8 ? "gap-2.5" : "gap-3 lg:gap-4"} ${grade}`}
     >
       {children}
     </section>

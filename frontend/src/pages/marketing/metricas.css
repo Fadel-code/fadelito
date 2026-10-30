@@ -1,4 +1,4 @@
-/* Hallmark · v2.0.0 · redesign: full · scope: app · shape: app screen · theme: brand (Fadelito #005BAE, Plus Jakarta Sans) · signature: o resumo da rede com o risco de onde a meta deveria estar hoje · built: the project */
+/* Hallmark · v2.0.0 · redesign: full · scope: app · shape: app screen · theme: brand (Fadelito #005BAE, Plus Jakarta Sans) · signature: a tabela por unidade, metas ao lado dos números; resumo nos cartões de KPI do sistema · built: the project */
 /* Hallmark critique · menos tinta e menos texto: ideais em símbolos (≥ 35%), três níveis de cor da marca (tinta, azul na estrutura, cinza) e cor de estado só no número fora do ideal */
 /* Hallmark · waive 26b · o único botão da tela (ver todas) nunca fica desabilitado · não há estado disabled para estilizar */
 /* Hallmark · dropped ícones dos KPIs, a cor verde de "no ideal", a legenda de bolinhas e a legenda de cores · cor só para estado que pede atenção */
@@ -36,19 +36,9 @@
   border-radius: 12px;
 }
 
-/* Resumo da rede: três grupos, os mesmos da tabela */
-.mt-stat dt { color: var(--mt-muted); font-weight: 500; }
-.mt-figure { color: var(--mt-ink); }
-.mt-figure--longe { color: var(--mt-longe); }
-.mt-figure--perto { color: var(--mt-perto); }
-.mt-note { color: var(--mt-muted); }
-/* Meta ao lado do valor: sempre cinza, nunca na cor do estado, para não disputar com o número */
-.mt-meta { color: var(--mt-faint); font-weight: 500; }
-.mt-cell .mt-meta { color: var(--mt-faint); }
+/* Meta ao lado do valor na tabela: sempre cinza, para não disputar com o número */
+.mt-cell .mt-meta { color: var(--mt-faint); font-weight: 500; }
 
-.mt-bar { background: var(--mt-track); }
-.mt-bar-fill { background: var(--mt-accent); transform-origin: left center; }
-.mt-bar-tick { background: var(--mt-ink); }
 
 /* Tabela: só linhas horizontais, grupos separados por espaço */
 .mt-table thead > tr > * { background: var(--mt-head); }
@@ -58,7 +48,6 @@
    O recuo do .mt-gap deixa um respiro entre um traço e o próximo, então os grupos se separam sem linha vertical. */
 .mt-table thead .mt-group { color: var(--mt-accent-ink); }
 .mt-group-label { border-bottom: 2px solid var(--mt-track); }
-.mt-summary .mt-group-label { color: var(--mt-accent-ink); }
 .mt-col-title { color: var(--mt-ink); }
 .mt-gap { padding-left: 1.75rem; }
 .mt-table tbody tr + tr { border-top: 1px solid var(--mt-rule-soft); }

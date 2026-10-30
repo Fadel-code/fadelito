@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Award, CalendarCheck, ChevronDown, GraduationCap, Percent, Repeat, Scale, UserMinus, Users } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import KpiCard, { KpiGrid, type TomKpi } from "../../components/KpiCard";
 import { pct, num } from "../../components/ranking/formato";
 import "./metricas.css";
 
@@ -101,46 +102,16 @@ function estadoDe(v: number | null, ideal: number | null, menorMelhor = false): 
   if (menorMelhor) return v <= ideal ? "ok" : v <= ideal * 1.2 ? "perto" : "longe";
   return v >= ideal ? "ok" : v >= ideal * 0.8 ? "perto" : "longe";
 }
+const TOM_DO_ESTADO: Record<NonNullable<Estado>, TomKpi> = { ok: "green", perto: "amber", longe: "red" };
+const tomDe = (e: Estado): TomKpi => (e === null ? "primary" : TOM_DO_ESTADO[e]);
 const TEXTO = { ok: "no ideal", perto: "perto do ideal", longe: "longe do ideal" };
 
 // Só o que está fora do ideal ganha cor; "no ideal" fica em tinta normal para o olho ir direto aos problemas.
 const CELULA: Record<NonNullable<Estado>, string> = { ok: "", perto: "mt-cell--perto", longe: "mt-cell--longe" };
 const classeCelula = (e: Estado) => (e === null ? "mt-cell--nulo" : CELULA[e]);
 
-/** Trilho = meta do ano, preenchimento = feito, risco = onde a meta deveria estar hoje. */
-function Barra({ feito, alvo }: { feito: number; alvo: number }) {
-  return (
-    <span className="mt-bar relative block h-1 w-full overflow-hidden rounded-full" aria-hidden>
-      <span className="mt-bar-fill block h-full" style={{ transform: `scaleX(${Math.min(feito / alvo, 1)})` }} />
-      <span className="mt-bar-tick absolute inset-y-0 w-0.5" style={{ left: `calc(${fracaoDoAno * 100}% - 1px)` }} />
-    </span>
-  );
-}
 
-/** Grupo do resumo: mesmo título e traço dos grupos da tabela, para os dois lerem como uma coisa só. */
-function Grupo({ titulo, colunas, children }: { titulo: string; colunas: 2 | 3; children: ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <h2 className="mt-group-label pb-2 text-sm font-semibold">{titulo}</h2>
-      <dl className={`mt-4 grid gap-x-6 gap-y-4 ${colunas === 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>{children}</dl>
-    </div>
-  );
-}
 
-/** A meta fica ao lado do número, menor e em cinza: dá para comparar sem competir com o valor atual. */
-function Figura({ rotulo, valor, meta, estado, children }: { rotulo: string; valor: string; meta?: string; estado: Estado; children?: ReactNode }) {
-  return (
-    <div className="mt-stat flex min-w-0 flex-col gap-1.5">
-      <dt className="text-sm">{rotulo}</dt>
-      <dd className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
-        <span className={`mt-figure text-2xl font-bold tracking-tight ${estado ? `mt-figure--${estado}` : ""}`}>{valor}</span>
-        {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
-        {meta && <span className="mt-meta text-xs">{meta}</span>}
-      </dd>
-      {children}
-    </div>
-  );
-}
 
 function Cabecalho({ titulo, ideal, grupo, dica }: { titulo: string; ideal: string; grupo?: boolean; dica?: string }) {
   return (
@@ -260,30 +231,30 @@ export default function Metricas() {
 
       {erro && <p role="alert" className="mt-error rounded-xl p-4 text-sm">Não foi possível carregar as métricas: {erro}. Recarregue a página; se continuar, avise o time de sistemas.</p>}
 
-      <section aria-label="Resumo da rede" className="mt-panel mt-summary grid gap-x-10 gap-y-6 px-5 py-5 sm:px-6 lg:grid-cols-[3fr_3fr_2fr]">
-        <Grupo titulo="Visitas e matrículas" colunas={3}>
-          <Figura rotulo="Visitas" valor={rede ? num(rede.visitas) : "—"} meta={rede ? `/ ${num(rede.metaVisitas)}` : undefined}
-            estado={estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracaoDoAno : null)}>
-            {rede && rede.metaVisitas > 0 && <dd><Barra feito={rede.visitas} alvo={rede.metaVisitas} /></dd>}
-          </Figura>
-          <Figura rotulo="Matrículas" valor={rede ? num(rede.matriculas) : "—"} meta={rede ? `/ ${num(metaRedeMatriculas)}` : undefined}
-            estado={estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracaoDoAno : null)}>
-            {rede && metaRedeMatriculas > 0 && <dd><Barra feito={rede.matriculas} alvo={rede.metaMatriculas} /></dd>}
-          </Figura>
-          <Figura rotulo="Conversão" valor={pct(rede?.conversao ?? null)} meta={`≥ ${pctInt(META_CONVERSAO)}`} estado={estadoDe(rede?.conversao ?? null, META_CONVERSAO)} />
-        </Grupo>
-        <Grupo titulo="Alunos" colunas={3}>
-          <Figura rotulo="Alunos" valor={rede ? num(rede.alunos) : "—"}
-            meta={rede?.alunosAntes != null ? `/ ${num(rede.alunosAntes)} em ${ANO - 1}` : undefined}
-            estado={rede?.dAlunos == null ? null : rede.dAlunos >= 0 ? "ok" : "longe"} />
-          <Figura rotulo="Perda" valor={pct(rede?.perda ?? null)} meta={`≤ ${pctInt(META_PERDA)}`} estado={estadoDe(rede?.perda ?? null, META_PERDA, true)} />
-          <Figura rotulo="Saldo" valor={pct(rede?.saldoPct ?? null)} meta={`≥ ${pctInt(META_SALDO)}`} estado={estadoDe(rede?.saldoPct ?? null, META_SALDO)} />
-        </Grupo>
-        <Grupo titulo="Equipe" colunas={2}>
-          <Figura rotulo="Treinamento" valor={pct(rede?.treinamento ?? null)} meta={`≥ ${pctInt(META_TREINAMENTO)}`} estado={estadoDe(rede?.treinamento ?? null, META_TREINAMENTO)} />
-          <Figura rotulo="Rotatividade" valor={pct(rede?.equipe ?? null)} meta={`≤ ${pctInt(META_EQUIPE)}`} estado={estadoDe(rede?.equipe ?? null, META_EQUIPE, true)} />
-        </Grupo>
-      </section>
+      {/* Mesmo cartão de KPI das outras telas; a ordem segue os grupos da tabela (visitas e matrículas, alunos, equipe). */}
+      <KpiGrid rotulo="Resumo da rede" colunas={8}>
+        <KpiCard compacto rotulo="Visitas" Icone={CalendarCheck} carregando={!rede}
+          tom={tomDe(estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracaoDoAno : null))}
+          valor={rede ? num(rede.visitas) : "—"} sub={rede ? `meta do ano: ${num(rede.metaVisitas)}` : undefined}
+          corProgresso="primary" progresso={rede?.metaVisitas ? rede.visitas / rede.metaVisitas : undefined} />
+        <KpiCard compacto rotulo="Matrículas" Icone={GraduationCap} carregando={!rede}
+          tom={tomDe(estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracaoDoAno : null))}
+          valor={rede ? num(rede.matriculas) : "—"} sub={rede ? `meta do ano: ${num(metaRedeMatriculas)}` : undefined}
+          corProgresso="primary" progresso={rede?.metaMatriculas ? rede.matriculas / rede.metaMatriculas : undefined} />
+        <KpiCard compacto rotulo="Conversão" Icone={Percent} carregando={!rede} tom={tomDe(estadoDe(rede?.conversao ?? null, META_CONVERSAO))}
+          valor={pct(rede?.conversao ?? null)} sub={`ideal: ${pctInt(META_CONVERSAO)} ou mais`} />
+        <KpiCard compacto rotulo="Alunos" Icone={Users} carregando={!rede}
+          tom={tomDe(rede?.dAlunos == null ? null : rede.dAlunos >= 0 ? "ok" : "longe")}
+          valor={rede ? num(rede.alunos) : "—"} sub={rede?.alunosAntes != null ? `em ${ANO - 1}: ${num(rede.alunosAntes)}` : undefined} />
+        <KpiCard compacto rotulo="Perda" Icone={UserMinus} carregando={!rede} tom={tomDe(estadoDe(rede?.perda ?? null, META_PERDA, true))}
+          valor={pct(rede?.perda ?? null)} sub={`ideal: até ${pctInt(META_PERDA)}`} />
+        <KpiCard compacto rotulo="Saldo" Icone={Scale} carregando={!rede} tom={tomDe(estadoDe(rede?.saldoPct ?? null, META_SALDO))}
+          valor={pct(rede?.saldoPct ?? null)} sub={`ideal: ${pctInt(META_SALDO)} ou mais`} />
+        <KpiCard compacto rotulo="Treinamento" Icone={Award} carregando={!rede} tom={tomDe(estadoDe(rede?.treinamento ?? null, META_TREINAMENTO))}
+          valor={pct(rede?.treinamento ?? null)} sub={`ideal: ${pctInt(META_TREINAMENTO)} ou mais`} />
+        <KpiCard compacto rotulo="Rotatividade" Icone={Repeat} carregando={!rede} tom={tomDe(estadoDe(rede?.equipe ?? null, META_EQUIPE, true))}
+          valor={pct(rede?.equipe ?? null)} sub={`ideal: até ${pctInt(META_EQUIPE)}`} />
+      </KpiGrid>
 
       <section ref={secao} aria-labelledby="mt-titulo" className="mt-panel scroll-mt-4 overflow-clip">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-6">
