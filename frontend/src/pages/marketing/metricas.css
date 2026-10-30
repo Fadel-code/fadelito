@@ -1,0 +1,91 @@
+/* Hallmark · v2.0.0 · redesign: full · scope: app · shape: app screen · theme: brand (Fadelito #005BAE, Plus Jakarta Sans) · signature: o resumo da rede com o risco de onde a meta deveria estar hoje · built: the project */
+/* Hallmark critique · menos tinta e menos texto: ideais em símbolos (≥ 35%), três níveis de cor da marca (tinta, azul na estrutura, cinza) e cor de estado só no número fora do ideal */
+/* Hallmark · waive 26b · o único botão da tela (ver todas) nunca fica desabilitado · não há estado disabled para estilizar */
+/* Hallmark · dropped ícones dos KPIs, a cor verde de "no ideal", a legenda de bolinhas e a legenda de cores · cor só para estado que pede atenção */
+
+/* Tokens com prefixo --mt-: ficam no :root sem mexer nas outras telas. */
+:root {
+  /* Hierarquia: tinta da marca para o que se lê primeiro, azul da marca só na estrutura, cinza-azulado para o resto */
+  --mt-ink: #001040;
+  --mt-text: #26324a;
+  --mt-muted: #5a6478;
+  --mt-faint: #687183;
+  --mt-rule: #e3e8ef;
+  --mt-rule-soft: #eef1f5;
+  --mt-surface: #fcfdff;
+  --mt-head: #f4f7fb;
+  --mt-accent: #005bae;
+  --mt-accent-ink: #153f7d;
+  --mt-accent-soft: #eef4fb;
+  --mt-track: #d9e8f7;
+  --mt-longe: #b42318;
+  --mt-perto: #9a5800;
+  --mt-skeleton: #eef1f5;
+  --mt-focus: #005bae;
+  --mt-dur-micro: 120ms;
+}
+
+.mt { color: var(--mt-text); }
+.mt-title { color: var(--mt-ink); overflow-wrap: break-word; min-width: 0; }
+.mt-lede { color: var(--mt-muted); }
+
+/* Um recipiente só, sem cartão dentro de cartão */
+.mt-panel {
+  background: var(--mt-surface);
+  border: 1px solid var(--mt-rule);
+  border-radius: 12px;
+}
+
+/* Resumo da rede: três grupos, os mesmos da tabela */
+.mt-stat dt { color: var(--mt-muted); font-weight: 500; }
+.mt-figure { color: var(--mt-ink); }
+.mt-figure--longe { color: var(--mt-longe); }
+.mt-figure--perto { color: var(--mt-perto); }
+.mt-note { color: var(--mt-muted); }
+/* Meta ao lado do valor: sempre cinza, nunca na cor do estado, para não disputar com o número */
+.mt-meta { color: var(--mt-faint); font-weight: 500; }
+.mt-cell .mt-meta { color: var(--mt-faint); }
+
+.mt-bar { background: var(--mt-track); }
+.mt-bar-fill { background: var(--mt-accent); transform-origin: left center; }
+.mt-bar-tick { background: var(--mt-ink); }
+
+/* Tabela: só linhas horizontais, grupos separados por espaço */
+.mt-table thead > tr > * { background: var(--mt-head); }
+.mt-table thead tr:last-child > * { border-bottom: 1px solid var(--mt-rule); }
+.mt-table thead th, .mt-table thead td { color: var(--mt-muted); }
+/* Grupos de colunas: título em azul da marca e um traço que cobre só as colunas do grupo.
+   O recuo do .mt-gap deixa um respiro entre um traço e o próximo, então os grupos se separam sem linha vertical. */
+.mt-table thead .mt-group { color: var(--mt-accent-ink); }
+.mt-group-label { border-bottom: 2px solid var(--mt-track); }
+.mt-summary .mt-group-label { color: var(--mt-accent-ink); }
+.mt-col-title { color: var(--mt-ink); }
+.mt-gap { padding-left: 1.75rem; }
+.mt-table tbody tr + tr { border-top: 1px solid var(--mt-rule-soft); }
+.mt-table tbody tr:hover > * { background-color: var(--mt-accent-soft); }
+.mt-unit { color: var(--mt-ink); background: var(--mt-surface); }
+.mt-cell { color: var(--mt-text); }
+.mt-cell--nulo { color: var(--mt-faint); }
+.mt-cell--longe { color: var(--mt-longe); }
+.mt-cell--perto { color: var(--mt-perto); }
+.mt-sub { color: var(--mt-faint); }
+
+
+.mt-skel { background: var(--mt-skeleton); border-radius: 4px; }
+
+.mt-foot { background: var(--mt-surface); border-top: 1px solid var(--mt-rule-soft); color: var(--mt-muted); }
+.mt-link {
+  color: var(--mt-accent-ink);
+  border-radius: 6px;
+  transition: background-color var(--mt-dur-micro) ease-out;
+}
+.mt-link:hover { background-color: var(--mt-accent-soft); }
+.mt-link:active { background-color: var(--mt-track); }
+.mt-link:focus-visible { outline: 2px solid var(--mt-focus); outline-offset: 2px; transition: none; }
+.mt-chevron { transition: transform var(--mt-dur-micro) ease-out; }
+
+.mt-error { color: var(--mt-longe); background: var(--mt-surface); border: 1px solid var(--mt-rule); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-link, .mt-chevron { transition: none; }
+}

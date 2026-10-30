@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, CalendarCheck, ChevronDown, GraduationCap, Percent, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import KpiCard, { KpiGrid, type TomKpi } from "../../components/KpiCard";
-import { CARD_DESTAQUE } from "../../components/ui/estilos";
 import { pct, num } from "../../components/ranking/formato";
+import "./metricas.css";
 
 const ANO = 2026;
 // Metas da rede (iguais em todas as planilhas). A meta de visitas é por unidade: metricas_anuais.
@@ -47,6 +46,8 @@ interface Linha {
   alunosAnoAnterior: number | null;
   saldo: number;
   saldoPct: number | null;
+  /** Média de alunos no ano: base de perda e saldo. */
+  base: number | null;
 }
 
 const media = (xs: (number | null)[]) => {
@@ -88,6 +89,7 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
       alunosAnoAnterior: ultimo ? m.find((x) => x.ano === ANO - 1 && x.mes === ultimo.mes)?.alunos ?? null : null,
       saldo,
       saldoPct: div(saldo, base),
+      base,
     }];
   });
 }
@@ -99,52 +101,108 @@ function estadoDe(v: number | null, ideal: number | null, menorMelhor = false): 
   if (menorMelhor) return v <= ideal ? "ok" : v <= ideal * 1.2 ? "perto" : "longe";
   return v >= ideal ? "ok" : v >= ideal * 0.8 ? "perto" : "longe";
 }
-const TOM_DO_ESTADO: Record<NonNullable<Estado>, TomKpi> = { ok: "green", perto: "amber", longe: "red" };
-const tomDe = (e: Estado): TomKpi => (e === null ? "primary" : TOM_DO_ESTADO[e]);
-const COR = { ok: "text-green-700", perto: "text-amber-700", longe: "text-red-600" };
 const TEXTO = { ok: "no ideal", perto: "perto do ideal", longe: "longe do ideal" };
+
+// Só o que está fora do ideal ganha cor; "no ideal" fica em tinta normal para o olho ir direto aos problemas.
+const CELULA: Record<NonNullable<Estado>, string> = { ok: "", perto: "mt-cell--perto", longe: "mt-cell--longe" };
+const classeCelula = (e: Estado) => (e === null ? "mt-cell--nulo" : CELULA[e]);
+
+/** Trilho = meta do ano, preenchimento = feito, risco = onde a meta deveria estar hoje. */
+function Barra({ feito, alvo }: { feito: number; alvo: number }) {
+  return (
+    <span className="mt-bar relative block h-1 w-full overflow-hidden rounded-full" aria-hidden>
+      <span className="mt-bar-fill block h-full" style={{ transform: `scaleX(${Math.min(feito / alvo, 1)})` }} />
+      <span className="mt-bar-tick absolute inset-y-0 w-0.5" style={{ left: `calc(${fracaoDoAno * 100}% - 1px)` }} />
+    </span>
+  );
+}
+
+/** Grupo do resumo: mesmo título e traço dos grupos da tabela, para os dois lerem como uma coisa só. */
+function Grupo({ titulo, colunas, children }: { titulo: string; colunas: 2 | 3; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <h2 className="mt-group-label pb-2 text-sm font-semibold">{titulo}</h2>
+      <dl className={`mt-4 grid gap-x-6 gap-y-4 ${colunas === 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>{children}</dl>
+    </div>
+  );
+}
+
+/** A meta fica ao lado do número, menor e em cinza: dá para comparar sem competir com o valor atual. */
+function Figura({ rotulo, valor, meta, estado, children }: { rotulo: string; valor: string; meta?: string; estado: Estado; children?: ReactNode }) {
+  return (
+    <div className="mt-stat flex min-w-0 flex-col gap-1.5">
+      <dt className="text-sm">{rotulo}</dt>
+      <dd className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+        <span className={`mt-figure text-2xl font-bold tracking-tight ${estado ? `mt-figure--${estado}` : ""}`}>{valor}</span>
+        {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
+        {meta && <span className="mt-meta text-xs">{meta}</span>}
+      </dd>
+      {children}
+    </div>
+  );
+}
 
 function Cabecalho({ titulo, ideal, grupo, dica }: { titulo: string; ideal: string; grupo?: boolean; dica?: string }) {
   return (
-    <th scope="col" title={dica} className={`px-3 pb-3 pt-1 text-right align-bottom ${grupo ? "border-l border-gray-200" : ""}`}>
-      <span className="block pt-1.5 font-semibold text-gray-900">{titulo}</span>
-      <span className="block whitespace-nowrap font-normal text-gray-600">{ideal}</span>
+    <th scope="col" title={dica} className={`px-3 pb-3 pt-3 text-right align-bottom ${grupo ? "mt-gap" : ""}`}>
+      <span className="mt-col-title block whitespace-nowrap font-semibold">{titulo}</span>
+      <span className="block whitespace-nowrap font-normal">{ideal}</span>
     </th>
   );
 }
 
 function Celula({ valor, sub, dica, estado, grupo }: { valor: string; sub?: string; dica?: string; estado: Estado; grupo?: boolean }) {
   return (
-    <td title={dica} className={`px-3 py-2.5 text-right ${estado ? COR[estado] : "text-gray-400"} ${grupo ? "border-l border-gray-100" : ""}`}>
+    <td title={dica} className={`mt-cell px-3 py-3 text-right ${classeCelula(estado)} ${grupo ? "mt-gap" : ""}`}>
       <span className="font-medium">{valor}</span>
       {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
-      {sub && <span className="ml-2 whitespace-nowrap text-xs">{sub}</span>}
+      {sub && <span className="mt-sub ml-2 whitespace-nowrap text-xs">{sub}</span>}
     </td>
   );
 }
 
-const diferenca = (d: number) => (d === 0 ? "igual a 2025" : `${num(Math.abs(d))} ${d > 0 ? "a mais" : "a menos"}`);
+/** Visitas e matrículas: o número, a barra da meta do ano e a linha do ano atravessando a coluna. */
+function CelulaMeta({ feito, alvo, estado, grupo }: { feito: number; alvo: number | null; estado: Estado; grupo?: boolean }) {
+  return (
+    <td title={alvo ? `${pctInt(feito / alvo)} da meta do ano; o ideal de hoje é ${num(Math.round(alvo * fracaoDoAno))}` : "sem meta"}
+      className={`mt-cell px-3 py-3 text-right ${classeCelula(estado)} ${grupo ? "mt-gap" : ""}`}>
+      <span className="font-medium">{num(feito)}</span>
+      {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
+      {alvo !== null && <span className="mt-meta ml-1 text-xs">/ {num(alvo)}</span>}
+    </td>
+  );
+}
 
-function LinhaUnidade({ l, par }: { l: Linha; par: boolean }) {
+const diferenca = (d: number) => (d === 0 ? "=" : `${d > 0 ? "+" : "−"}${num(Math.abs(d))}`);
+
+function LinhaUnidade({ l }: { l: Linha }) {
   const meta = l.metaVisitas;
   const metaMatriculas = meta === null ? null : Math.round(meta * META_CONVERSAO);
   const dAlunos = l.alunos === null || l.alunosAnoAnterior === null ? null : l.alunos - l.alunosAnoAnterior;
-  const daMeta = (feito: number, alvo: number | null) => (alvo ? `${pctInt(feito / alvo)} da meta do ano` : "sem meta");
   return (
-    <tr className={`border-b border-gray-100 ${par ? "bg-white" : "bg-gray-50/60"} hover:bg-primary-50/50`}>
-      <th scope="row" className="whitespace-nowrap px-3 py-2.5 text-left font-medium text-gray-900">{l.unidade}</th>
-      <Celula grupo valor={meta === null ? num(l.visitas) : `${num(l.visitas)} de ${num(meta)}`} dica={daMeta(l.visitas, meta)}
-        estado={estadoDe(l.visitas, meta === null ? null : meta * fracaoDoAno)} />
-      <Celula valor={metaMatriculas === null ? num(l.matriculas) : `${num(l.matriculas)} de ${num(metaMatriculas)}`} dica={daMeta(l.matriculas, metaMatriculas)}
-        estado={estadoDe(l.matriculas, metaMatriculas === null ? null : metaMatriculas * fracaoDoAno)} />
+    <tr>
+      <th scope="row" className="mt-unit sticky left-0 z-[1] whitespace-nowrap px-3 py-3 text-left font-medium">{l.unidade}</th>
+      <CelulaMeta grupo feito={l.visitas} alvo={meta} estado={estadoDe(l.visitas, meta === null ? null : meta * fracaoDoAno)} />
+      <CelulaMeta feito={l.matriculas} alvo={metaMatriculas} estado={estadoDe(l.matriculas, metaMatriculas === null ? null : metaMatriculas * fracaoDoAno)} />
       <Celula valor={pct(l.conversao)} dica={`${num(l.matriculas)} matrículas em ${num(l.visitas)} visitas`} estado={estadoDe(l.conversao, META_CONVERSAO)} />
-      <Celula grupo valor={l.alunos === null ? "—" : num(l.alunos)} sub={dAlunos === null ? "sem dado de 2025" : diferenca(dAlunos)}
+      <Celula grupo valor={l.alunos === null ? "—" : num(l.alunos)} sub={dAlunos === null ? undefined : diferenca(dAlunos)}
         dica={dAlunos === null || l.alunos === null ? undefined : `${num(l.alunos)} alunos hoje; no mesmo mês de ${ANO - 1} eram ${num(l.alunosAnoAnterior ?? 0)}`}
         estado={dAlunos === null ? null : dAlunos >= 0 ? "ok" : "longe"} />
       <Celula valor={pct(l.perda)} dica={`${num(l.desligamentos)} ${l.desligamentos === 1 ? "desligamento" : "desligamentos"} no ano`} estado={estadoDe(l.perda, META_PERDA, true)} />
       <Celula valor={pct(l.saldoPct)} dica={`${l.saldo >= 0 ? "+" : ""}${num(l.saldo)} alunos no ano`} estado={estadoDe(l.saldoPct, META_SALDO)} />
       <Celula grupo valor={pct(l.treinamento)} estado={estadoDe(l.treinamento, META_TREINAMENTO)} />
       <Celula valor={pct(l.equipe)} estado={estadoDe(l.equipe, META_EQUIPE, true)} />
+    </tr>
+  );
+}
+
+function LinhaCarregando() {
+  return (
+    <tr aria-hidden>
+      <th className="mt-unit sticky left-0 px-3 py-3.5 text-left"><span className="mt-skel block h-3.5 w-32" /></th>
+      {Array.from({ length: 8 }, (_, i) => (
+        <td key={i} className="px-3 py-3.5"><span className="mt-skel ml-auto block h-3.5 w-14" /></td>
+      ))}
     </tr>
   );
 }
@@ -175,91 +233,107 @@ export default function Metricas() {
     const visitas = soma((l) => l.visitas);
     const metaVisitas = soma((l) => l.metaVisitas);
     const matriculas = soma((l) => l.matriculas);
-    return { visitas, metaVisitas, matriculas, metaMatriculas: metaVisitas * META_CONVERSAO, conversao: div(matriculas, visitas), treinamento: media(linhas.map((l) => l.treinamento)), equipe: media(linhas.map((l) => l.equipe)) };
+    const base = soma((l) => l.base);
+    // Comparação com o ano anterior só entre unidades que têm os dois números.
+    const comparaveis = linhas.filter((l) => l.alunos !== null && l.alunosAnoAnterior !== null);
+    const alunosAntes = comparaveis.reduce((s, l) => s + (l.alunosAnoAnterior ?? 0), 0);
+    const alunosAgora = comparaveis.reduce((s, l) => s + (l.alunos ?? 0), 0);
+    return {
+      visitas, metaVisitas, matriculas, metaMatriculas: metaVisitas * META_CONVERSAO, conversao: div(matriculas, visitas),
+      treinamento: media(linhas.map((l) => l.treinamento)), equipe: media(linhas.map((l) => l.equipe)),
+      alunos: soma((l) => l.alunos),
+      alunosAntes: comparaveis.length && comparaveis.length === linhas.filter((l) => l.alunos !== null).length ? alunosAntes : null,
+      dAlunos: comparaveis.length ? alunosAgora - alunosAntes : null,
+      perda: div(soma((l) => (l.base === null ? 0 : l.desligamentos)), base || null),
+      saldoPct: div(soma((l) => (l.base === null ? 0 : l.saldo)), base || null),
+    };
   }, [linhas]);
 
+  const metaRedeMatriculas = rede ? Math.round(rede.metaMatriculas) : 0;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Métricas {ANO}</h1>
-        <p className="mt-1.5 text-sm text-gray-600">
-          Como cada unidade está frente ao ideal da rede. <span className="font-semibold text-primary-700">{pctAno}% do ano</span> já passou.
-        </p>
-      </div>
+    <div className="mt space-y-6">
+      <header className="min-w-0">
+        <h1 className="mt-title text-2xl font-bold tracking-tight">Métricas {ANO}</h1>
+        <p className="mt-lede mt-1 text-sm">{pctAno}% do ano já passou</p>
+      </header>
 
-      {erro && <p className="card p-4 text-sm text-red-600">Erro ao carregar: {erro}</p>}
+      {erro && <p role="alert" className="mt-error rounded-xl p-4 text-sm">Não foi possível carregar as métricas: {erro}. Recarregue a página; se continuar, avise o time de sistemas.</p>}
 
-      <KpiGrid rotulo="Resumo da rede" colunas={5}>
-        <KpiCard rotulo="Visitas" Icone={CalendarCheck} carregando={!rede}
-          tom={tomDe(estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracaoDoAno : null))}
-          valor={rede ? num(rede.visitas) : "—"} sub={rede ? `meta do ano: ${num(rede.metaVisitas)}` : undefined}
-          progresso={rede?.metaVisitas ? rede.visitas / rede.metaVisitas : undefined} />
-        <KpiCard rotulo="Matrículas" Icone={GraduationCap} carregando={!rede}
-          tom={tomDe(estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracaoDoAno : null))}
-          valor={rede ? num(rede.matriculas) : "—"} sub={rede ? `meta do ano: ${num(Math.round(rede.metaMatriculas))}` : undefined}
-          progresso={rede?.metaMatriculas ? rede.matriculas / rede.metaMatriculas : undefined} />
-        <KpiCard rotulo="Conversão" Icone={Percent} tom={tomDe(estadoDe(rede?.conversao ?? null, META_CONVERSAO))} carregando={!rede}
-          valor={pct(rede?.conversao ?? null)} sub={`ideal: ${pctInt(META_CONVERSAO)} ou mais`} />
-        <KpiCard rotulo="Treinamento" Icone={Award} tom={tomDe(estadoDe(rede?.treinamento ?? null, META_TREINAMENTO))} carregando={!rede}
-          valor={pct(rede?.treinamento ?? null)} sub={`ideal: ${pctInt(META_TREINAMENTO)} ou mais`} />
-        <KpiCard rotulo="Rotatividade da equipe" Icone={Users} tom={tomDe(estadoDe(rede?.equipe ?? null, META_EQUIPE, true))} carregando={!rede}
-          valor={pct(rede?.equipe ?? null)} sub={`ideal: até ${pctInt(META_EQUIPE)}`} />
-      </KpiGrid>
+      <section aria-label="Resumo da rede" className="mt-panel mt-summary grid gap-x-10 gap-y-6 px-5 py-5 sm:px-6 lg:grid-cols-[3fr_3fr_2fr]">
+        <Grupo titulo="Visitas e matrículas" colunas={3}>
+          <Figura rotulo="Visitas" valor={rede ? num(rede.visitas) : "—"} meta={rede ? `/ ${num(rede.metaVisitas)}` : undefined}
+            estado={estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracaoDoAno : null)}>
+            {rede && rede.metaVisitas > 0 && <dd><Barra feito={rede.visitas} alvo={rede.metaVisitas} /></dd>}
+          </Figura>
+          <Figura rotulo="Matrículas" valor={rede ? num(rede.matriculas) : "—"} meta={rede ? `/ ${num(metaRedeMatriculas)}` : undefined}
+            estado={estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracaoDoAno : null)}>
+            {rede && metaRedeMatriculas > 0 && <dd><Barra feito={rede.matriculas} alvo={rede.metaMatriculas} /></dd>}
+          </Figura>
+          <Figura rotulo="Conversão" valor={pct(rede?.conversao ?? null)} meta={`≥ ${pctInt(META_CONVERSAO)}`} estado={estadoDe(rede?.conversao ?? null, META_CONVERSAO)} />
+        </Grupo>
+        <Grupo titulo="Alunos" colunas={3}>
+          <Figura rotulo="Alunos" valor={rede ? num(rede.alunos) : "—"}
+            meta={rede?.alunosAntes != null ? `/ ${num(rede.alunosAntes)} em ${ANO - 1}` : undefined}
+            estado={rede?.dAlunos == null ? null : rede.dAlunos >= 0 ? "ok" : "longe"} />
+          <Figura rotulo="Perda" valor={pct(rede?.perda ?? null)} meta={`≤ ${pctInt(META_PERDA)}`} estado={estadoDe(rede?.perda ?? null, META_PERDA, true)} />
+          <Figura rotulo="Saldo" valor={pct(rede?.saldoPct ?? null)} meta={`≥ ${pctInt(META_SALDO)}`} estado={estadoDe(rede?.saldoPct ?? null, META_SALDO)} />
+        </Grupo>
+        <Grupo titulo="Equipe" colunas={2}>
+          <Figura rotulo="Treinamento" valor={pct(rede?.treinamento ?? null)} meta={`≥ ${pctInt(META_TREINAMENTO)}`} estado={estadoDe(rede?.treinamento ?? null, META_TREINAMENTO)} />
+          <Figura rotulo="Rotatividade" valor={pct(rede?.equipe ?? null)} meta={`≤ ${pctInt(META_EQUIPE)}`} estado={estadoDe(rede?.equipe ?? null, META_EQUIPE, true)} />
+        </Grupo>
+      </section>
 
-      <section ref={secao} aria-labelledby="mt-titulo" className={`${CARD_DESTAQUE} scroll-mt-4 overflow-clip`}>
-        <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <section ref={secao} aria-labelledby="mt-titulo" className="mt-panel scroll-mt-4 overflow-clip">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <h2 id="mt-titulo" className="text-xl font-bold tracking-tight text-gray-900">Resultados por unidade</h2>
-            <p className="mt-1 text-sm text-gray-700">Cada número é comparado com o ideal, que aparece embaixo do nome da coluna.</p>
+            <h2 id="mt-titulo" className="mt-title text-lg font-bold tracking-tight">Por unidade</h2>
           </div>
-          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-700">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-green-500" aria-hidden />No ideal</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" aria-hidden />Perto (até 20%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-400" aria-hidden />Longe</span>
-          </p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse text-sm tabular-nums">
-            <thead className="border-b border-gray-100 bg-gray-50 text-xs text-gray-700">
+          <table className="mt-table w-full min-w-[920px] border-collapse text-sm tabular-nums">
+            <thead className="text-xs">
               <tr>
-                <td className="border-b-2 border-b-transparent" />
-                <th scope="colgroup" colSpan={3} className="border-b-2 border-l border-b-primary-200 border-l-gray-200 px-3 pb-1.5 pt-3 text-left text-sm font-semibold text-primary-700">Visitas e matrículas</th>
-                <th scope="colgroup" colSpan={3} className="border-b-2 border-l border-b-primary-200 border-l-gray-200 px-3 pb-1.5 pt-3 text-left text-sm font-semibold text-primary-700">Alunos</th>
-                <th scope="colgroup" colSpan={2} className="border-b-2 border-l border-b-primary-200 border-l-gray-200 px-3 pb-1.5 pt-3 text-left text-sm font-semibold text-primary-700">Equipe</th>
+                <td className="mt-unit sticky left-0 z-[1]" />
+                <th scope="colgroup" colSpan={3} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Visitas e matrículas</span></th>
+                <th scope="colgroup" colSpan={3} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Alunos</span></th>
+                <th scope="colgroup" colSpan={2} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Equipe</span></th>
               </tr>
               <tr>
-                <th scope="col" className="px-3 pb-3 pt-1.5 text-left align-bottom font-semibold text-gray-900">Unidade</th>
-                <Cabecalho grupo titulo="Visitas" ideal="meta do ano" dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
-                <Cabecalho titulo="Matrículas" ideal="meta do ano" dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
-                <Cabecalho titulo="Conversão" ideal={`ideal: ${pctInt(META_CONVERSAO)} ou mais`} />
-                <Cabecalho grupo titulo="Alunos hoje" ideal={`ideal: mais que em ${ANO - 1}`} />
-                <Cabecalho titulo="Perda" ideal={`ideal: até ${pctInt(META_PERDA)}`} />
-                <Cabecalho titulo="Saldo" ideal={`ideal: ${pctInt(META_SALDO)} ou mais`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre a média de alunos." />
-                <Cabecalho grupo titulo="Treinamento" ideal={`ideal: ${pctInt(META_TREINAMENTO)} ou mais`} />
-                <Cabecalho titulo="Rotatividade" ideal={`ideal: até ${pctInt(META_EQUIPE)}`} />
+                <th scope="col" className="mt-unit mt-col-title sticky left-0 z-[1] px-3 pb-3 pt-1.5 text-left align-bottom font-semibold">Unidade</th>
+                <Cabecalho grupo titulo="Visitas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
+                <Cabecalho titulo="Matrículas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
+                <Cabecalho titulo="Conversão" ideal={`≥ ${pctInt(META_CONVERSAO)}`} />
+                <Cabecalho grupo titulo="Alunos" ideal={`> ${ANO - 1}`} />
+                <Cabecalho titulo="Perda" ideal={`≤ ${pctInt(META_PERDA)}`} />
+                <Cabecalho titulo="Saldo" ideal={`≥ ${pctInt(META_SALDO)}`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre a média de alunos." />
+                <Cabecalho grupo titulo="Treinamento" ideal={`≥ ${pctInt(META_TREINAMENTO)}`} />
+                <Cabecalho titulo="Rotatividade" ideal={`≤ ${pctInt(META_EQUIPE)}`} />
               </tr>
             </thead>
             <tbody>
-              {!linhas && !erro && (
-                <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">Carregando…</td></tr>
+              {!linhas && !erro && Array.from({ length: 6 }, (_, i) => <LinhaCarregando key={i} />)}
+              {linhas?.length === 0 && (
+                <tr><td colSpan={9} className="mt-lede px-3 py-8 text-center">Nenhuma planilha de métricas importada para {ANO}.</td></tr>
               )}
-              {(aberto ? linhas : linhas?.slice(0, LINHAS_INICIAIS))?.map((l, i) => <LinhaUnidade key={l.unidade_id} l={l} par={i % 2 === 0} />)}
+              {(aberto ? linhas : linhas?.slice(0, LINHAS_INICIAIS))?.map((l) => <LinhaUnidade key={l.unidade_id} l={l} />)}
             </tbody>
           </table>
         </div>
 
         {linhas && linhas.length > LINHAS_INICIAIS && (
-          <div className="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-gray-100 bg-white px-4 py-2.5 text-sm text-gray-700 sm:px-6">
-            <span>Mostrando {aberto ? linhas.length : LINHAS_INICIAIS} de {linhas.length} unidades</span>
+          <div className="mt-foot sticky bottom-0 z-10 flex items-center justify-between gap-4 px-4 py-2 text-sm sm:px-6">
+            <span>{aberto ? linhas.length : LINHAS_INICIAIS} de {linhas.length}</span>
             <button type="button" aria-expanded={aberto}
               onClick={() => {
                 setAberto((a) => !a);
                 if (aberto) secao.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
               }}
-              className="inline-flex items-center gap-1 rounded px-1 py-1 font-medium text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
-              {aberto ? "Mostrar menos" : `Ver as ${linhas.length} unidades`}
-              <ChevronDown className={`h-4 w-4 transition-transform motion-reduce:transition-none ${aberto ? "rotate-180" : ""}`} aria-hidden />
+              className="mt-link inline-flex min-h-[44px] items-center gap-1 px-3 font-semibold">
+              {aberto ? "Mostrar menos" : "Ver todas"}
+              <ChevronDown className={`mt-chevron h-4 w-4 ${aberto ? "rotate-180" : ""}`} aria-hidden />
             </button>
           </div>
         )}
