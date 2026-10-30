@@ -6,7 +6,6 @@ import { useRematricula } from "../../hooks/useRematricula";
 import { calcularKpisRematricula, REMATRICULA_META, REMATRICULA_FORA_DA_META } from "../../types";
 import type { RematriculaAluno } from "../../types";
 import MetaGauge from "../../components/MetaGauge";
-import RematriculaFaixa3009 from "../../components/RematriculaFaixa3009";
 import RematriculaPainel from "../../components/RematriculaPainel";
 import StatTile from "../../components/StatTile";
 import { Button } from "../../components/ui/button";
@@ -88,7 +87,6 @@ export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const rematricula = useRematricula();
   const { alunos, loading, carregar } = rematricula;
-  const [ver3009, setVer3009] = useState(false);
 
   // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
   const kpisRede = calcularKpisRematricula(
@@ -154,29 +152,21 @@ export default function RematriculaMarketing() {
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {ver3009 ? "Como a rede estava em 30/09." : "Acompanhamento da rematrícula em toda a rede."}
-          </p>
+          <p className="mt-1 text-sm text-gray-600">Acompanhamento da rematrícula em toda a rede.</p>
         </div>
         <div className="flex items-center gap-2">
-          {profile?.role === "marketing" && (
-            <Button variant={ver3009 ? "default" : "outline"} onClick={() => setVer3009((v) => !v)} aria-pressed={ver3009}>
-              {ver3009 ? "Voltar para hoje" : "Ver 30/09"}
-            </Button>
-          )}
           <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(carregar)} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
           </Button>
-          {!ver3009 && <MenuExportar
+          <MenuExportar
             opcoes={[
               { chave: "xlsx", Icone: FileSpreadsheet, titulo: "Excel", descricao: "Resumo por unidade", onSelecionar: () => exportar("xlsx") },
               { chave: "csv", Icone: Table2, titulo: "Google Sheets (CSV)", descricao: "Importa direto no Sheets e no Excel", onSelecionar: () => exportar("csv") },
             ]}
-          />}
+          />
         </div>
       </div>
 
-      {ver3009 ? <RematriculaFaixa3009 alunos={alunos} /> : <>
       {/* Hero: meta da rede + indicadores */}
       <div className="card mb-4 flex flex-col items-center gap-6 p-5 sm:flex-row sm:p-6">
         <MetaGauge pct={kpisRede.pct} label="Meta 90%" />
@@ -290,7 +280,6 @@ export default function RematriculaMarketing() {
           </>
         )}
       </section>
-      </>}
 
       {profile?.role === "supervisao" && unidadesRelatorio.length > 0 && (
         <section aria-labelledby="rm-alunos" className="card mt-4 p-4 sm:p-5">
