@@ -83,10 +83,27 @@ function Numero({ label, valor, cor = "text-gray-800" }: { label: string; valor:
 
 const CHAVE_UNIDADE = "rematricula.previewUnidadeId";
 
+// Foto de 30/09 reconstruída do estado atual: o banco não guarda histórico de status.
+// ponytail: aproximação — aluno editado depois do corte volta a "pendente" (erra para menos);
+// tabela de snapshots diários se precisar de datas exatas.
+const CORTE_30_09 = "2026-10-01T00:00:00-03:00";
+function fotoEm(alunos: RematriculaAluno[], corte: string): RematriculaAluno[] {
+  const t = new Date(corte).getTime();
+  return alunos
+    .filter((a) => new Date(a.created_at).getTime() < t)
+    .map((a) =>
+      new Date(a.updated_at).getTime() < t
+        ? a
+        : { ...a, contrato_assinado: false, motivo: null, negociando: false, aceite: false }
+    );
+}
+
 export default function RematriculaMarketing() {
   const { profile } = useAuth();
   const rematricula = useRematricula();
-  const { alunos, loading, carregar } = rematricula;
+  const { alunos: alunosAtuais, loading, carregar } = rematricula;
+  const [ver3009, setVer3009] = useState(false);
+  const alunos = ver3009 ? fotoEm(alunosAtuais, CORTE_30_09) : alunosAtuais;
 
   // Fora da meta geral (mas seguem no ranking): unidades que não entram no cálculo da rede.
   const kpisRede = calcularKpisRematricula(
@@ -152,9 +169,18 @@ export default function RematriculaMarketing() {
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rematrícula 2027</h1>
-          <p className="mt-1 text-sm text-gray-600">Acompanhamento da rematrícula em toda a rede.</p>
+          <p className="mt-1 text-sm text-gray-600">
+            {ver3009
+              ? "Números como estavam em 30/09 (aproximado: alunos editados depois dessa data contam como pendentes)."
+              : "Acompanhamento da rematrícula em toda a rede."}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          {profile?.role === "marketing" && (
+            <Button variant={ver3009 ? "default" : "outline"} onClick={() => setVer3009((v) => !v)} aria-pressed={ver3009}>
+              {ver3009 ? "Voltar para hoje" : "Ver 30/09"}
+            </Button>
+          )}
           <Button variant="outline" size="icon" onClick={() => atualizarOuRecarregar(carregar)} title="Atualizar" aria-label="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
           </Button>
