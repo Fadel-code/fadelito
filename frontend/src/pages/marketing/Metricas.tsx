@@ -168,7 +168,6 @@ function LinhaUnidade({ l, fracao, mesAlunos }: { l: Linha; fracao: number; mesA
         <Celula grupo valor={num(l.alunos)} dica={`alunos em ${mesAlunos}`} />
       )}
       <Celula valor={pct(l.perda)} dica={`${num(l.desligamentos)} ${l.desligamentos === 1 ? "desligamento" : "desligamentos"} no período`} estado={estadoDe(l.perda, META_PERDA, true)} />
-      <Celula valor={pct(l.saldoPct)} dica={`${l.saldo >= 0 ? "+" : ""}${num(l.saldo)} alunos no período`} estado={estadoDe(l.saldoPct, META_SALDO)} />
       <Celula grupo valor={pct(l.treinamento)} estado={estadoDe(l.treinamento, META_TREINAMENTO)} />
       <Celula valor={pct(l.equipe)} estado={estadoDe(l.equipe, META_EQUIPE, true)} />
     </tr>
@@ -179,7 +178,7 @@ function LinhaCarregando() {
   return (
     <tr aria-hidden>
       <th className="mt-unit sticky left-0 px-3 py-3.5 text-left"><span className="mt-skel block h-3.5 w-32" /></th>
-      {Array.from({ length: 8 }, (_, i) => (
+      {Array.from({ length: 7 }, (_, i) => (
         <td key={i} className="px-3 py-3.5"><span className="mt-skel ml-auto block h-3.5 w-14" /></td>
       ))}
     </tr>
@@ -302,7 +301,7 @@ export default function Metricas() {
               <tr>
                 <td className="mt-unit sticky left-0 z-[1]" />
                 <th scope="colgroup" colSpan={3} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Visitas e matrículas</span></th>
-                <th scope="colgroup" colSpan={3} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Alunos</span></th>
+                <th scope="colgroup" colSpan={2} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Alunos</span></th>
                 <th scope="colgroup" colSpan={2} className="mt-group mt-gap px-3 pb-0 pt-4 text-left text-sm font-semibold"><span className="mt-group-label block pb-2">Equipe</span></th>
               </tr>
               <tr>
@@ -312,7 +311,6 @@ export default function Metricas() {
                 <Cabecalho titulo="Conversão" ideal={`≥ ${pctInt(META_CONVERSAO)}`} />
                 <Cabecalho grupo titulo="Alunos" ideal={rotuloMesAlunos} />
                 <Cabecalho titulo="Perda" ideal={`≤ ${pctInt(META_PERDA)}`} />
-                <Cabecalho titulo="Saldo" ideal={`≥ ${pctInt(META_SALDO)}`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre a média de alunos." />
                 <Cabecalho grupo titulo="Treinamento" ideal={`≥ ${pctInt(META_TREINAMENTO)}`} />
                 <Cabecalho titulo="Rotatividade" ideal={`≤ ${pctInt(META_EQUIPE)}`} />
               </tr>
@@ -320,7 +318,7 @@ export default function Metricas() {
             <tbody>
               {!linhas && !erro && Array.from({ length: 6 }, (_, i) => <LinhaCarregando key={i} />)}
               {linhas?.length === 0 && (
-                <tr><td colSpan={9} className="mt-lede px-3 py-8 text-center">Nenhuma planilha de métricas importada para {ANO}.</td></tr>
+                <tr><td colSpan={8} className="mt-lede px-3 py-8 text-center">Nenhuma planilha de métricas importada para {ANO}.</td></tr>
               )}
               {(aberto ? linhas : linhas?.slice(0, LINHAS_INICIAIS))?.map((l) => <LinhaUnidade key={l.unidade_id} l={l} fracao={fracao} mesAlunos={rotuloMesAlunos} />)}
             </tbody>
