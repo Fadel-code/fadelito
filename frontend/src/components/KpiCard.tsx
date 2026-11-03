@@ -49,13 +49,13 @@ export default function KpiCard({ rotulo, valor, sub, Icone, tom, alerta, progre
   );
 }
 
-/** Grade de KPIs: 2 colunas no celular (o último ímpar ocupa a linha), 4 ou 5 no desktop; 8 é a grade compacta (4 por linha, 8 em telas largas). */
-export function KpiGrid({ rotulo, colunas, children }: { rotulo: string; colunas: 4 | 5 | 8; children: ReactNode }) {
-  const grade = { 4: "lg:grid-cols-4", 5: "md:grid-cols-3 lg:grid-cols-5", 8: "sm:grid-cols-4 2xl:grid-cols-8" }[colunas];
+/** Grade de KPIs: 2 colunas no celular (o último ímpar ocupa a linha), 4 ou 5 no desktop; 7 e 8 são a grade compacta (4 por linha, todas numa linha em telas largas). */
+export function KpiGrid({ rotulo, colunas, children }: { rotulo: string; colunas: 4 | 5 | 7 | 8; children: ReactNode }) {
+  const grade = { 4: "lg:grid-cols-4", 5: "md:grid-cols-3 lg:grid-cols-5", 7: "sm:grid-cols-4 2xl:grid-cols-7", 8: "sm:grid-cols-4 2xl:grid-cols-8" }[colunas];
   return (
     <section
       aria-label={rotulo}
-      className={`grid grid-cols-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${colunas === 8 ? "gap-2.5" : "gap-3 lg:gap-4"} ${grade}`}
+      className={`grid grid-cols-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${colunas >= 7 ? "gap-2.5" : "gap-3 lg:gap-4"} ${grade}`}
     >
       {children}
     </section>

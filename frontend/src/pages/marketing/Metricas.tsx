@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, CalendarCheck, ChevronDown, GraduationCap, Percent, Repeat, Scale, UserMinus, Users } from "lucide-react";
+import { Award, CalendarCheck, ChevronDown, GraduationCap, Percent, Repeat, UserMinus, Users } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import KpiCard, { KpiGrid, type TomKpi } from "../../components/KpiCard";
 import { pct, num } from "../../components/ranking/formato";
@@ -13,7 +13,6 @@ const META_CONVERSAO = 0.35;
 const META_PERDA = 0.1;
 const META_TREINAMENTO = 0.85;
 const META_EQUIPE = 0.15; // teto de rotatividade
-const META_SALDO = 0.1;
 // O formulário diário só tem registros a partir de junho/2026. Antes disso, visitas, matrículas e
 // desligamentos vêm das planilhas das supervisoras (metricas_mensais).
 const MES_INICIO_FORMULARIO = 6;
@@ -34,7 +33,7 @@ const LINHAS_INICIAIS = 10;
 const pctInt = (x: number) => `${Math.round(x * 100)}%`;
 
 interface Mensal { unidade_id: string; ano: number; mes: number; alunos: number | null; treinamento_pct: number | null; equipe_pct: number | null; visitas: number | null; matriculas: number | null; desligamentos: number | null }
-interface Anual { unidade_id: string; meta_visitas: number | null; perdas_rematricula: number | null; saidas_pre: number | null }
+interface Anual { unidade_id: string; meta_visitas: number | null }
 interface Consolidado { unidade_id: string; unidade_nome: string; mes: string; visitas_totais: number; matriculas_totais: number; desligamentos: number }
 
 interface Linha {
@@ -50,9 +49,7 @@ interface Linha {
   equipe: number | null;
   alunos: number | null;
   alunosAnoAnterior: number | null;
-  saldo: number;
-  saldoPct: number | null;
-  /** Média de alunos no ano: base de perda e saldo. */
+  /** Média de alunos no ano: base da perda. */
   base: number | null;
 }
 
@@ -80,8 +77,6 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
     // Base dos percentuais: tamanho médio da escola no ano (janeiro exagera a perda de quem cresce).
     const base = media(doAno.map((x) => x.alunos));
     const noMes = doAno.find((x) => x.mes === mesAlunos)?.alunos ?? null;
-    // ponytail: não rematriculados e saídas do Pré são números anuais da planilha; entram inteiros em qualquer mês.
-    const saldo = matriculas - desligamentos - (a.perdas_rematricula ?? 0) - (a.saidas_pre ?? 0);
     return [{
       unidade_id: u.id,
       unidade: u.unidade_nome,
@@ -95,8 +90,6 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
       equipe: media(doAno.map((x) => x.equipe_pct)),
       alunos: noMes,
       alunosAnoAnterior: noMes === null ? null : m.find((x) => x.ano === ANO - 1 && x.mes === mesAlunos)?.alunos ?? null,
-      saldo,
-      saldoPct: div(saldo, base),
       base,
     }];
   });
@@ -209,7 +202,7 @@ export default function Metricas() {
         supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true).order("unidade_nome"),
         supabase.from("consolidado_mensal").select("unidade_id, unidade_nome, mes, visitas_totais, matriculas_totais, desligamentos").gte("mes", `${ANO}-01-01`).lt("mes", `${ANO + 1}-01-01`),
         supabase.from("metricas_mensais").select("unidade_id, ano, mes, alunos, treinamento_pct, equipe_pct, visitas, matriculas, desligamentos").in("ano", [ANO - 1, ANO]),
-        supabase.from("metricas_anuais").select("unidade_id, meta_visitas, perdas_rematricula, saidas_pre").eq("ano", ANO),
+        supabase.from("metricas_anuais").select("unidade_id, meta_visitas").eq("ano", ANO),
       ]);
       const falha = un.error ?? cons.error ?? mens.error ?? anu.error;
       if (falha) return setErro(falha.message);
@@ -235,7 +228,6 @@ export default function Metricas() {
       alunosAntes: comparaveis.length && comparaveis.length === linhas.filter((l) => l.alunos !== null).length ? alunosAntes : null,
       dAlunos: comparaveis.length ? alunosAgora - alunosAntes : null,
       perda: div(soma((l) => (l.base === null ? 0 : l.desligamentos)), base || null),
-      saldoPct: div(soma((l) => (l.base === null ? 0 : l.saldo)), base || null),
     };
   }, [linhas]);
 
@@ -264,7 +256,7 @@ export default function Metricas() {
       {erro && <p role="alert" className="mt-error rounded-xl p-4 text-sm">Não foi possível carregar as métricas: {erro}. Recarregue a página; se continuar, avise o time de sistemas.</p>}
 
       {/* Mesmo cartão de KPI das outras telas; a ordem segue os grupos da tabela (visitas e matrículas, alunos, equipe). */}
-      <KpiGrid rotulo="Resumo da rede" colunas={8}>
+      <KpiGrid rotulo="Resumo da rede" colunas={7}>
         <KpiCard compacto rotulo="Visitas" Icone={CalendarCheck} carregando={!rede}
           tom={tomDe(estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracao : null))}
           valor={rede ? num(rede.visitas) : "—"} sub={rede ? `meta do ano: ${num(rede.metaVisitas)}` : undefined}
@@ -280,8 +272,6 @@ export default function Metricas() {
           valor={rede ? num(rede.alunos) : "—"} sub={rede?.alunosAntes != null ? `em ${ANO - 1}: ${num(rede.alunosAntes)}` : undefined} />
         <KpiCard compacto rotulo="Perda" Icone={UserMinus} carregando={!rede} tom={tomDe(estadoDe(rede?.perda ?? null, META_PERDA, true))}
           valor={pct(rede?.perda ?? null)} sub={`ideal: até ${pctInt(META_PERDA)}`} />
-        <KpiCard compacto rotulo="Saldo" Icone={Scale} carregando={!rede} tom={tomDe(estadoDe(rede?.saldoPct ?? null, META_SALDO))}
-          valor={pct(rede?.saldoPct ?? null)} sub={`ideal: ${pctInt(META_SALDO)} ou mais`} />
         <KpiCard compacto rotulo="Treinamento" Icone={Award} carregando={!rede} tom={tomDe(estadoDe(rede?.treinamento ?? null, META_TREINAMENTO))}
           valor={pct(rede?.treinamento ?? null)} sub={`ideal: ${pctInt(META_TREINAMENTO)} ou mais`} />
         <KpiCard compacto rotulo="Rotatividade" Icone={Repeat} carregando={!rede} tom={tomDe(estadoDe(rede?.equipe ?? null, META_EQUIPE, true))}
