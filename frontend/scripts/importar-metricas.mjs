@@ -2,14 +2,25 @@
 // e imprime o SQL de UPSERT em metricas_mensais / metricas_anuais pra colar no SQL Editor.
 //
 //   node frontend/scripts/importar-metricas.mjs ~/Downloads/Metricas > metricas.sql
+//   node frontend/scripts/importar-metricas.mjs --drive     # baixa do Drive e grava direto no Supabase
+//   node frontend/scripts/importar-metricas.mjs --drive --seco  # só baixa e lê, sem gravar
 //   node frontend/scripts/importar-metricas.mjs --teste
 //
+// --drive (usado pelo workflow sincronizar-metricas.yml) precisa de:
+//   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+//     OAuth de uma conta que já lê a PASTA_DRIVE (hisdevotions@gmail.com). O refresh token sai de
+//     `node frontend/scripts/autorizar-google.mjs <client_secret.json>`, rodado uma vez.
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//
 // Relatório (unidades lidas, faltantes, valores estranhos) sai no stderr.
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import XLSX from "xlsx";
 
 const ANO = 2026;
+// Pasta "2026 -SUPERVISÃO RELATÓRIO": uma subpasta por unidade com a "Métricas - <Unidade>.xlsx".
+const PASTA_DRIVE = "1lIW7YK3tzhgeRmqaNO06l6Wes-aYnrOv";
 
 // Nome na planilha → nome em UNIDADES, quando não bate só tirando acento.
 const ALIAS = {
@@ -47,7 +58,7 @@ function unidadesDoSistema() {
 
 // Duas abas, achadas pelo nome (a ordem varia: Vila Gumercindo vem invertida).
 function lerPlanilha(caminho, unidades) {
-  const wb = XLSX.readFile(caminho);
+  const wb = XLSX.read(readFileSync(caminho)); // readFile não acha o fs no build ESM do xlsx 0.20
   const aba = (nome) => {
     const sheet = wb.SheetNames.find((s) => normalizar(s) === nome);
     if (!sheet) throw new Error(`${caminho}: aba "${nome}" não encontrada`);
@@ -112,7 +123,8 @@ ON CONFLICT (unidade_id, ${chave}) DO UPDATE SET
   updated_at = now();`;
 }
 
-function main(pasta) {
+/** Lê todas as planilhas da pasta. Uma planilha quebrada não derruba as outras: vai para `erros`. */
+function lerPasta(pasta) {
   const unidades = unidadesDoSistema();
   const arquivos = [];
   const varrer = (dir) => {
@@ -124,7 +136,11 @@ function main(pasta) {
   };
   varrer(pasta);
 
-  const lidas = arquivos.map((a) => lerPlanilha(a, unidades)).filter((l) => !FORA.includes(l.unidade));
+  const erros = [];
+  const lidas = arquivos
+    .flatMap((a) => { try { return [lerPlanilha(a, unidades)]; } catch (e) { erros.push(e.message); return []; } })
+    .filter((l) => !FORA.includes(l.unidade));
+  for (const e of erros) console.error(`erro: ${e}`);
   const repetidas = lidas.map((l) => l.unidade).filter((u, i, t) => t.indexOf(u) !== i);
   if (repetidas.length) throw new Error(`Mais de uma planilha para: ${repetidas.join(", ")}`);
 
@@ -136,7 +152,12 @@ function main(pasta) {
 
   const faltam = unidades.filter((u) => !FORA.includes(u) && !lidas.some((l) => l.unidade === u));
   console.error(`${lidas.length} planilhas lidas. Sem planilha: ${faltam.join(", ") || "nenhuma"}`);
+  return { lidas, mensais, erros };
+}
 
+function main(pasta) {
+  const { lidas, mensais, erros } = lerPasta(pasta);
+  if (erros.length) process.exitCode = 1;
   console.log(`-- Gerado por frontend/scripts/importar-metricas.mjs em ${new Date().toISOString()}
 BEGIN;
 ${upsert("metricas_mensais", "ano, mes", mensais)}
@@ -145,7 +166,91 @@ ${upsert("metricas_anuais", "ano", lidas.map((l) => l.anual))}
 COMMIT;`);
 }
 
-if (process.argv[2] === "--teste") {
+// ---------------- --drive: Google Drive → Supabase ----------------
+
+/** Access token a partir do refresh token OAuth (lê o Drive como a conta que autorizou). */
+async function tokenGoogle() {
+  const r = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    }),
+  });
+  // invalid_grant = token revogado/expirado: rodar autorizar-google.mjs de novo e trocar o secret.
+  if (!r.ok) throw new Error(`Google OAuth ${r.status}: ${await r.text()}`);
+  return (await r.json()).access_token;
+}
+
+async function baixarDoDrive() {
+  const token = await tokenGoogle();
+  const auth = { Authorization: `Bearer ${token}` };
+  const destino = mkdtempSync(join(tmpdir(), "metricas-"));
+  const PASTA = "application/vnd.google-apps.folder";
+  const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const filhos = async (id) => {
+    const todos = [];
+    let pageToken = "";
+    do {
+      const url = `https://www.googleapis.com/drive/v3/files?${new URLSearchParams({
+        q: `'${id}' in parents and trashed = false`, includeItemsFromAllDrives: "true", supportsAllDrives: "true",
+        fields: "nextPageToken, files(id, name, mimeType)", pageSize: "200", ...(pageToken && { pageToken }),
+      })}`;
+      const r = await fetch(url, { headers: auth });
+      if (!r.ok) throw new Error(`Drive list ${r.status}: ${await r.text()}`);
+      const j = await r.json();
+      todos.push(...j.files);
+      pageToken = j.nextPageToken ?? "";
+    } while (pageToken);
+    return todos;
+  };
+  // ponytail: desce a árvore inteira; as pastas das unidades têm poucos arquivos.
+  const fila = [PASTA_DRIVE];
+  let baixados = 0;
+  while (fila.length) {
+    for (const f of await filhos(fila.shift())) {
+      if (f.mimeType === PASTA) { fila.push(f.id); continue; }
+      if (f.mimeType !== XLSX_MIME || !/^m[eé]tricas?/i.test(f.name.normalize("NFC"))) continue;
+      const d = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&supportsAllDrives=true`, { headers: auth });
+      if (!d.ok) throw new Error(`Drive download ${f.name} ${d.status}`);
+      // Uma subpasta por arquivo: duas unidades podem ter planilhas de mesmo nome.
+      mkdirSync(join(destino, f.id));
+      writeFileSync(join(destino, f.id, f.name.replace(/[/\\]/g, "_")), Buffer.from(await d.arrayBuffer()));
+      baixados++;
+    }
+  }
+  if (!baixados) throw new Error(`Nenhuma planilha de métricas na pasta ${PASTA_DRIVE}: a conta que autorizou o OAuth tem acesso a ela?`);
+  console.error(`${baixados} planilhas baixadas do Drive`);
+  return destino;
+}
+
+async function gravarNoSupabase(lidas, mensais) {
+  const base = process.env.SUPABASE_URL;
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const h = { apikey: chave, Authorization: `Bearer ${chave}`, "Content-Type": "application/json" };
+  const p = await fetch(`${base}/rest/v1/profiles?select=id,unidade_nome&role=eq.unidade`, { headers: h });
+  if (!p.ok) throw new Error(`profiles ${p.status}: ${await p.text()}`);
+  const idDe = new Map((await p.json()).map((x) => [x.unidade_nome, x.id]));
+  const agora = new Date().toISOString();
+  const linhas = (xs) => xs.flatMap(({ unidade, ...resto }) => (idDe.has(unidade) ? [{ unidade_id: idDe.get(unidade), ...resto, updated_at: agora }] : []));
+  for (const [tabela, chave_, dados] of [["metricas_mensais", "unidade_id,ano,mes", linhas(mensais)], ["metricas_anuais", "unidade_id,ano", linhas(lidas.map((l) => l.anual))]]) {
+    const r = await fetch(`${base}/rest/v1/${tabela}?on_conflict=${chave_}`, {
+      method: "POST", headers: { ...h, Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(dados),
+    });
+    if (!r.ok) throw new Error(`${tabela} ${r.status}: ${await r.text()}`);
+    console.error(`${tabela}: ${dados.length} linhas gravadas`);
+  }
+}
+
+if (process.argv[2] === "--drive") {
+  const { lidas, mensais, erros } = lerPasta(await baixarDoDrive());
+  // --seco: baixa e lê, sem gravar (para testar o acesso ao Drive).
+  if (process.argv[3] !== "--seco") await gravarNoSupabase(lidas, mensais);
+  // As planilhas boas já foram gravadas; falha no fim para o GitHub avisar das quebradas.
+  if (erros.length) process.exitCode = 1;
+} else if (process.argv[2] === "--teste") {
   const ok = (a, b) => { if (a !== b) throw new Error(`esperado ${b}, veio ${a}`); };
   ok(lerPct(0.24), 0.24);
   ok(lerPct("10%%"), 0.1);

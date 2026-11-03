@@ -1,0 +1,46 @@
+name: Sincronizar métricas (Drive → Supabase)
+
+# Puxa as planilhas "Métricas - <Unidade>.xlsx" do drive da supervisão na última semana
+# de cada mês: segunda, quarta e sexta às 18h (São Paulo = 21h UTC).
+# O cron do GitHub não sabe "última semana": roda toda seg/qua/sex e o primeiro passo filtra.
+on:
+  schedule:
+    - cron: "0 21 * * 1,3,5"
+  workflow_dispatch: # botão "Run workflow": roda na hora, fora da última semana também
+
+concurrency: sincronizar-metricas
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Última semana do mês?
+        id: janela
+        if: github.event_name == 'schedule'
+        run: |
+          dia=$(TZ=America/Sao_Paulo date +%-d)
+          ultimo=$(TZ=America/Sao_Paulo date -d "$(TZ=America/Sao_Paulo date +%Y-%m-01) +1 month -1 day" +%-d)
+          if [ "$dia" -gt $((ultimo - 7)) ]; then echo "roda=1" >> "$GITHUB_OUTPUT"; else echo "Dia $dia de $ultimo: fora da última semana."; fi
+
+      - uses: actions/checkout@v4
+        if: github.event_name != 'schedule' || steps.janela.outputs.roda == '1'
+
+      - uses: actions/setup-node@v4
+        if: github.event_name != 'schedule' || steps.janela.outputs.roda == '1'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Importar
+        if: github.event_name != 'schedule' || steps.janela.outputs.roda == '1'
+        working-directory: frontend
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm ci
+          node scripts/importar-metricas.mjs --drive
