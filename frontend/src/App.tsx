@@ -138,6 +138,11 @@ function RequireAuth({ children, role }: { children: ReactNode; role?: "unidade"
 }
 
 // Só o login Marketing — supervisão passa por RequireAuth role="marketing", mas não vê o ranking.
+function RequireMarketingOuSupervisao({ children }: { children: ReactNode }) {
+  const { profile } = useAuth();
+  return profile?.role === "marketing" || profile?.role === "supervisao" ? <>{children}</> : <Navigate to="/marketing/dashboard" replace />;
+}
+
 function RequireMarketing({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   return profile?.role === "marketing" ? <>{children}</> : <Navigate to="/marketing/dashboard" replace />;
@@ -195,7 +200,7 @@ export default function App() {
           <Route path="desfechos" element={<DesfechosMarketing />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
-          <Route path="metricas" element={<RequireMarketing><Metricas /></RequireMarketing>} />
+          <Route path="metricas" element={<RequireMarketingOuSupervisao><Metricas /></RequireMarketingOuSupervisao>} />
           <Route path="ranking-supervisoras" element={<RequireMarketing><RankingSupervisoras /></RequireMarketing>} />
           <Route path="protocolos" element={<AssistenteFadelito />} />
           <Route path="mfa" element={<ContaMfa />} />

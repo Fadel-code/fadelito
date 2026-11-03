@@ -104,14 +104,13 @@ const NAV_MARKETING: NavEntry[] = [
     ],
   },
   { to: "/marketing/protocolos", label: "Assistente Fadelito", icon: BookOpen },
-  // marketingOnly: o grupo inteiro some para a supervisão (Métricas e Ranking são só do login Marketing).
+  // Métricas aparece para marketing e supervisão; o Ranking é só do login Marketing.
   {
     label: "Desempenho",
     icon: BarChart3,
-    marketingOnly: true,
     items: [
       { to: "/marketing/metricas", label: "Métricas", icon: BarChart3 },
-      { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy },
+      { to: "/marketing/ranking-supervisoras", label: "Ranking Supervisoras", icon: Trophy, marketingOnly: true },
     ],
   },
   // marketingOnly: supervisão tem a mesma hierarquia de leitura da unidade — sem gestão de usuários/senhas.
@@ -179,9 +178,10 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
       )
     : NAV_MARKETING;
 
-  const navItems = (role === "unidade" ? navUnidade : navMarketing).filter(
-    (entry) => !("marketingOnly" in entry && entry.marketingOnly && profile?.role === "supervisao")
-  );
+  const soMarketing = (e: { marketingOnly?: boolean }) => e.marketingOnly && profile?.role === "supervisao";
+  const navItems = (role === "unidade" ? navUnidade : navMarketing)
+    .filter((entry) => !soMarketing(entry))
+    .map((entry) => (isNavGroup(entry) ? { ...entry, items: entry.items.filter((item) => !soMarketing(item)) } : entry));
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
     const abertos = new Set<string>();
