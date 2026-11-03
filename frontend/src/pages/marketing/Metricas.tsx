@@ -52,7 +52,7 @@ interface Linha {
   alunosAnoAnterior: number | null;
   saldo: number;
   saldoPct: number | null;
-  /** Média de alunos no ano: base de perda e saldo. */
+  /** Média de alunos no ano: base da perda. */
   base: number | null;
 }
 
@@ -96,7 +96,8 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
       alunos: noMes,
       alunosAnoAnterior: noMes === null ? null : m.find((x) => x.ano === ANO - 1 && x.mes === mesAlunos)?.alunos ?? null,
       saldo,
-      saldoPct: div(saldo, base),
+      // Saldo sobre os alunos do mês mostrado (igual à planilha), não sobre a média do ano.
+      saldoPct: div(saldo, noMes),
       base,
     }];
   });
@@ -236,7 +237,7 @@ export default function Metricas() {
       alunosAntes: comparaveis.length && comparaveis.length === linhas.filter((l) => l.alunos !== null).length ? alunosAntes : null,
       dAlunos: comparaveis.length ? alunosAgora - alunosAntes : null,
       perda: div(soma((l) => (l.base === null ? 0 : l.desligamentos)), base || null),
-      saldoPct: div(soma((l) => (l.base === null ? 0 : l.saldo)), base || null),
+      saldoPct: div(soma((l) => (l.alunos === null ? 0 : l.saldo)), soma((l) => l.alunos) || null),
     };
   }, [linhas]);
 
@@ -312,7 +313,7 @@ export default function Metricas() {
                 <Cabecalho titulo="Conversão" ideal={`≥ ${pctInt(META_CONVERSAO)}`} />
                 <Cabecalho grupo titulo="Alunos" ideal={rotuloMesAlunos} />
                 <Cabecalho titulo="Perda" ideal={`≤ ${pctInt(META_PERDA)}`} />
-                <Cabecalho titulo="Saldo" ideal={`≥ ${pctInt(META_SALDO)}`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre a média de alunos." />
+                <Cabecalho titulo="Saldo" ideal={`≥ ${pctInt(META_SALDO)}`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre os alunos do mês." />
                 <Cabecalho grupo titulo="Treinamento" ideal={`≥ ${pctInt(META_TREINAMENTO)}`} />
                 <Cabecalho titulo="Rotatividade" ideal={`≤ ${pctInt(META_EQUIPE)}`} />
               </tr>
