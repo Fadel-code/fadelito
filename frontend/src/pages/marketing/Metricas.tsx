@@ -3,6 +3,8 @@ import { Award, CalendarCheck, ChevronDown, GraduationCap, Percent, Repeat, Scal
 import { supabase } from "../../lib/supabase";
 import KpiCard, { KpiGrid, type TomKpi } from "../../components/KpiCard";
 import { pct, num } from "../../components/ranking/formato";
+import { MESES_CURTOS } from "../../lib/rankingSupervisoras";
+import { MESES } from "../../types";
 import "./metricas.css";
 
 const ANO = 2026;
@@ -16,14 +18,17 @@ const META_SALDO = 0.1;
 // desligamentos vêm das planilhas das supervisoras (metricas_mensais).
 const MES_INICIO_FORMULARIO = 6;
 
-// Visitas e matrículas têm meta anual: o ideal de hoje é a parte da meta que o ano já "gastou".
-const fracaoDoAno = (() => {
-  const hoje = new Date();
-  if (hoje.getFullYear() !== ANO) return hoje.getFullYear() > ANO ? 1 : 0;
+const hoje = new Date();
+// Último mês com dados: o mês corrente em ANO, dezembro depois dele.
+const MES_ATUAL = hoje.getFullYear() > ANO ? 12 : hoje.getFullYear() < ANO ? 1 : hoje.getMonth() + 1;
+
+// Visitas e matrículas têm meta anual: o ideal é a parte da meta que o ano já "gastou" até o fim do
+// mês escolhido (no mês corrente, até hoje).
+function fracaoAte(mes: number) {
   const inicio = new Date(ANO, 0, 1).getTime();
-  return (hoje.getTime() - inicio) / (new Date(ANO + 1, 0, 1).getTime() - inicio);
-})();
-const pctAno = Math.round(fracaoDoAno * 100);
+  const fim = mes === MES_ATUAL && hoje.getFullYear() === ANO ? hoje.getTime() : new Date(ANO, mes, 1).getTime();
+  return (fim - inicio) / (new Date(ANO + 1, 0, 1).getTime() - inicio);
+}
 // Linhas visíveis antes de "ver todas": mantém a página curta.
 const LINHAS_INICIAIS = 10;
 const pctInt = (x: number) => `${Math.round(x * 100)}%`;
@@ -57,15 +62,16 @@ const media = (xs: (number | null)[]) => {
 };
 const div = (a: number, b: number | null) => (b ? a / b : null);
 
-function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Consolidado[], mensais: Mensal[], anuais: Anual[]): Linha[] {
+/** Métricas acumuladas de janeiro até o mês `ate` (1–12); a coluna Alunos é a foto do mês `mesAlunos`, igual para todas. */
+function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Consolidado[], mensais: Mensal[], anuais: Anual[], ate: number, mesAlunos: number): Linha[] {
   // Só entra quem tem planilha importada: as unidades fechadas (Brooklin, Klabin, Perdizes, Real Parque) ficam de fora.
   return unidades.flatMap((u) => {
     const a = anuais.find((x) => x.unidade_id === u.id);
     if (!a) return [];
     const c = cons.filter((x) => x.unidade_id === u.id);
     const m = mensais.filter((x) => x.unidade_id === u.id);
-    const doAno = m.filter((x) => x.ano === ANO).sort((x, y) => x.mes - y.mes);
-    const formulario = c.filter((x) => Number(x.mes.slice(5, 7)) >= MES_INICIO_FORMULARIO);
+    const doAno = m.filter((x) => x.ano === ANO && x.mes <= ate).sort((x, y) => x.mes - y.mes);
+    const formulario = c.filter((x) => { const mes = Number(x.mes.slice(5, 7)); return mes >= MES_INICIO_FORMULARIO && mes <= ate; });
     const planilha = doAno.filter((x) => x.mes < MES_INICIO_FORMULARIO);
     const somaPlanilha = (f: (x: Mensal) => number | null) => planilha.reduce((s, x) => s + (f(x) ?? 0), 0);
     const visitas = formulario.reduce((s, x) => s + x.visitas_totais, 0) + somaPlanilha((x) => x.visitas);
@@ -73,7 +79,8 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
     const desligamentos = formulario.reduce((s, x) => s + x.desligamentos, 0) + somaPlanilha((x) => x.desligamentos);
     // Base dos percentuais: tamanho médio da escola no ano (janeiro exagera a perda de quem cresce).
     const base = media(doAno.map((x) => x.alunos));
-    const ultimo = [...doAno].reverse().find((x) => x.alunos !== null) ?? null;
+    const noMes = doAno.find((x) => x.mes === mesAlunos)?.alunos ?? null;
+    // ponytail: não rematriculados e saídas do Pré são números anuais da planilha; entram inteiros em qualquer mês.
     const saldo = matriculas - desligamentos - (a.perdas_rematricula ?? 0) - (a.saidas_pre ?? 0);
     return [{
       unidade_id: u.id,
@@ -86,8 +93,8 @@ function montarLinhas(unidades: { id: string; unidade_nome: string }[], cons: Co
       perda: div(desligamentos, base),
       treinamento: media(doAno.map((x) => x.treinamento_pct)),
       equipe: media(doAno.map((x) => x.equipe_pct)),
-      alunos: ultimo?.alunos ?? null,
-      alunosAnoAnterior: ultimo ? m.find((x) => x.ano === ANO - 1 && x.mes === ultimo.mes)?.alunos ?? null : null,
+      alunos: noMes,
+      alunosAnoAnterior: noMes === null ? null : m.find((x) => x.ano === ANO - 1 && x.mes === mesAlunos)?.alunos ?? null,
       saldo,
       saldoPct: div(saldo, base),
       base,
@@ -122,9 +129,9 @@ function Cabecalho({ titulo, ideal, grupo, dica }: { titulo: string; ideal: stri
   );
 }
 
-function Celula({ valor, sub, dica, estado, grupo }: { valor: string; sub?: string; dica?: string; estado: Estado; grupo?: boolean }) {
+function Celula({ valor, sub, dica, estado, grupo }: { valor: string; sub?: string; dica?: string; estado?: Estado; grupo?: boolean }) {
   return (
-    <td title={dica} className={`mt-cell px-3 py-3 text-right ${classeCelula(estado)} ${grupo ? "mt-gap" : ""}`}>
+    <td title={dica} className={`mt-cell px-3 py-3 text-right ${estado === undefined ? "" : classeCelula(estado)} ${grupo ? "mt-gap" : ""}`}>
       <span className="font-medium">{valor}</span>
       {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
       {sub && <span className="mt-sub ml-2 whitespace-nowrap text-xs">{sub}</span>}
@@ -133,9 +140,9 @@ function Celula({ valor, sub, dica, estado, grupo }: { valor: string; sub?: stri
 }
 
 /** Visitas e matrículas: o número, a barra da meta do ano e a linha do ano atravessando a coluna. */
-function CelulaMeta({ feito, alvo, estado, grupo }: { feito: number; alvo: number | null; estado: Estado; grupo?: boolean }) {
+function CelulaMeta({ feito, alvo, estado, grupo, fracao }: { feito: number; alvo: number | null; estado: Estado; grupo?: boolean; fracao: number }) {
   return (
-    <td title={alvo ? `${pctInt(feito / alvo)} da meta do ano; o ideal de hoje é ${num(Math.round(alvo * fracaoDoAno))}` : "sem meta"}
+    <td title={alvo ? `${pctInt(feito / alvo)} da meta do ano; o ideal até aqui é ${num(Math.round(alvo * fracao))}` : "sem meta"}
       className={`mt-cell px-3 py-3 text-right ${classeCelula(estado)} ${grupo ? "mt-gap" : ""}`}>
       <span className="font-medium">{num(feito)}</span>
       {estado && <span className="sr-only"> ({TEXTO[estado]})</span>}
@@ -144,23 +151,24 @@ function CelulaMeta({ feito, alvo, estado, grupo }: { feito: number; alvo: numbe
   );
 }
 
-const diferenca = (d: number) => (d === 0 ? "=" : `${d > 0 ? "+" : "−"}${num(Math.abs(d))}`);
-
-function LinhaUnidade({ l }: { l: Linha }) {
+function LinhaUnidade({ l, fracao, mesAlunos }: { l: Linha; fracao: number; mesAlunos: string }) {
   const meta = l.metaVisitas;
   const metaMatriculas = meta === null ? null : Math.round(meta * META_CONVERSAO);
-  const dAlunos = l.alunos === null || l.alunosAnoAnterior === null ? null : l.alunos - l.alunosAnoAnterior;
   return (
     <tr>
       <th scope="row" className="mt-unit sticky left-0 z-[1] whitespace-nowrap px-3 py-3 text-left font-medium">{l.unidade}</th>
-      <CelulaMeta grupo feito={l.visitas} alvo={meta} estado={estadoDe(l.visitas, meta === null ? null : meta * fracaoDoAno)} />
-      <CelulaMeta feito={l.matriculas} alvo={metaMatriculas} estado={estadoDe(l.matriculas, metaMatriculas === null ? null : metaMatriculas * fracaoDoAno)} />
+      <CelulaMeta grupo fracao={fracao} feito={l.visitas} alvo={meta} estado={estadoDe(l.visitas, meta === null ? null : meta * fracao)} />
+      <CelulaMeta fracao={fracao} feito={l.matriculas} alvo={metaMatriculas} estado={estadoDe(l.matriculas, metaMatriculas === null ? null : metaMatriculas * fracao)} />
       <Celula valor={pct(l.conversao)} dica={`${num(l.matriculas)} matrículas em ${num(l.visitas)} visitas`} estado={estadoDe(l.conversao, META_CONVERSAO)} />
-      <Celula grupo valor={l.alunos === null ? "—" : num(l.alunos)} sub={dAlunos === null ? undefined : diferenca(dAlunos)}
-        dica={dAlunos === null || l.alunos === null ? undefined : `${num(l.alunos)} alunos hoje; no mesmo mês de ${ANO - 1} eram ${num(l.alunosAnoAnterior ?? 0)}`}
-        estado={dAlunos === null ? null : dAlunos >= 0 ? "ok" : "longe"} />
-      <Celula valor={pct(l.perda)} dica={`${num(l.desligamentos)} ${l.desligamentos === 1 ? "desligamento" : "desligamentos"} no ano`} estado={estadoDe(l.perda, META_PERDA, true)} />
-      <Celula valor={pct(l.saldoPct)} dica={`${l.saldo >= 0 ? "+" : ""}${num(l.saldo)} alunos no ano`} estado={estadoDe(l.saldoPct, META_SALDO)} />
+      {l.alunos === null ? (
+        <td title={`A planilha não tem o número de alunos de ${mesAlunos}`} className="mt-cell mt-gap px-3 py-3 text-right">
+          <span className="mt-sub whitespace-nowrap text-xs italic">sem dados de {mesAlunos} na planilha</span>
+        </td>
+      ) : (
+        <Celula grupo valor={num(l.alunos)} dica={`alunos em ${mesAlunos}`} />
+      )}
+      <Celula valor={pct(l.perda)} dica={`${num(l.desligamentos)} ${l.desligamentos === 1 ? "desligamento" : "desligamentos"} no período`} estado={estadoDe(l.perda, META_PERDA, true)} />
+      <Celula valor={pct(l.saldoPct)} dica={`${l.saldo >= 0 ? "+" : ""}${num(l.saldo)} alunos no período`} estado={estadoDe(l.saldoPct, META_SALDO)} />
       <Celula grupo valor={pct(l.treinamento)} estado={estadoDe(l.treinamento, META_TREINAMENTO)} />
       <Celula valor={pct(l.equipe)} estado={estadoDe(l.equipe, META_EQUIPE, true)} />
     </tr>
@@ -179,7 +187,19 @@ function LinhaCarregando() {
 }
 
 export default function Metricas() {
-  const [linhas, setLinhas] = useState<Linha[] | null>(null);
+  const [dados, setDados] = useState<{ un: { id: string; unidade_nome: string }[]; cons: Consolidado[]; mens: Mensal[]; anu: Anual[] } | null>(null);
+  const [mes, setMes] = useState(MES_ATUAL);
+  // Alunos vêm da planilha, que anda atrás do calendário: no mês atual, usa o último mês que alguma
+  // unidade já preencheu. Quem não tem esse mês mostra "—", em vez de um número de outro mês.
+  const mesAlunos = useMemo(() => {
+    if (!dados || mes !== MES_ATUAL) return mes;
+    const preenchidos = dados.mens.filter((x) => x.ano === ANO && x.alunos !== null && x.mes <= mes).map((x) => x.mes);
+    return preenchidos.length ? Math.max(...preenchidos) : mes;
+  }, [dados, mes]);
+  const rotuloMesAlunos = `${MESES_CURTOS[mesAlunos - 1].toLowerCase()}/${ANO}`;
+  const linhas = useMemo(() => (dados ? montarLinhas(dados.un, dados.cons, dados.mens, dados.anu, mes, mesAlunos) : null), [dados, mes, mesAlunos]);
+  const fracao = fracaoAte(mes);
+  const pctAno = Math.round(fracao * 100);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
   const secao = useRef<HTMLElement>(null);
@@ -194,7 +214,7 @@ export default function Metricas() {
       ]);
       const falha = un.error ?? cons.error ?? mens.error ?? anu.error;
       if (falha) return setErro(falha.message);
-      setLinhas(montarLinhas(un.data ?? [], cons.data ?? [], mens.data ?? [], anu.data ?? []));
+      setDados({ un: un.data ?? [], cons: cons.data ?? [], mens: mens.data ?? [], anu: anu.data ?? [] });
     })();
   }, []);
 
@@ -224,9 +244,22 @@ export default function Metricas() {
 
   return (
     <div className="mt space-y-6">
-      <header className="min-w-0">
-        <h1 className="mt-title text-2xl font-bold tracking-tight">Métricas {ANO}</h1>
-        <p className="mt-lede mt-1 text-sm">{pctAno}% do ano já passou</p>
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="mt-title text-2xl font-bold tracking-tight">Métricas {ANO}</h1>
+          <p className="mt-lede mt-1 text-sm">
+            {mes === MES_ATUAL ? `${pctAno}% do ano já passou` : `Acumulado de janeiro a ${MESES[mes - 1].toLowerCase()} (${pctAno}% do ano)`}
+          </p>
+        </div>
+        <label className="mt-lede flex flex-col gap-1 text-xs font-medium">
+          Mês
+          <select value={mes} onChange={(e) => setMes(Number(e.target.value))}
+            className="h-9 rounded-md border border-gray-300 bg-white px-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            {Array.from({ length: MES_ATUAL }, (_, i) => MES_ATUAL - i).map((m) => (
+              <option key={m} value={m}>{m === MES_ATUAL ? "Mês atual" : `${MESES[m - 1]} de ${ANO}`}</option>
+            ))}
+          </select>
+        </label>
       </header>
 
       {erro && <p role="alert" className="mt-error rounded-xl p-4 text-sm">Não foi possível carregar as métricas: {erro}. Recarregue a página; se continuar, avise o time de sistemas.</p>}
@@ -234,11 +267,11 @@ export default function Metricas() {
       {/* Mesmo cartão de KPI das outras telas; a ordem segue os grupos da tabela (visitas e matrículas, alunos, equipe). */}
       <KpiGrid rotulo="Resumo da rede" colunas={8}>
         <KpiCard compacto rotulo="Visitas" Icone={CalendarCheck} carregando={!rede}
-          tom={tomDe(estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracaoDoAno : null))}
+          tom={tomDe(estadoDe(rede?.visitas ?? null, rede ? rede.metaVisitas * fracao : null))}
           valor={rede ? num(rede.visitas) : "—"} sub={rede ? `meta do ano: ${num(rede.metaVisitas)}` : undefined}
           corProgresso="primary" progresso={rede?.metaVisitas ? rede.visitas / rede.metaVisitas : undefined} />
         <KpiCard compacto rotulo="Matrículas" Icone={GraduationCap} carregando={!rede}
-          tom={tomDe(estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracaoDoAno : null))}
+          tom={tomDe(estadoDe(rede?.matriculas ?? null, rede ? rede.metaMatriculas * fracao : null))}
           valor={rede ? num(rede.matriculas) : "—"} sub={rede ? `meta do ano: ${num(metaRedeMatriculas)}` : undefined}
           corProgresso="primary" progresso={rede?.metaMatriculas ? rede.matriculas / rede.metaMatriculas : undefined} />
         <KpiCard compacto rotulo="Conversão" Icone={Percent} carregando={!rede} tom={tomDe(estadoDe(rede?.conversao ?? null, META_CONVERSAO))}
@@ -274,10 +307,10 @@ export default function Metricas() {
               </tr>
               <tr>
                 <th scope="col" className="mt-unit mt-col-title sticky left-0 z-[1] px-3 pb-3 pt-1.5 text-left align-bottom font-semibold">Unidade</th>
-                <Cabecalho grupo titulo="Visitas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
-                <Cabecalho titulo="Matrículas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal de hoje é ter feito ${pctAno}% da meta.`} />
+                <Cabecalho grupo titulo="Visitas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal é ter feito ${pctAno}% da meta.`} />
+                <Cabecalho titulo="Matrículas" ideal={`≥ ${pctAno}% da meta`} dica={`Janeiro a maio vem das planilhas e junho em diante do formulário diário. O ideal acompanha o ano: já passou ${pctAno}%, então o ideal é ter feito ${pctAno}% da meta.`} />
                 <Cabecalho titulo="Conversão" ideal={`≥ ${pctInt(META_CONVERSAO)}`} />
-                <Cabecalho grupo titulo="Alunos" ideal={`> ${ANO - 1}`} />
+                <Cabecalho grupo titulo="Alunos" ideal={rotuloMesAlunos} />
                 <Cabecalho titulo="Perda" ideal={`≤ ${pctInt(META_PERDA)}`} />
                 <Cabecalho titulo="Saldo" ideal={`≥ ${pctInt(META_SALDO)}`} dica="Matrículas − desligamentos − não rematriculados − saídas do Pré, sobre a média de alunos." />
                 <Cabecalho grupo titulo="Treinamento" ideal={`≥ ${pctInt(META_TREINAMENTO)}`} />
@@ -289,7 +322,7 @@ export default function Metricas() {
               {linhas?.length === 0 && (
                 <tr><td colSpan={9} className="mt-lede px-3 py-8 text-center">Nenhuma planilha de métricas importada para {ANO}.</td></tr>
               )}
-              {(aberto ? linhas : linhas?.slice(0, LINHAS_INICIAIS))?.map((l) => <LinhaUnidade key={l.unidade_id} l={l} />)}
+              {(aberto ? linhas : linhas?.slice(0, LINHAS_INICIAIS))?.map((l) => <LinhaUnidade key={l.unidade_id} l={l} fracao={fracao} mesAlunos={rotuloMesAlunos} />)}
             </tbody>
           </table>
         </div>
