@@ -302,15 +302,20 @@ export default function Desfechos() {
   const realizados = Array.from(eventos.values()).sort(
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
-  // ponytail: filtra pela data do registro do desfecho (eventos_lead.data) — a data
-  // da visita não é gravada localmente; criar coluna data_visita se precisar filtrar por ela.
-  const mesesDisponiveis = [...new Set(realizados.map((ev) => ev.data.slice(0, 7)))].sort().reverse();
-  const realizadosFiltrados = mesFiltro ? realizados.filter((ev) => ev.data.startsWith(mesFiltro)) : realizados;
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
   // Leads que já têm evento registrado (qualquer tipo) saem da lista de aguardando
   // desfecho — inclusive "Visitou"/"Em negociação", cujo stage no CRM continua elegível
   // para permitir decisão futura, mas a atualização passa a ser feita em Desfechos Realizados.
   const leadsPendentes = leads.filter((l) => !eventos.has(l.id));
+
+  // Filtro de mês: pendentes pelo mês da visita (CRM); realizados pelo mês do registro.
+  // ponytail: eventos_lead não guarda a data da visita — criar coluna data_visita se
+  // precisar filtrar os realizados por ela.
+  const mesVisita = (l: LeadCRM) => (l.visit_date ? format(new Date(l.visit_date), "yyyy-MM") : "");
+  const mesesDisponiveis = [...new Set([...leadsPendentes.map(mesVisita), ...realizados.map((ev) => ev.data.slice(0, 7))])]
+    .filter(Boolean).sort().reverse();
+  const pendentesFiltrados = mesFiltro ? leadsPendentes.filter((l) => mesVisita(l) === mesFiltro) : leadsPendentes;
+  const realizadosFiltrados = mesFiltro ? realizados.filter((ev) => ev.data.startsWith(mesFiltro)) : realizados;
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -354,24 +359,41 @@ export default function Desfechos() {
               {profile?.unidade_nome} — aponte quem visitou, matriculou ou não fechou.
             </p>
           </div>
-          <Button variant="outline" onClick={recarregar} disabled={loading}>
-            <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-            Atualizar
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              Mês
+              <select
+                className="h-10 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={mesFiltro}
+                onChange={(e) => setMesFiltro(e.target.value)}
+              >
+                <option value="">Todos os meses</option>
+                {mesesDisponiveis.map((ym) => (
+                  <option key={ym} value={ym}>{MESES[Number(ym.slice(5, 7)) - 1]} de {ym.slice(0, 4)}</option>
+                ))}
+              </select>
+            </label>
+            <Button variant="outline" onClick={recarregar} disabled={loading}>
+              <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {loading && leadsPendentes.length === 0 ? (
           <div className="card p-12 text-center text-gray-500">
             Carregando leads do CRM...
           </div>
-        ) : leadsPendentes.length === 0 ? (
+        ) : pendentesFiltrados.length === 0 ? (
           <div className="card p-12 text-center">
             <CalendarCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Nenhum lead aguardando desfecho nesta unidade no momento.</p>
+            <p className="text-gray-500">
+              {mesFiltro ? "Nenhuma visita deste mês aguardando desfecho." : "Nenhum lead aguardando desfecho nesta unidade no momento."}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {leadsPendentes.map((lead) => {
+            {pendentesFiltrados.map((lead) => {
               const linha = estado[lead.id] ?? { tipo: "", observacao: "" };
               const isSalvando = salvando === lead.id;
               return (
@@ -571,24 +593,9 @@ export default function Desfechos() {
       {/* ── Desfechos Realizados ── */}
       {realizados.length > 0 && (
         <div>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Desfechos Realizados <span className="text-sm font-normal text-gray-500">({realizadosFiltrados.length})</span>
-            </h2>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              Mês do registro
-              <select
-                className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={mesFiltro}
-                onChange={(e) => setMesFiltro(e.target.value)}
-              >
-                <option value="">Todos os meses</option>
-                {mesesDisponiveis.map((ym) => (
-                  <option key={ym} value={ym}>{MESES[Number(ym.slice(5, 7)) - 1]} de {ym.slice(0, 4)}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <h2 className="mb-3 text-lg font-semibold text-gray-800">
+            Desfechos Realizados <span className="text-sm font-normal text-gray-500">({realizadosFiltrados.length})</span>
+          </h2>
           <div className="card overflow-hidden">
             <table className="w-full text-sm border-collapse">
               <thead>
