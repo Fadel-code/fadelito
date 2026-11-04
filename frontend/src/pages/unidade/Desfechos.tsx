@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
 import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
-import { DESFECHOS, DESFECHO_BADGE, desfechoLabel } from "../../types";
+import { DESFECHOS, DESFECHO_BADGE, desfechoLabel, MESES } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
 import {
@@ -220,6 +220,7 @@ export default function Desfechos() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [editEstado, setEditEstado] = useState<EditState>({ tipo: "", observacao: "", nome: "" });
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [mesFiltro, setMesFiltro] = useState(""); // "" = todos; senão YYYY-MM
 
   // Modal "próximo passo" após registrar "Visitou"
   const [modalVisita, setModalVisita] = useState<{ lead: LeadCRM; observacao: string; tipo?: DesfechoTipo } | null>(null);
@@ -301,6 +302,10 @@ export default function Desfechos() {
   const realizados = Array.from(eventos.values()).sort(
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
+  // ponytail: filtra pela data do registro do desfecho (eventos_lead.data) — a data
+  // da visita não é gravada localmente; criar coluna data_visita se precisar filtrar por ela.
+  const mesesDisponiveis = [...new Set(realizados.map((ev) => ev.data.slice(0, 7)))].sort().reverse();
+  const realizadosFiltrados = mesFiltro ? realizados.filter((ev) => ev.data.startsWith(mesFiltro)) : realizados;
   const pendingVisitas = realizados.filter((ev) => ev.tipo === "visita_realizada").length;
   // Leads que já têm evento registrado (qualquer tipo) saem da lista de aguardando
   // desfecho — inclusive "Visitou"/"Em negociação", cujo stage no CRM continua elegível
@@ -566,7 +571,24 @@ export default function Desfechos() {
       {/* ── Desfechos Realizados ── */}
       {realizados.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Desfechos Realizados</h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Desfechos Realizados <span className="text-sm font-normal text-gray-500">({realizadosFiltrados.length})</span>
+            </h2>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              Mês do registro
+              <select
+                className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={mesFiltro}
+                onChange={(e) => setMesFiltro(e.target.value)}
+              >
+                <option value="">Todos os meses</option>
+                {mesesDisponiveis.map((ym) => (
+                  <option key={ym} value={ym}>{MESES[Number(ym.slice(5, 7)) - 1]} de {ym.slice(0, 4)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="card overflow-hidden">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -579,7 +601,7 @@ export default function Desfechos() {
                 </tr>
               </thead>
               <tbody>
-                {realizados.map((ev, i) => {
+                {realizadosFiltrados.map((ev, i) => {
                   const isEditando = editandoId === ev.id;
                   const isConfirmando = confirmandoId === ev.id;
                   const isSalvando = salvando === ev.crm_lead_id;
