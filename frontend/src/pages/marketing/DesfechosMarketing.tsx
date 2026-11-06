@@ -5,7 +5,6 @@ import { ptBR } from "date-fns/locale";
 import { RefreshCw, AlertOctagon, CheckCircle2, Clock, Eye, GraduationCap, MessageCircle, XCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { fetchLeadsElegiveis } from "../../lib/crm";
-import { DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
@@ -28,12 +27,15 @@ interface UnidadeRow {
   nao_fechou: number;
   total: number;
   nuncaPreencheu: boolean;
-  diasPendente: number | null;
   visitasNoPeriodo: number;
   visitasSemDesfecho: number;
 }
 
 const FILTRO_KEY = "fadelito_filtro_desfechos_marketing";
+
+// Urgente = o que a coluna "Visitas no período" mostra: visita já ocorrida no período
+// sem nenhum desfecho registrado, ou unidade que nunca registrou desfecho algum.
+const ehUrgente = (r: UnidadeRow) => r.nuncaPreencheu || r.visitasSemDesfecho > 0;
 
 export default function DesfechosMarketing() {
   const mesCorrido = new Date().getMonth() + 1;
@@ -72,8 +74,8 @@ export default function DesfechosMarketing() {
     const [{ data: profiles }, { data: eventos }, { data: todosEventos }] = await Promise.all([
       supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true),
       supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim),
-      // Sem filtro de período: usado só para o alerta de urgência (nunca preencheu / pendente há dias)
-      supabase.from("eventos_lead").select("unidade_id, tipo, created_at, crm_lead_id"),
+      // Sem filtro de período: quem já registrou algum desfecho (nunca preencheu / lead já resolvido)
+      supabase.from("eventos_lead").select("unidade_id, crm_lead_id"),
     ]);
 
     // Lead com desfecho local já registrado (qualquer tipo, a qualquer momento)
@@ -111,40 +113,29 @@ export default function DesfechosMarketing() {
       contagens.get(e.unidade_id)![e.tipo as DesfechoTipo]++;
     }
 
-    const historico = new Map<string, { pendenteMaisAntigo: string | null }>();
-    for (const e of todosEventos ?? []) {
-      const h = historico.get(e.unidade_id) ?? { pendenteMaisAntigo: null };
-      if (e.tipo === "visita_realizada" && (!h.pendenteMaisAntigo || e.created_at < h.pendenteMaisAntigo)) {
-        h.pendenteMaisAntigo = e.created_at;
-      }
-      historico.set(e.unidade_id, h);
-    }
+    const jaPreencheu = new Set((todosEventos ?? []).map((e) => e.unidade_id));
 
     const result: UnidadeRow[] = (profiles ?? []).map((p) => {
       const c = contagens.get(p.id) ?? { visita_realizada: 0, em_negociacao: 0, matricula: 0, nao_fechou: 0 };
-      const h = historico.get(p.id);
-      const diasPendente = h?.pendenteMaisAntigo
-        ? Math.floor((Date.now() - new Date(h.pendenteMaisAntigo).getTime()) / 86_400_000)
-        : null;
       const crm = crmStats.get(p.id) ?? { visitasNoPeriodo: 0, visitasSemDesfecho: 0 };
       return {
         unidade_id: p.id,
         unidade_nome: p.unidade_nome ?? p.id,
         ...c,
         total: c.visita_realizada + c.em_negociacao + c.matricula + c.nao_fechou,
-        nuncaPreencheu: !h,
-        diasPendente,
+        nuncaPreencheu: !jaPreencheu.has(p.id),
         visitasNoPeriodo: crm.visitasNoPeriodo,
         visitasSemDesfecho: crm.visitasSemDesfecho,
       };
     });
 
-    // Urgência (nunca preencheu / pendente há muitos dias) primeiro, depois pendentes do período, depois total
-    result.sort((a, b) => {
-      const urgA = a.nuncaPreencheu || (a.diasPendente ?? 0) >= DIAS_URGENCIA ? 1 : 0;
-      const urgB = b.nuncaPreencheu || (b.diasPendente ?? 0) >= DIAS_URGENCIA ? 1 : 0;
-      return urgB - urgA || b.visita_realizada - a.visita_realizada || b.total - a.total;
-    });
+    // Urgentes primeiro (mais visitas sem desfecho no topo), depois pendentes do período, depois total
+    result.sort((a, b) =>
+      Number(ehUrgente(b)) - Number(ehUrgente(a)) ||
+      b.visitasSemDesfecho - a.visitasSemDesfecho ||
+      b.visita_realizada - a.visita_realizada ||
+      b.total - a.total
+    );
     setRows(result);
     setLoading(false);
   }
@@ -162,7 +153,7 @@ export default function DesfechosMarketing() {
   );
 
   const pad = (n: number) => String(n).padStart(2, "0");
-  const urgentes = rows.filter((r) => r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA).length;
+  const urgentes = rows.filter(ehUrgente).length;
   const rotuloPeriodo = dia !== "todos"
     ? format(new Date(`${dia}T12:00:00`), "EEEE, dd/MM", { locale: ptBR })
     : `${MESES[mes - 1]} de ${ANO}`;
@@ -251,7 +242,7 @@ export default function DesfechosMarketing() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {rows.map((r) => {
-                    const urgente = r.nuncaPreencheu || (r.diasPendente ?? 0) >= DIAS_URGENCIA;
+                    const urgente = ehUrgente(r);
                     return (
                       <tr key={r.unidade_id} className={urgente ? "bg-red-50/60" : r.visita_realizada > 0 ? "bg-amber-50/40" : ""}>
                         <td className="px-6 py-3 font-medium text-gray-900">
@@ -264,7 +255,7 @@ export default function DesfechosMarketing() {
                           {urgente ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
                               <AlertOctagon className="h-3 w-3" aria-hidden />
-                              {r.nuncaPreencheu ? "Nunca preencheu" : `Pendente há ${r.diasPendente}d`}
+                              {r.nuncaPreencheu ? "Nunca preencheu" : "Visitas sem desfecho"}
                             </span>
                           ) : traco}
                         </td>
