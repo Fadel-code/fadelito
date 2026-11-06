@@ -25,6 +25,7 @@ const Usuarios = lazy(() => import("./pages/marketing/Usuarios"));
 const Observacoes = lazy(() => import("./pages/marketing/Observacoes"));
 const RelatorioTurmas = lazy(() => import("./pages/marketing/RelatorioTurmas"));
 const DesfechosMarketing = lazy(() => import("./pages/marketing/DesfechosMarketing"));
+const DesfechosUnidade = lazy(() => import("./pages/marketing/DesfechosUnidade"));
 const AssistenteFadelito = lazy(() => import("./pages/AssistenteFadelito"));
 const Agenda = lazy(() => import("./pages/Agenda"));
 const RematriculaMarketing = lazy(() => import("./pages/marketing/Rematricula"));
@@ -198,6 +199,7 @@ export default function App() {
           <Route path="observacoes" element={<Observacoes />} />
           <Route path="turmas" element={<RelatorioTurmas />} />
           <Route path="desfechos" element={<DesfechosMarketing />} />
+          <Route path="desfechos/:unidadeId" element={<DesfechosUnidade />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="rematricula" element={<RematriculaMarketing />} />
           <Route path="metricas" element={<RequireMarketingOuSupervisao><Metricas /></RequireMarketingOuSupervisao>} />

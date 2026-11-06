@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, AlertOctagon, CheckCircle2, Clock, GraduationCap, MessageCircle, XCircle } from "lucide-react";
+import { RefreshCw, AlertOctagon, CheckCircle2, Clock, Eye, GraduationCap, MessageCircle, XCircle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { fetchLeadsElegiveis } from "../../lib/crm";
 import { DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
@@ -234,7 +235,7 @@ export default function DesfechosMarketing() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[56rem] text-sm">
+              <table className="w-full min-w-[64rem] text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50 text-xs">
                     <th className="px-6 py-3 text-left font-semibold text-gray-700">Unidade</th>
@@ -245,6 +246,7 @@ export default function DesfechosMarketing() {
                     <th className="px-4 py-3 text-center font-semibold text-green-800">Matrículas</th>
                     <th className="px-4 py-3 text-center font-semibold text-red-700">Não fechou</th>
                     <th className="px-4 py-3 text-center font-semibold text-gray-700">Total</th>
+                    <th className="px-4 py-3"><span className="sr-only">Ações</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -279,6 +281,15 @@ export default function DesfechosMarketing() {
                         <td className="px-4 py-3 text-center tabular-nums">{r.matricula > 0 ? <span className="font-semibold text-green-700">{r.matricula}</span> : traco}</td>
                         <td className="px-4 py-3 text-center tabular-nums">{r.nao_fechou > 0 ? <span className="font-semibold text-red-700">{r.nao_fechou}</span> : traco}</td>
                         <td className="px-4 py-3 text-center tabular-nums text-gray-700">{r.total > 0 ? r.total : traco}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Link
+                            to={`/marketing/desfechos/${r.unidade_id}?mes=${dia !== "todos" ? dia.slice(0, 7) : `${ANO}-${pad(mes)}`}`}
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                            aria-label={`Visualizar desfechos de ${r.unidade_nome}`}
+                          >
+                            <Eye className="h-3.5 w-3.5" aria-hidden /> Visualizar desfechos
+                          </Link>
+                        </td>
                       </tr>
                     );
                   })}

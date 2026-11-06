@@ -210,6 +210,13 @@ export const DESFECHOS: { value: DesfechoTipo; label: string }[] = [
   { value: "nao_fechou", label: "Não fechou" },
 ];
 
+export const STAGE_LABEL: Record<string, string> = {
+  VISITA_AGENDADA: "Visita agendada",
+  NAO_COMPARECEU: "Não compareceu",
+  VISITA_REALIZADA: "Visitou",
+  EM_NEGOCIACAO: "Em negociação",
+};
+
 export const DESFECHO_BADGE: Record<DesfechoTipo, string> = {
   visita_realizada: "bg-blue-100 text-blue-800",
   em_negociacao:   "bg-yellow-100 text-yellow-800",

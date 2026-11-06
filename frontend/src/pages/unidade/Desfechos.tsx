@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../App";
 import { useEventosLead } from "../../hooks/useEventosLead";
 import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgencia";
-import { DESFECHOS, DESFECHO_BADGE, desfechoLabel, MESES } from "../../types";
+import { DESFECHOS, DESFECHO_BADGE, desfechoLabel, MESES, STAGE_LABEL } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
 import {
@@ -16,13 +16,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-
-const STAGE_LABEL: Record<string, string> = {
-  VISITA_AGENDADA: "Visita agendada",
-  NAO_COMPARECEU: "Não compareceu",
-  VISITA_REALIZADA: "Visitou",
-  EM_NEGOCIACAO: "Em negociação",
-};
 
 // soNaoFechou: só aparecem quando o desfecho é "Não fechou"
 const MOTIVOS: { grupo: string; icon: LucideIcon; itens: string[]; soNaoFechou?: string[] }[] = [
