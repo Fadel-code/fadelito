@@ -34,8 +34,8 @@ interface UnidadeRow {
 const FILTRO_KEY = "fadelito_filtro_desfechos_marketing";
 
 // Urgente = o que a coluna "Visitas no período" mostra: visita já ocorrida no período
-// sem nenhum desfecho registrado, ou unidade que nunca registrou desfecho algum.
-const ehUrgente = (r: UnidadeRow) => r.nuncaPreencheu || r.visitasSemDesfecho > 0;
+// sem nenhum desfecho registrado. "Nunca preencheu" sem visita pendente é só informativo.
+const ehUrgente = (r: UnidadeRow) => r.visitasSemDesfecho > 0;
 
 export default function DesfechosMarketing() {
   const mesCorrido = new Date().getMonth() + 1;
@@ -253,9 +253,13 @@ export default function DesfechosMarketing() {
                         </td>
                         <td className="px-4 py-3">
                           {urgente ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
                               <AlertOctagon className="h-3 w-3" aria-hidden />
-                              {r.nuncaPreencheu ? "Nunca preencheu" : "Visitas sem desfecho"}
+                              {r.nuncaPreencheu ? "Nunca preencheu" : "Sem desfecho"}
+                            </span>
+                          ) : r.nuncaPreencheu ? (
+                            <span className="inline-flex items-center whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                              Nunca preencheu
                             </span>
                           ) : traco}
                         </td>
