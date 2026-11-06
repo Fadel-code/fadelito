@@ -155,7 +155,14 @@ export default function DesfechosUnidade() {
               <tbody className="divide-y divide-gray-100">
                 {realizadosFiltrados.map((ev) => (
                   <tr key={ev.id}>
-                    <td className="px-4 py-3 font-medium text-gray-800">{ev.nome ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-800">{ev.nome ?? "—"}</div>
+                      {ev.telefone && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
+                          <Phone className="h-3 w-3" aria-hidden />{ev.telefone}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>{desfechoLabel(ev.tipo)}</span>
                     </td>
