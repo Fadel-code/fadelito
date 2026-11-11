@@ -8,6 +8,7 @@ import { fetchLeadsElegiveis } from "../../lib/crm";
 import { DESFECHO_BADGE, desfechoLabel, MESES, STAGE_LABEL } from "../../types";
 import type { EventoLead, LeadCRM } from "../../types";
 import { Button } from "../../components/ui/button";
+import { LeadDetalhes } from "../../components/LeadDetalhes";
 
 // Visão só leitura do Desfecho das Visitas de uma unidade (marketing/supervisão):
 // o que a unidade ainda tem a registrar e o que já registrou, com a observação.
@@ -41,6 +42,7 @@ export default function DesfechosUnidade() {
   const comEvento = new Set(eventos.map((e) => e.crm_lead_id));
   const mesVisita = (l: LeadCRM) => (l.visit_date ? format(new Date(l.visit_date), "yyyy-MM") : "");
   const pendentes = leads.filter((l) => !comEvento.has(l.id));
+  const leadPorId = new Map(leads.map((l) => [l.id, l]));
   const realizados = [...eventos].sort(
     (a, b) => new Date(b.synced_at ?? b.created_at).getTime() - new Date(a.synced_at ?? a.created_at).getTime()
   );
@@ -157,11 +159,7 @@ export default function DesfechosUnidade() {
                   <tr key={ev.id}>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800">{ev.nome ?? "—"}</div>
-                      {ev.telefone && (
-                        <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
-                          <Phone className="h-3 w-3" aria-hidden />{ev.telefone}
-                        </div>
-                      )}
+                      <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} />
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>{desfechoLabel(ev.tipo)}</span>

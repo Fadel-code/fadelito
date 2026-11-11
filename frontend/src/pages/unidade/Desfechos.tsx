@@ -9,6 +9,7 @@ import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgen
 import { DESFECHOS, DESFECHO_BADGE, desfechoLabel, MESES, STAGE_LABEL } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
+import { LeadDetalhes } from "../../components/LeadDetalhes";
 import {
   Dialog,
   DialogContent,
@@ -300,6 +301,7 @@ export default function Desfechos() {
   // desfecho — inclusive "Visitou"/"Em negociação", cujo stage no CRM continua elegível
   // para permitir decisão futura, mas a atualização passa a ser feita em Desfechos Realizados.
   const leadsPendentes = leads.filter((l) => !eventos.has(l.id));
+  const leadPorId = new Map(leads.map((l) => [l.id, l]));
 
   // Filtro de mês: pendentes pelo mês da visita (CRM); realizados pelo mês do registro.
   // ponytail: eventos_lead não guarda a data da visita — criar coluna data_visita se
@@ -682,6 +684,7 @@ export default function Desfechos() {
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                             </span>
+                            <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} />
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>
