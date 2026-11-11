@@ -8,7 +8,8 @@ import { fetchLeadsElegiveis } from "../../lib/crm";
 import { DESFECHO_BADGE, desfechoLabel, MESES, STAGE_LABEL } from "../../types";
 import type { EventoLead, LeadCRM } from "../../types";
 import { Button } from "../../components/ui/button";
-import { LeadDetalhes } from "../../components/LeadDetalhes";
+import { LeadDetalhes, EmailLinha } from "../../components/LeadDetalhes";
+import { fetchEmailsAgenda, chaveTelefone } from "../../lib/agenda";
 
 // Visão só leitura do Desfecho das Visitas de uma unidade (marketing/supervisão):
 // o que a unidade ainda tem a registrar e o que já registrou, com a observação.
@@ -38,6 +39,8 @@ export default function DesfechosUnidade() {
   }
 
   useEffect(() => { carregar(); }, [unidadeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [emails, setEmails] = useState<Map<string, string>>(new Map());
+  useEffect(() => { fetchEmailsAgenda().then(setEmails); }, []);
 
   const comEvento = new Set(eventos.map((e) => e.crm_lead_id));
   const mesVisita = (l: LeadCRM) => (l.visit_date ? format(new Date(l.visit_date), "yyyy-MM") : "");
@@ -117,6 +120,9 @@ export default function DesfechosUnidade() {
                           <Phone className="h-3 w-3" aria-hidden />{l.phone}
                         </div>
                       )}
+                      {emails.get(chaveTelefone(l.phone)) && (
+                        <div className="mt-0.5 text-xs text-gray-500"><EmailLinha email={emails.get(chaveTelefone(l.phone))!} /></div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">
                       {l.visit_date ? (
@@ -159,7 +165,7 @@ export default function DesfechosUnidade() {
                   <tr key={ev.id}>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800">{ev.nome ?? "—"}</div>
-                      <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} />
+                      <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} email={emails.get(chaveTelefone(leadPorId.get(ev.crm_lead_id)?.phone ?? ev.telefone))} />
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>{desfechoLabel(ev.tipo)}</span>

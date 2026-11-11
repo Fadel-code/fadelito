@@ -1,13 +1,13 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Baby, CalendarCheck, Phone, AlertTriangle } from "lucide-react";
+import { Baby, CalendarCheck, Phone, AlertTriangle, Mail } from "lucide-react";
 import { STAGE_LABEL } from "../types";
 import type { LeadCRM } from "../types";
 
 // Dados da visita (criança, telefone, data, situação no CRM) exibidos sob o nome
 // do lead nos "Desfechos realizados". O lead vem da lista do CRM; se ele não
 // estiver mais lá (ou o CRM estiver fora), cai no telefone salvo no eventos_lead.
-export function LeadDetalhes({ lead, telefone }: { lead?: LeadCRM; telefone?: string | null }) {
+export function LeadDetalhes({ lead, telefone, email }: { lead?: LeadCRM; telefone?: string | null; email?: string }) {
   const fone = lead?.phone ?? telefone;
   return (
     <div className="mt-1 flex flex-col gap-0.5 text-xs font-normal text-gray-500">
@@ -22,6 +22,7 @@ export function LeadDetalhes({ lead, telefone }: { lead?: LeadCRM; telefone?: st
           <Phone className="h-3 w-3" aria-hidden />{fone}
         </span>
       )}
+      {email && <EmailLinha email={email} />}
       {lead?.visit_date && (
         <span className="flex items-center gap-1">
           <CalendarCheck className="h-3 w-3" aria-hidden />
@@ -39,5 +40,15 @@ export function LeadDetalhes({ lead, telefone }: { lead?: LeadCRM; telefone?: st
         </span>
       )}
     </div>
+  );
+}
+
+// Email do responsável vindo da agenda (casado pelo telefone)
+export function EmailLinha({ email }: { email: string }) {
+  return (
+    <span className="flex items-center gap-1 break-all">
+      <Mail className="h-3 w-3 shrink-0" aria-hidden />
+      <a href={`mailto:${email}`} className="hover:text-primary-600 hover:underline">{email}</a>
+    </span>
   );
 }

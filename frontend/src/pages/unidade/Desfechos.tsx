@@ -9,7 +9,8 @@ import { useDesfechoUrgencia, DIAS_URGENCIA } from "../../hooks/useDesfechoUrgen
 import { DESFECHOS, DESFECHO_BADGE, desfechoLabel, MESES, STAGE_LABEL } from "../../types";
 import type { LeadCRM, EventoLead, DesfechoTipo } from "../../types";
 import { Button } from "../../components/ui/button";
-import { LeadDetalhes } from "../../components/LeadDetalhes";
+import { LeadDetalhes, EmailLinha } from "../../components/LeadDetalhes";
+import { fetchEmailsAgenda, chaveTelefone } from "../../lib/agenda";
 import {
   Dialog,
   DialogContent,
@@ -237,6 +238,8 @@ export default function Desfechos() {
   }, [carregar]);
 
   useEffect(() => { recarregar(); }, [recarregar]);
+  const [emails, setEmails] = useState<Map<string, string>>(new Map());
+  useEffect(() => { fetchEmailsAgenda().then(setEmails); }, []);
 
   function setLinha(leadId: number, patch: Partial<LinhaState>) {
     setEstado((prev) => ({ ...prev, [leadId]: { ...prev[leadId], ...patch } }));
@@ -419,6 +422,7 @@ export default function Desfechos() {
                             <Phone className="h-3 w-3" />{lead.phone}
                           </span>
                         )}
+                        {emails.get(chaveTelefone(lead.phone)) && <EmailLinha email={emails.get(chaveTelefone(lead.phone))!} />}
                         {lead.visit_date && (
                           <span className="flex items-center gap-1">
                             <CalendarCheck className="h-3 w-3" />
@@ -684,7 +688,7 @@ export default function Desfechos() {
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                             </span>
-                            <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} />
+                            <LeadDetalhes lead={leadPorId.get(ev.crm_lead_id)} telefone={ev.telefone} email={emails.get(chaveTelefone(leadPorId.get(ev.crm_lead_id)?.phone ?? ev.telefone))} />
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${DESFECHO_BADGE[ev.tipo]}`}>
