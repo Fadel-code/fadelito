@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCargaAtual } from "./useCargaAtual";
 import { supabase } from "../lib/supabase";
 import type { RematriculaAluno } from "../types";
 import { semAcento } from "../lib/utils";
@@ -15,11 +16,10 @@ export function useRematricula() {
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState<string | null>(null);
 
-  const ultimaCarga = useRef(0);
+  const novaCarga = useCargaAtual();
   const carregar = useCallback(async () => {
     // Cada save de qualquer unidade dispara recarga via realtime (3 páginas sequenciais).
-    // Uma carga antiga que termina depois da nova devolvia o valor de antes do save.
-    const minha = ++ultimaCarga.current;
+    const atual = novaCarga();
     setLoading(true);
     try {
       // Supabase corta em 1000 linhas por request — pagina até esgotar (a rede toda já
@@ -37,14 +37,14 @@ export function useRematricula() {
         todos = todos.concat((data ?? []) as RematriculaAluno[]);
         if (!data || data.length < PAGINA) break;
       }
-      if (minha === ultimaCarga.current) setAlunos(todos);
+      if (atual()) setAlunos(todos);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar dados de rematrícula");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [novaCarga]);
 
   useEffect(() => {
     carregar();
@@ -135,8 +135,9 @@ export function useRematricula() {
 
   const remover = useCallback(
     async (id: string) => {
-      const { error } = await supabase.from("rematricula_alunos").delete().eq("id", id);
-      if (error) {
+      // RLS: só supervisão apaga; outro papel recebe 0 linhas sem erro.
+      const { data, error } = await supabase.from("rematricula_alunos").delete().eq("id", id).select("id");
+      if (error || !data?.length) {
         toast.error("Erro ao remover aluno");
         return false;
       }
@@ -153,8 +154,8 @@ export function useRematricula() {
       const aluno = alunos.find((a) => a.id === id);
       if (!aluno) return false;
       const historico = [...(aluno.negociacao_historico ?? []), { data: new Date().toISOString(), texto: texto.trim() }];
-      const { error } = await supabase.from("rematricula_alunos").update({ negociacao_historico: historico }).eq("id", id);
-      if (error) {
+      const { data, error } = await supabase.from("rematricula_alunos").update({ negociacao_historico: historico }).eq("id", id).select("id");
+      if (error || !data?.length) {
         toast.error("Erro ao registrar histórico");
         return false;
       }

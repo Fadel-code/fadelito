@@ -335,7 +335,7 @@ export default function RematriculaMarketing() {
           <RematriculaPainel
             unidadeId={previewUnidadeId || "previa"}
             {...rematricula}
-            permiteRemover
+            permiteRemover={profile?.role === "supervisao"}
             permiteAdicionar
             permiteMarcarInadimplente={profile?.role === "supervisao"}
             somenteLeitura={profile?.role !== "supervisao"}

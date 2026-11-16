@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCargaAtual } from "./useCargaAtual";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import {
@@ -43,7 +44,9 @@ export function useRankingSupervisoras(inicio: string, fim: string) {
   const [unidades, setUnidades] = useState<UnidadeBasica[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const novaCarga = useCargaAtual();
   const carregar = useCallback(async () => {
+    const atual = novaCarga();
     setLoading(true);
     try {
       const janelaIni = mesAnterior(`${inicio.slice(0, 7)}-01`);
@@ -64,6 +67,7 @@ export function useRankingSupervisoras(inicio: string, fim: string) {
         supabase.from("profiles").select("id, unidade_nome, ativo").eq("role", "unidade").order("unidade_nome"),
       ]);
       for (const r of [sup, atr, uni]) if (r.error) throw r.error;
+      if (!atual()) return;
 
       setSupervisoras((sup.data ?? []) as Supervisora[]);
       setAtribuicoes(
@@ -87,7 +91,7 @@ export function useRankingSupervisoras(inicio: string, fim: string) {
     } finally {
       setLoading(false);
     }
-  }, [inicio, fim]);
+  }, [inicio, fim, novaCarga]);
 
   useEffect(() => {
     carregar();

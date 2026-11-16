@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { ConsolidadoUnidade, LinhaTurma } from "../types";
 import { dateToIso } from "../lib/utils";
 import { CAMPOS_TURMA, zeradaTurma } from "../lib/turmas";
+import { useCargaAtual } from "./useCargaAtual";
 
 // dia: ISO date string para filtrar por dia específico; undefined = mês inteiro
 export function useConsolidado(ano: number, mes: number, dia?: string) {
@@ -12,7 +13,9 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
   const [linhasTurma, setLinhasTurma] = useState<LinhaTurma[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const novaCarga = useCargaAtual();
   const carregar = useCallback(async () => {
+    const atual = novaCarga();
     setLoading(true);
     try {
       const padMes = String(mes).padStart(2, "0");
@@ -132,12 +135,13 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
         porTurma.set(chave, linha);
       }
 
+      if (!atual()) return;
       setDados(consolidado);
       setLinhasTurma([...porTurma.values()]);
     } finally {
       setLoading(false);
     }
-  }, [ano, mes, dia]);
+  }, [ano, mes, dia, novaCarga]);
 
   useEffect(() => {
     carregar();

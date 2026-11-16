@@ -10,6 +10,7 @@ import { MESES } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import SeletorMes from "../../components/ranking/SeletorMes";
+import { useCargaAtual } from "../../hooks/useCargaAtual";
 import KpiCard, { KpiGrid } from "../../components/KpiCard";
 import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import { diasUteisDoMes, dateToIso } from "../../lib/utils";
@@ -68,7 +69,9 @@ export default function DesfechosMarketing() {
     return { inicio, fim };
   }
 
+  const novaCarga = useCargaAtual();
   async function carregar() {
+    const atual = novaCarga();
     setLoading(true);
     const { inicio, fim } = buildDateRange();
     const [{ data: profiles }, { data: eventos }, { data: todosEventos }] = await Promise.all([
@@ -136,6 +139,7 @@ export default function DesfechosMarketing() {
       b.visita_realizada - a.visita_realizada ||
       b.total - a.total
     );
+    if (!atual()) return;
     setRows(result);
     setLoading(false);
   }

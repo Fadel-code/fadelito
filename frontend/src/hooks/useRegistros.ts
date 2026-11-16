@@ -203,13 +203,18 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
           .eq("unidade_id", unidadeId)
           .eq("data", dataIso);
 
-        const { error } = await supabase
+        const { data: apagados, error } = await supabase
           .from("registros")
           .delete()
           .eq("unidade_id", unidadeId)
-          .eq("data", dataIso);
+          .eq("data", dataIso)
+          .select("id");
 
         if (error) throw error;
+        // RLS bloqueia DELETE fora da janela editável com 0 linhas e sem erro.
+        if (existentes?.length && !apagados?.length) {
+          throw new Error("Permissão negada pelo banco para remover essa data.");
+        }
 
         await supabase
           .from("observacoes_diarias")

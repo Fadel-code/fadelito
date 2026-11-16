@@ -12,6 +12,7 @@ import Segmentado from "../../components/ui/segmentado";
 import { ROTULO, CARD_DESTAQUE } from "../../components/ui/estilos";
 import SeletorMes from "../../components/ranking/SeletorMes";
 import SeletorDatas from "../../components/ranking/SeletorDatas";
+import { useCargaAtual } from "../../hooks/useCargaAtual";
 import { Check, MessageSquareText, Pencil, RefreshCw, Search, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { diasUteisDoMes, dateToIso, semAcento } from "../../lib/utils";
@@ -123,7 +124,9 @@ export default function Observacoes() {
     return { inicio: `${ANO}-${pad(m)}-01`, fim: `${ANO}-${pad(m)}-${pad(new Date(ANO, m, 0).getDate())}` };
   }
 
+  const novaCarga = useCargaAtual();
   const buscar = useCallback(async () => {
+    const atual = novaCarga();
     setLoading(true);
     const { inicio, fim } = buildDateRange();
 
@@ -132,7 +135,9 @@ export default function Observacoes() {
       .order("data", { ascending: false }).limit(1000);
     if (inicio) q1 = q1.gte("data", inicio);
     if (fim)    q1 = q1.lte("data", fim);
-    const { data: obs } = await q1;
+    const { data: obs, error: e1 } = await q1;
+    if (!atual()) return;
+    if (e1) toast.error("Erro ao carregar observações");
     let obsFiltered = (obs ?? []) as ObsRow[];
     if (unidade !== "todas") obsFiltered = obsFiltered.filter((r) => nomeMap[r.unidade_id] === unidade);
     setObsRows(obsFiltered);
@@ -142,14 +147,16 @@ export default function Observacoes() {
       .order("data", { ascending: false }).limit(1000);
     if (inicio) q2 = q2.gte("data", inicio);
     if (fim)    q2 = q2.lte("data", fim);
-    const { data: desf } = await q2;
+    const { data: desf, error: e2 } = await q2;
+    if (!atual()) return;
+    if (e2) toast.error("Erro ao carregar desfechos");
     let desfFiltered = (desf ?? []) as DesfechoRow[];
     if (unidade !== "todas") desfFiltered = desfFiltered.filter((r) => nomeMap[r.unidade_id] === unidade);
     setDesfechoRows(desfFiltered);
 
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidade, mes, dia, dataInicio, dataFim, nomeMap]);
+  }, [unidade, mes, dia, dataInicio, dataFim, nomeMap, novaCarga]);
 
   useEffect(() => { buscar(); }, [buscar]);
 

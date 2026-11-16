@@ -41,22 +41,12 @@ function getFeriadosNacionais(ano: number): string[] {
     `${ano}-10-12`, // Nossa Senhora Aparecida
     `${ano}-11-02`, // Finados
     `${ano}-11-15`, // Proclamação da República
+    `${ano}-11-20`, // Consciência Negra (nacional desde a Lei 14.759/2023)
     `${ano}-12-25`, // Natal
   ];
 }
 
-function getFeriadosSet(ano: number): Set<string> {
-  return new Set(getFeriadosNacionais(ano));
-}
-
-export const FERIADOS_SET = getFeriadosSet(new Date().getFullYear());
-
-function isFeriado(date: Date): boolean {
-  const iso = date.toISOString().slice(0, 10);
-  return FERIADOS_SET.has(iso);
-}
-
-export function isDiaUtil(date: Date): boolean {
-  const dia = date.getDay();
-  return dia !== 0 && dia !== 6 && !isFeriado(date);
-}
+// Ano anterior e seguinte também: em janeiro a unidade ainda edita dezembro, e o modal
+// de edição navega para qualquer mês. Só o ano atual fazia o Natal passado virar dia útil.
+const ANO_ATUAL = new Date().getFullYear();
+export const FERIADOS_SET = new Set([ANO_ATUAL - 1, ANO_ATUAL, ANO_ATUAL + 1].flatMap(getFeriadosNacionais));
