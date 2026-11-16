@@ -94,9 +94,13 @@ describe("datas e feriados", () => {
     expect(dateToIso(new Date(2026, 0, 5))).toBe("2026-01-05");
     expect(semAcento("Ação JOSÉ")).toBe("acao jose");
   });
-  it("Consciência Negra e Sexta-feira Santa são feriados", () => {
+  it("feriados nacionais e de São Paulo, sem Carnaval", () => {
     expect(FERIADOS_SET.has(`${new Date().getFullYear()}-11-20`)).toBe(true);
     expect(FERIADOS_SET.has("2026-04-03")).toBe(true); // Páscoa 2026 = 05/04
+    expect(FERIADOS_SET.has("2026-06-04")).toBe(true); // Corpus Christi 2026
+    expect(FERIADOS_SET.has("2026-01-25")).toBe(true); // Aniversário de SP
+    expect(FERIADOS_SET.has("2026-07-09")).toBe(true); // Revolução Constitucionalista
+    expect(FERIADOS_SET.has("2026-02-17")).toBe(false); // Carnaval fica de fora (decisão do marketing)
   });
   // Em janeiro a unidade ainda edita dezembro: o feriado do ano anterior tem que valer.
   it("cobre ano anterior e seguinte", () => {

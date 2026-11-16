@@ -34,9 +34,12 @@ function getFeriadosNacionais(ano: number): string[] {
   const sextaFeiraSanta = addDias(pascoa, -2);
   return [
     `${ano}-01-01`, // Confraternização Universal
+    `${ano}-01-25`, // Aniversário de São Paulo (municipal)
     toIso(sextaFeiraSanta), // Paixão de Cristo (calculada via Páscoa)
     `${ano}-04-21`, // Tiradentes
     `${ano}-05-01`, // Dia do Trabalho
+    toIso(addDias(pascoa, 60)), // Corpus Christi (municipal SP)
+    `${ano}-07-09`, // Revolução Constitucionalista (estadual SP)
     `${ano}-09-07`, // Independência do Brasil
     `${ano}-10-12`, // Nossa Senhora Aparecida
     `${ano}-11-02`, // Finados
