@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import type { RematriculaAluno } from "../types";
 import { semAcento } from "../lib/utils";
@@ -15,7 +15,11 @@ export function useRematricula() {
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState<string | null>(null);
 
+  const ultimaCarga = useRef(0);
   const carregar = useCallback(async () => {
+    // Cada save de qualquer unidade dispara recarga via realtime (3 páginas sequenciais).
+    // Uma carga antiga que termina depois da nova devolvia o valor de antes do save.
+    const minha = ++ultimaCarga.current;
     setLoading(true);
     try {
       // Supabase corta em 1000 linhas por request — pagina até esgotar (a rede toda já
@@ -33,7 +37,7 @@ export function useRematricula() {
         todos = todos.concat((data ?? []) as RematriculaAluno[]);
         if (!data || data.length < PAGINA) break;
       }
-      setAlunos(todos);
+      if (minha === ultimaCarga.current) setAlunos(todos);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao carregar dados de rematrícula");

@@ -4,6 +4,7 @@ import { calcularKpisRematricula, derivarStatusRematricula, type RematriculaAlun
 import { Button } from "./ui/button";
 import StatTile from "./StatTile";
 import { semAcento } from "../lib/utils";
+import toast from "react-hot-toast";
 
 const STATUS_PILL: Record<string, string> = {
   pendente: "bg-amber-100 text-amber-700",
@@ -174,6 +175,12 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
 
   async function handleSalvar(a: RematriculaAluno) {
     const linha = linhaDe(a);
+    // "Não rematriculou" não tem coluna própria: é derivado de motivo preenchido. Sem motivo
+    // o aluno voltava pra Pendente depois de salvar, sem aviso nenhum.
+    if (linha.naoRematriculou && !linha.motivo.trim()) {
+      toast.error("Informe o motivo da não rematrícula para salvar");
+      return;
+    }
     const ok = await atualizar(a.id, linha.contratoAssinado, linha.motivo, linha.quemContatou, linha.observacao, linha.negociando, linha.inadimplente, linha.aceite);
     if (ok) setRascunho(({ [a.id]: _salvo, ...resto }) => resto);
   }
@@ -307,6 +314,7 @@ export default function RematriculaPainel({ unidadeId, alunos, loading, salvando
                 const linha = linhaDe(a);
                 const isSalvando = salvando === a.id;
                 const alterado =
+                  linha.naoRematriculou !== (derivarStatusRematricula(a) === "nao_rematriculado") ||
                   linha.contratoAssinado !== a.contrato_assinado ||
                   linha.motivo !== (a.motivo ?? "") ||
                   linha.quemContatou !== (a.quem_contatou ?? "") ||
