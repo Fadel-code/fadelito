@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase, buscarTudo, EVENTOS_LEAD_ALTERADOS } from "../lib/supabase";
 import { fetchLeadsElegiveis } from "../lib/crm";
 
 // ponytail: limite arbitrário de urgência; ajustar se o negócio definir um SLA formal
@@ -34,14 +34,19 @@ export function useDesfechoUrgencia(
   useEffect(() => {
     if (!unidadeId) return;
     let ativo = true;
-    (async () => {
-      const [{ data }, leads] = await Promise.all([
-        supabase.from("eventos_lead").select("crm_lead_id, tipo, created_at").eq("unidade_id", unidadeId),
+    let carga = 0;
+    const calcular = async () => {
+      const minha = ++carga;
+      const [data, leads] = await Promise.all([
+        buscarTudo<{ crm_lead_id: number; tipo: string; created_at: string }>((de, ate) =>
+          supabase.from("eventos_lead").select("crm_lead_id, tipo, created_at").eq("unidade_id", unidadeId).order("id").range(de, ate)
+        ).catch(() => null),
         fetchLeadsElegiveis(unidadeNome ?? "").catch(() => []),
       ]);
-      if (!ativo) return;
+      // Falha do banco não vira "nunca preencheu"; resposta antiga não sobrescreve a nova.
+      if (!ativo || minha !== carga || !data) return;
 
-      const eventos = data ?? [];
+      const eventos = data;
       const comDesfecho = new Set(eventos.map((e) => e.crm_lead_id));
       const pendentes = eventos.filter((e) => e.tipo === "visita_realizada");
       const diasPendente = pendentes.length
@@ -62,9 +67,13 @@ export function useDesfechoUrgencia(
         visitasSemDesfecho,
         urgente: nuncaPreencheu || (diasPendente ?? 0) >= DIAS_URGENCIA || visitasSemDesfecho > 0,
       });
-    })();
+    };
+    calcular();
+    // Registrar/editar/remover desfecho recalcula o aviso na hora (antes ficava o de quando a tela abriu).
+    window.addEventListener(EVENTOS_LEAD_ALTERADOS, calcular);
     return () => {
       ativo = false;
+      window.removeEventListener(EVENTOS_LEAD_ALTERADOS, calcular);
     };
   }, [unidadeId, unidadeNome]);
 

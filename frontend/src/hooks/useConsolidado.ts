@@ -37,6 +37,7 @@ export function useConsolidado(ano: number, mes: number, dia?: string) {
           .select("*, profiles!inner(unidade_nome, ativo)")
           .gte("data", inicio)
           .lte("data", fim)
+          .order("id") // sem ordem estável as páginas repetem/pulam linhas e o total oscila
           .range(from, from + PAGE - 1);
         if (errReg) throw errReg;
         registros.push(...(batch ?? []));

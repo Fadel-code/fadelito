@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCargaAtual } from "./useCargaAtual";
 import toast from "react-hot-toast";
-import { supabase } from "../lib/supabase";
+import { supabase, buscarTudo } from "../lib/supabase";
 import {
   mesAnterior,
   mesclarDados,
@@ -20,15 +20,6 @@ export interface UnidadeBasica {
 }
 
 // Supabase corta em 1000 linhas por request — pagina até esgotar.
-async function buscarTudo<T>(consulta: (de: number, ate: number) => PromiseLike<{ data: T[] | null; error: unknown }>) {
-  const todos: T[] = [];
-  for (let de = 0; ; de += 1000) {
-    const { data, error } = await consulta(de, de + 999);
-    if (error) throw error;
-    todos.push(...(data ?? []));
-    if (!data || data.length < 1000) return todos;
-  }
-}
 
 /**
  * `inicio`/`fim` (YYYY-MM-DD) definem o período. Carrega também o mês anterior (pra variação)

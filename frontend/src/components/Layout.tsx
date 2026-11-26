@@ -123,7 +123,8 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const pendingCount = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
+  const pendingInicial = usePendingDesfechos(role === "unidade" ? profile?.id : undefined);
+  const pendingCount = pendingInicial ?? 0;
   const rematriculaPct = useRematriculaProgresso(role === "marketing");
   // Agenda é um embed que precisa da área de conteúdo inteira — sem o respiro
   // de padding que as outras páginas (formulários, tabelas) usam.
@@ -142,11 +143,13 @@ export default function Layout({ role }: { role: "unidade" | "marketing" }) {
   const [modalAberto, setModalAberto] = useState(false);
   const modalMostrado = useRef(false);
 
+  // Decide só pela primeira contagem: o badge agora se atualiza ao registrar desfecho, e um
+  // "Visitou" novo (0 → 1) abriria este pop-up por cima do modal "próximo passo" da página.
   useEffect(() => {
-    if (role !== "unidade" || pendingCount === 0 || modalMostrado.current) return;
+    if (role !== "unidade" || pendingInicial === null || modalMostrado.current) return;
     modalMostrado.current = true;
-    setModalAberto(true);
-  }, [pendingCount, role]);
+    if (pendingInicial > 0) setModalAberto(true);
+  }, [pendingInicial, role]);
 
   // rematriculaPct só vem null quando a unidade ainda não tem nenhum aluno importado
   // (ver migration 027) — usamos isso pra só mostrar o menu pra quem já tem dados.

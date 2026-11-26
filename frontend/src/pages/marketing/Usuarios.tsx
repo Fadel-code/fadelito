@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { UserPlus, RefreshCw, KeyRound, Eye, EyeOff, Lock, Search, X } from "lucide-react";
 import { useAuth } from "../../App";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../types";
 import { UNIDADES } from "../../types";
@@ -16,26 +17,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import toast from "react-hot-toast";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string;
+// Cliente sem sessão persistida: o signUp de um usuário novo não pode trocar a sessão
+// do Marketing (com confirmação de e-mail desligada, o Supabase loga como o recém-criado).
+const authIsolado = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "fadelito-auth-isolado" },
+});
 
 const ROLE_LABEL: Record<string, string> = {
   marketing: "Marketing",
   supervisao: "Supervisão",
 };
-
-async function adminUpdatePassword(userId: string, password: string) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SERVICE_KEY}`,
-      "apikey": SERVICE_KEY,
-    },
-    body: JSON.stringify({ password }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-}
 
 const COLUNAS = "lg:grid-cols-[11rem_minmax(0,1fr)_9.5rem_5.5rem_6.5rem_auto]";
 const ACAO_PERIGO = "border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800";
@@ -173,8 +164,9 @@ export default function Usuarios() {
     if (novaSenhaAdmin.length < 8) { toast.error("Senha deve ter pelo menos 8 caracteres."); return; }
     setRedefinindo(true);
     try {
-      await adminUpdatePassword(modalSenha.id, novaSenhaAdmin);
-      await supabase.from("profiles").update({ senha_temp: novaSenhaAdmin }).eq("id", modalSenha.id);
+      // migration 053: troca a senha no Auth e grava senha_temp, só para o Marketing.
+      const { error } = await supabase.rpc("admin_definir_senha", { p_user_id: modalSenha.id, p_senha: novaSenhaAdmin });
+      if (error) throw error;
       toast.success(`Senha de ${modalSenha.unidade_nome ?? modalSenha.email} redefinida!`);
       setModalSenha(null);
       setNovaSenhaAdmin("");
@@ -191,7 +183,7 @@ export default function Usuarios() {
     if (novaSenha.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres."); return; }
     setCriando(true);
     try {
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
+      const { data: authData, error: authErr } = await authIsolado.auth.signUp({
         email: novoEmail.trim(),
         password: novaSenha,
         options: { data: { unidade_nome: novoNome } },

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, startOfMonth, subMonths, endOfYear, isBefore, isSameYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Save, Trash2, ClipboardCheck, AlertTriangle, CalendarOff, TrendingUp, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { BANNER_KEY } from "../../components/Layout";
 import { useAuth } from "../../App";
 import { useRegistros } from "../../hooks/useRegistros";
@@ -51,6 +52,9 @@ export default function FormularioDiario() {
   const [observacao, setObservacao] = useState("");
   const [conversaoMes, setConversaoMes] = useState<string | null>(null);
   const [avisoDesfecho, setAvisoDesfecho] = useState(false);
+  // Só libera salvar/remover depois que a data escolhida carregou: antes, trocar de dia e salvar
+  // durante a carga (ou após falha nela) gravava os números do dia anterior no dia novo.
+  const [dadosProntos, setDadosProntos] = useState(false);
 
   const { loading, salvando, removendo, carregarPorData, salvar, remover, carregarObservacao, salvarObservacao, carregarPorMes } = useRegistros({
     unidadeId: profile!.id,
@@ -107,15 +111,19 @@ export default function FormularioDiario() {
     const iso = dateToIso(dataSelecionada);
     setTemRegistros(false);
     setAvisoDesfecho(false);
-    carregarPorData(iso).then(({ linhas, existe }) => {
-      if (!active) return;
-      setLinhas(linhas);
-      setTemRegistros(existe);
-    });
-    carregarObservacao(iso).then((obs) => {
-      if (!active) return;
-      setObservacao(obs);
-    });
+    setDadosProntos(false);
+    Promise.all([carregarPorData(iso), carregarObservacao(iso)])
+      .then(([{ linhas, existe }, obs]) => {
+        if (!active) return;
+        setLinhas(linhas);
+        setTemRegistros(existe);
+        setObservacao(obs);
+        setDadosProntos(true);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (active) toast.error("Não foi possível carregar os dados desse dia. Selecione a data de novo.");
+      });
     return () => { active = false; };
   }, [dataSelecionada, carregarPorData, carregarObservacao]);
 
@@ -129,7 +137,7 @@ export default function FormularioDiario() {
   }, [mostrarCalendario]);
 
   async function handleSalvar() {
-    if (!dataSelecionada || !observacao.trim()) return;
+    if (!dataSelecionada || !dadosProntos || !observacao.trim()) return;
     const iso = dateToIso(dataSelecionada);
     const ok = await salvar(iso, linhas);
     if (!ok) return;
@@ -347,7 +355,7 @@ export default function FormularioDiario() {
                   variant="outline"
                   className="text-red-600 border-red-300 hover:bg-red-50"
                   onClick={() => setModalRemocaoAberto(true)}
-                  disabled={salvando || removendo}
+                  disabled={salvando || removendo || !dadosProntos}
                 >
                   <Trash2 className="h-4 w-4" />
                   Remover preenchimento
@@ -358,13 +366,13 @@ export default function FormularioDiario() {
               <Button
                 variant="outline"
                 onClick={() => setModalSemVisitaAberto(true)}
-                disabled={salvando || removendo}
+                disabled={salvando || removendo || !dadosProntos}
                 size="lg"
               >
                 <CalendarOff className="h-4 w-4" />
                 Não tivemos visitas hoje
               </Button>
-              <Button onClick={handleSalvar} disabled={salvando || removendo || observacao.trim() === ""} size="lg">
+              <Button onClick={handleSalvar} disabled={salvando || removendo || !dadosProntos || observacao.trim() === ""} size="lg">
                 <Save className="h-4 w-4" />
                 {salvando ? "Salvando..." : "Salvar dados"}
               </Button>

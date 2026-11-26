@@ -697,7 +697,10 @@ export default function Desfechos() {
                           </td>
                           <td className="px-4 py-3 text-gray-600 whitespace-pre-wrap">{ev.observacao ?? "—"}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
-                            {ev.synced_at ? format(new Date(ev.synced_at), "dd/MM HH:mm") : "—"}
+                            {format(new Date(ev.synced_at ?? ev.created_at), "dd/MM HH:mm")}
+                            {!ev.synced_at && ev.tipo !== "removido" && (
+                              <span className="block text-amber-700" title="Será reenviado ao CRM na próxima atualização">CRM pendente</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             {isConfirmando ? (

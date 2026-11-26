@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "../../lib/supabase";
-import { reverterDesfecho } from "../../lib/crm";
+import { supabase, buscarTudo } from "../../lib/supabase";
+import { apagarEventoLead } from "../../hooks/useEventosLead";
 import { UNIDADES, MESES, DESFECHO_BADGE, desfechoLabel } from "../../types";
 import type { DesfechoTipo } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
@@ -89,7 +89,8 @@ export default function Observacoes() {
     return f;
   }, [mesCorrido]);
   const [unidade, setUnidade] = useState(inicial.unidade ?? "todas");
-  const [mes, setMes] = useState(inicial.mes && inicial.mes !== "todos" ? inicial.mes : String(mesCorrido));
+  // Mês salvo além do corrente (virada de ano: dezembro salvo, agora é janeiro) volta pro mês atual.
+  const [mes, setMes] = useState(inicial.mes && inicial.mes !== "todos" && Number(inicial.mes) <= mesCorrido ? inicial.mes : String(mesCorrido));
   const [dia, setDia] = useState(inicial.dia ?? "todos");
   const [dataInicio, setDataInicio] = useState(inicial.dataInicio ?? "");
   const [dataFim, setDataFim] = useState(inicial.dataFim ?? "");
@@ -130,29 +131,40 @@ export default function Observacoes() {
     setLoading(true);
     const { inicio, fim } = buildDateRange();
 
-    // Observações diárias
-    let q1 = supabase.from("observacoes_diarias").select("unidade_id, data, observacao")
-      .order("data", { ascending: false }).limit(1000);
-    if (inicio) q1 = q1.gte("data", inicio);
-    if (fim)    q1 = q1.lte("data", fim);
-    const { data: obs, error: e1 } = await q1;
-    if (!atual()) return;
-    if (e1) toast.error("Erro ao carregar observações");
-    let obsFiltered = (obs ?? []) as ObsRow[];
-    if (unidade !== "todas") obsFiltered = obsFiltered.filter((r) => nomeMap[r.unidade_id] === unidade);
-    setObsRows(obsFiltered);
+    // Filtro de unidade no banco (antes era aplicado depois do corte de 1000 linhas,
+    // e unidades com dados mais antigos no período sumiam). Paginado com buscarTudo.
+    const unidadeId = unidade === "todas" ? null : Object.keys(nomeMap).find((id) => nomeMap[id] === unidade);
+    if (unidade !== "todas" && !unidadeId) {
+      if (!Object.keys(nomeMap).length) return; // nomes ainda carregando — a carga refaz quando chegarem
+      setObsRows([]); // unidade salva no filtro que não existe mais
+      setDesfechoRows([]);
+      setLoading(false);
+      return;
+    }
 
-    // Desfechos de visita
-    let q2 = supabase.from("eventos_lead").select("id, crm_lead_id, unidade_id, data, nome, tipo, observacao, synced_at")
-      .order("data", { ascending: false }).limit(1000);
-    if (inicio) q2 = q2.gte("data", inicio);
-    if (fim)    q2 = q2.lte("data", fim);
-    const { data: desf, error: e2 } = await q2;
+    const [obsRes, desfRes] = await Promise.allSettled([
+      buscarTudo<ObsRow>((de, ate) => {
+        let q = supabase.from("observacoes_diarias").select("unidade_id, data, observacao")
+          .order("data", { ascending: false }).order("unidade_id").range(de, ate);
+        if (inicio) q = q.gte("data", inicio);
+        if (fim)    q = q.lte("data", fim);
+        if (unidadeId) q = q.eq("unidade_id", unidadeId);
+        return q;
+      }),
+      buscarTudo<DesfechoRow>((de, ate) => {
+        let q = supabase.from("eventos_lead").select("id, crm_lead_id, unidade_id, data, nome, tipo, observacao, synced_at")
+          .order("data", { ascending: false }).order("id").range(de, ate);
+        if (inicio) q = q.gte("data", inicio);
+        if (fim)    q = q.lte("data", fim);
+        if (unidadeId) q = q.eq("unidade_id", unidadeId);
+        return q;
+      }),
+    ]);
     if (!atual()) return;
-    if (e2) toast.error("Erro ao carregar desfechos");
-    let desfFiltered = (desf ?? []) as DesfechoRow[];
-    if (unidade !== "todas") desfFiltered = desfFiltered.filter((r) => nomeMap[r.unidade_id] === unidade);
-    setDesfechoRows(desfFiltered);
+    if (obsRes.status === "rejected") toast.error("Erro ao carregar observações");
+    if (desfRes.status === "rejected") toast.error("Erro ao carregar desfechos");
+    setObsRows(obsRes.status === "fulfilled" ? obsRes.value : []);
+    setDesfechoRows(desfRes.status === "fulfilled" ? desfRes.value : []);
 
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -163,14 +175,7 @@ export default function Observacoes() {
   async function handleRemoverDesfecho(row: DesfechoRow & { id: string }) {
     setRemovendoId(row.id);
     try {
-      // CRM: best-effort — falha não impede a limpeza local (ex.: lead "removido" nunca teve outcome enviado ao CRM)
-      try {
-        await reverterDesfecho(row.crm_lead_id);
-      } catch (crmErr) {
-        console.warn("Não foi possível reverter no CRM (ignorado):", crmErr);
-      }
-      const { error } = await supabase.from("eventos_lead").delete().eq("id", row.id);
-      if (error) throw error;
+      await apagarEventoLead(row);
       toast.success("Desfecho removido.");
       setConfirmandoId(null);
       await buscar();

@@ -48,14 +48,19 @@ export function chaveTelefone(raw: string | null | undefined): string {
   return d.length >= 10 ? d.slice(0, 2) + d.slice(-8) : "";
 }
 
-let emailsCache: Promise<Map<string, string>> | null = null;
+// Por usuário: sair e entrar com outro login na mesma aba não pode reaproveitar o mapa
+// do anterior (unidade veria emails da rede, ou de outra unidade).
+let emailsCache: { uid: string; mapa: Promise<Map<string, string>> } | null = null;
 
 /** Email do responsável por telefone, direto dos agendamentos da agenda
  *  (unidade só recebe os da própria unidade; marketing/supervisão, a rede).
  *  Best-effort: agenda fora do ar → mapa vazio, a tela segue sem email. */
-export function fetchEmailsAgenda(): Promise<Map<string, string>> {
+export async function fetchEmailsAgenda(): Promise<Map<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user.id ?? "";
+  if (emailsCache?.uid === uid) return emailsCache.mapa;
   // ponytail: busca os últimos 12 meses de agendamentos inteiros; criar endpoint enxuto na agenda se pesar
-  emailsCache ??= (async () => {
+  const mapa = (async () => {
     await ssoLoginAgenda();
     const desde = new Date();
     desde.setFullYear(desde.getFullYear() - 1);
@@ -76,5 +81,6 @@ export function fetchEmailsAgenda(): Promise<Map<string, string>> {
     emailsCache = null;
     return new Map<string, string>();
   });
-  return emailsCache;
+  emailsCache = { uid, mapa };
+  return mapa;
 }

@@ -136,12 +136,13 @@ export function useRegistros({ unidadeId, unidadeNome }: UseRegistrosOptions) {
 
   const carregarObservacao = useCallback(
     async (dataIso: string): Promise<string> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("observacoes_diarias")
         .select("observacao")
         .eq("unidade_id", unidadeId)
         .eq("data", dataIso)
         .maybeSingle();
+      if (error) throw error; // vazio por erro faria o salvar apagar a observação existente
       return data?.observacao ?? "";
     },
     [unidadeId]

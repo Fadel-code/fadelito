@@ -67,6 +67,13 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const usuarioAtual = useRef<string | null>(null);
 
   async function loadProfile(userId: string) {
+    // Quem tem MFA cadastrado e só passou pela senha (aal1) não entra: sem isso, sair da
+    // tela do código e abrir "/" levava direto ao app, pulando o segundo fator.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      setProfile(null);
+      return;
+    }
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -76,23 +83,20 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      usuarioAtual.current = session?.user?.id ?? null;
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
-
+    // INITIAL_SESSION cobre a sessão salva — sem getSession() à parte, que carregava o perfil duas vezes.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         // Renovação de token e SIGNED_IN ao voltar pra aba chegam com o mesmo usuário:
         // não recarrega o perfil nem mostra o spinner, senão a página desmonta e perde filtros/rascunhos.
-        if (session?.user && session.user.id === usuarioAtual.current) return;
+        // Exceção: o código MFA validado sobe a sessão pra aal2 e libera o perfil.
+        if (session?.user && session.user.id === usuarioAtual.current && event !== "MFA_CHALLENGE_VERIFIED") return;
         usuarioAtual.current = session?.user?.id ?? null;
         setUser(session?.user ?? null);
         if (session?.user) {
           setLoading(true);
-          loadProfile(session.user.id).finally(() => setLoading(false));
+          // Fora do callback: chamar o Supabase aqui dentro pode travar no lock interno do auth.
+          const id = session.user.id;
+          setTimeout(() => loadProfile(id).finally(() => setLoading(false)), 0);
         } else {
           setProfile(null);
           setLoading(false);

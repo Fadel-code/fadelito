@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RefreshCw, AlertOctagon, CheckCircle2, Clock, Eye, GraduationCap, MessageCircle, XCircle } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
+import { supabase, buscarTudo } from "../../lib/supabase";
 import { fetchLeadsElegiveis } from "../../lib/crm";
 import type { DesfechoTipo } from "../../types";
 import { MESES } from "../../types";
@@ -43,11 +44,13 @@ export default function DesfechosMarketing() {
   const hojeIso = dateToIso(new Date());
   const [mes, setMes] = useState(() => {
     const salvo = localStorage.getItem(FILTRO_KEY);
-    return salvo ? (JSON.parse(salvo).mes ?? mesCorrido) : mesCorrido;
+    const m = salvo ? (JSON.parse(salvo).mes ?? mesCorrido) : mesCorrido;
+    return m > mesCorrido ? mesCorrido : m; // virada de ano: mês salvo não pode ficar no futuro
   });
   const [dia, setDia] = useState(() => {
     const salvo = localStorage.getItem(FILTRO_KEY);
-    return salvo ? (JSON.parse(salvo).dia ?? "todos") : "todos";
+    const d = salvo ? (JSON.parse(salvo).dia ?? "todos") : "todos";
+    return d !== "todos" && !String(d).startsWith(`${ANO}-`) ? "todos" : d;
   });
 
   useEffect(() => {
@@ -70,15 +73,26 @@ export default function DesfechosMarketing() {
   }
 
   const novaCarga = useCargaAtual();
+  // Erro do banco não pode travar a tela em "Carregando…"
+  const falhou = (err: unknown) => {
+    console.error(err);
+    toast.error("Erro ao carregar desfechos");
+    return { data: null };
+  };
   async function carregar() {
     const atual = novaCarga();
     setLoading(true);
     const { inicio, fim } = buildDateRange();
     const [{ data: profiles }, { data: eventos }, { data: todosEventos }] = await Promise.all([
       supabase.from("profiles").select("id, unidade_nome").eq("role", "unidade").eq("ativo", true),
-      supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim),
-      // Sem filtro de período: quem já registrou algum desfecho (nunca preencheu / lead já resolvido)
-      supabase.from("eventos_lead").select("unidade_id, crm_lead_id"),
+      buscarTudo<{ unidade_id: string; tipo: string }>((de, ate) =>
+        supabase.from("eventos_lead").select("unidade_id, tipo").gte("data", inicio).lte("data", fim).order("id").range(de, ate)
+      ).then((data) => ({ data }), falhou),
+      // Sem filtro de período: quem já registrou algum desfecho (nunca preencheu / lead já resolvido).
+      // Paginado: a rede inteira passa de 1000 linhas e o corte calado marcava unidades como "sem desfecho".
+      buscarTudo<{ unidade_id: string; crm_lead_id: number }>((de, ate) =>
+        supabase.from("eventos_lead").select("unidade_id, crm_lead_id").order("id").range(de, ate)
+      ).then((data) => ({ data }), falhou),
     ]);
 
     // Lead com desfecho local já registrado (qualquer tipo, a qualquer momento)
@@ -99,7 +113,7 @@ export default function DesfechosMarketing() {
       let visitasSemDesfecho = 0;
       for (const l of leads) {
         if (!l.visit_date) continue;
-        const dataVisita = l.visit_date.slice(0, 10);
+        const dataVisita = dateToIso(new Date(l.visit_date)); // dia local, igual à tela da unidade
         if (new Date(l.visit_date).getTime() > agora) continue; // visita ainda não aconteceu
         if (dataVisita < inicio || dataVisita > fim) continue; // fora do período selecionado
         visitasNoPeriodo++;
