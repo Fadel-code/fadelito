@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Supabase e CRM falsos: nada sai da máquina, nada grava no banco.
+// O mock abaixo importa o lib/supabase real (pra manter buscarTudo etc.), e ele
+// chama createClient na importação — sem VITE_SUPABASE_URL (o passo de teste do
+// deploy não tem) isso lança "supabaseUrl is required". Valores falsos bastam.
+vi.hoisted(() => {
+  vi.stubEnv("VITE_SUPABASE_URL", "http://localhost:54321");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "chave-de-teste");
+});
 const chamadas: string[] = [];
 vi.mock("./lib/crm", () => ({
   reverterDesfecho: vi.fn(async (id: number) => { chamadas.push(`crm:revert:${id}`); }),
